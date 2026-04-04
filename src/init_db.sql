@@ -66,6 +66,9 @@ CREATE TABLE IF NOT EXISTS "Tournament" (
 	-- SOLO
 	-- TEAM
 	"participantType" TEXT NOT NULL,
+	-- OPEN
+	-- INVITE
+	"access" TEXT NOT NULL,
 	"gameType" INTEGER NOT NULL,
 	-- DRAFT
 	-- REGISTRATION_OPEN
@@ -85,6 +88,8 @@ CREATE TABLE IF NOT EXISTS "Tournament" (
 
 COMMENT ON COLUMN "Tournament"."participantType" IS 'SOLO
 TEAM';
+COMMENT ON COLUMN "Tournament"."access" IS 'OPEN
+INVITE';
 COMMENT ON COLUMN "Tournament"."status" IS 'DRAFT
 REGISTRATION_OPEN
 IN_PROGRESS
