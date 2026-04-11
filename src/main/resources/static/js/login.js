@@ -33,43 +33,24 @@
       return;
     }
     
-    // Здесь будет запрос к бэкенду
     window.showToast(`🔐 Добро пожаловать!`, false);
-    
-    // Пример отправки на сервер:
-    // fetch('/signin', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ email, password, remember })
-    // })
-    // .then(response => response.json())
-    // .then(data => {
-    //   if (data.success) {
-    //     window.location.href = '/dashboard';
-    //   } else {
-    //     window.showToast(data.message, true);
-    //   }
-    // })
-    // .catch(error => {
-    //   window.showToast('Ошибка соединения с сервером', true);
-    // });
   });
   
-  // Валидация email в реальном времени
+  // Валидация email в реальном времени (исправленная)
   const emailInput = document.getElementById('email');
   if (emailInput) {
     emailInput.addEventListener('blur', function() {
       const val = this.value.trim();
       const re = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
       if (val !== '' && !re.test(val)) {
-        this.style.borderColor = '#f97316';
-        this.style.backgroundColor = '#fff7ed';
+        this.style.borderColor = '#ef4444';
+        this.style.backgroundColor = '#3d3d3d';
       } else if (val !== '' && re.test(val)) {
         this.style.borderColor = '#10b981';
-        this.style.backgroundColor = '#f0fdf4';
+        this.style.backgroundColor = '#3d3d3d';
       } else {
-        this.style.borderColor = '#e5e7eb';
-        this.style.backgroundColor = '#fafbfc';
+        this.style.borderColor = '#374151';
+        this.style.backgroundColor = '#2d2d2d';
       }
     });
   }

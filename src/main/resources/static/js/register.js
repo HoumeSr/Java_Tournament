@@ -218,16 +218,16 @@
     
     if (pwdField && confirmField) {
       function checkPasswordMatchInline() {
-        if (confirmField.value.length > 0 && pwdField.value !== confirmField.value) {
-          confirmField.style.borderColor = '#ef4444';
-          confirmField.style.backgroundColor = '#fff5f5';
-        } else if (confirmField.value.length > 0 && pwdField.value === confirmField.value) {
-          confirmField.style.borderColor = '#10b981';
-          confirmField.style.backgroundColor = '#f0fdf4';
-        } else {
-          confirmField.style.borderColor = '#e5e7eb';
-          confirmField.style.backgroundColor = '#fafbfc';
-        }
+          if (confirmField.value.length > 0 && pwdField.value !== confirmField.value) {
+              confirmField.style.borderColor = '#ef4444';
+              confirmField.style.backgroundColor = '#3d3d3d';  // ✅ ТЁМНЫЙ ФОН
+          } else if (confirmField.value.length > 0 && pwdField.value === confirmField.value) {
+              confirmField.style.borderColor = '#10b981';
+              confirmField.style.backgroundColor = '#3d3d3d';  // ✅ ТЁМНЫЙ ФОН
+          } else {
+              confirmField.style.borderColor = '#374151';
+              confirmField.style.backgroundColor = '#2d2d2d';  // ✅ ТЁМНЫЙ ФОН (как у других)
+          }
       }
       
       pwdField.addEventListener('input', checkPasswordMatchInline);
@@ -238,18 +238,18 @@
     const emailInput = document.getElementById('email');
     if (emailInput) {
       emailInput.addEventListener('blur', function() {
-        const val = this.value.trim();
-        const re = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
-        if (val !== '' && !re.test(val)) {
-          this.style.borderColor = '#f97316';
-          this.style.backgroundColor = '#fff7ed';
-        } else if (val !== '' && re.test(val)) {
-          this.style.borderColor = '#10b981';
-          this.style.backgroundColor = '#f0fdf4';
-        } else {
-          this.style.borderColor = '#e5e7eb';
-          this.style.backgroundColor = '#fafbfc';
-        }
+          const val = this.value.trim();
+          const re = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
+          if (val !== '' && !re.test(val)) {
+              this.style.borderColor = '#ef4444';
+              this.style.backgroundColor = '#3d3d3d';  // ✅ ТЁМНЫЙ ФОН
+          } else if (val !== '' && re.test(val)) {
+              this.style.borderColor = '#10b981';
+              this.style.backgroundColor = '#3d3d3d';  // ✅ ТЁМНЫЙ ФОН
+          } else {
+              this.style.borderColor = '#374151';
+              this.style.backgroundColor = '#2d2d2d';  // ✅ ТЁМНЫЙ ФОН (как у других)
+          }
       });
     }
   }
