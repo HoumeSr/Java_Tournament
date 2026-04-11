@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Вход | Турнирная платформа</title>
+  
+  <link th:href="@{/css/register.css}" rel="stylesheet" type="text/css"/>
+  <link href="/css/register.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+
+<div class="register-container">
+  <!-- Левая панель: карусель фоновых изображений -->
+  <div class="hero-panel">
+    <div class="slideshow-bg" id="slideshowBg"></div>
+    <div class="hero-content">
+      <div class="hero-badge">🏆 С возвращением</div>
+      <h1>Снова в игре? <br>Войди в аккаунт</h1>
+      <p>Продолжай свой путь к чемпионству. Участвуй в турнирах, отслеживай рейтинг и забирай победы.</p>
+    </div>
+    <div class="slider-dots" id="sliderDots"></div>
+  </div>
+
+  <!-- Правая часть: форма входа -->
+  <div class="form-panel">
+    <div class="form-header">
+      <h2>Войти в аккаунт</h2>
+      <p>Введи свои данные для доступа</p>
+    </div>
+
+    <form class="register-form" id="loginForm" action="#" method="post" th:action="@{/signin}">
+      <div class="input-group">
+        <label for="email">Электронная почта</label>
+        <input type="email" id="email" name="email" placeholder="hello@example.com" autocomplete="email" required>
+      </div>
+
+      <div class="input-group">
+        <label for="password">Пароль</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+
+      <button type="submit" class="btn-register">Войти →</button>
+
+      <div class="login-redirect">
+        Нет аккаунта? <a th:href="@{/register}">Зарегистрироваться</a>
+      </div>
+      
+      <div class="login-redirect" style="margin-top: 0.5rem;">
+        <a th:href="@{/forgot-password}" style="font-size: 0.8rem;">Забыли пароль?</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="demoToast" class="demo-toast" style="opacity: 0; visibility: hidden;">✅ Действие выполнено</div>
+
+<script th:src="@{/js/register.js}"></script>
+<script src="/js/register.js"></script>
+
+<script th:src="@{/js/login.js}"></script>
+<script src="/js/login.js"></script>
+
+</body>
+</html>
