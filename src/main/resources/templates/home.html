@@ -10,7 +10,9 @@
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
-    
+    <!-- Font Awesome 6 (официальные иконки) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <!-- Подключаем CSS -->
     <link th:href="@{/css/home.css}" rel="stylesheet" type="text/css"/>
     <link href="/css/home.css" rel="stylesheet" type="text/css"/>
@@ -26,13 +28,12 @@
             <a data-nav="rating" class="nav-item">Рейтинг</a>
         </div>
     </div>
-    <div class="auth-buttons">
-        <button class="btn-outline" id="registerBtn">Регистрация</button>
-        <button class="btn-primary" id="loginBtn">Вход</button>
+    <div class="auth-buttons" id="authButtons">
+    <!-- Контент будет динамически меняться через JS -->
     </div>
 </header>
 
-<main class="container">
+<<main class="container">
     <!-- выбор категории -->
     <div class="categories-section">
         <div class="categories-grid" id="categoriesContainer">
@@ -50,8 +51,27 @@
     </div>
 </main>
 
-<footer>
-    © 2026 Бобры — платформа соревнований. Присоединяйся к битвам!
+<!-- ПОДВАЛ С СОЦСЕТЯМИ -->
+<footer class="modern-footer">
+    <div class="footer-content">
+        <div class="footer-info">
+            <div class="footer-logo">⚡ Бобры</div>
+            <p class="footer-tagline">Турнирная платформа нового поколения</p>
+            <p class="footer-copyright">© 2026 Бобры. Создано с ❤️ командой <span class="team-name">Космо-Бобры</span>. Все права защищены.</p>
+        </div>
+        
+        <div class="footer-social">
+            <a href="https://vk.com/ilnurmuhametzanov" class="social-icon vk" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-vk"></i>
+            </a>
+            <a href="https://discord.gg/your_link" class="social-icon discord" target="_blank">
+                <i class="fab fa-discord"></i>
+            </a>
+            <a href="https://github.com/HoumeSr" class="social-icon gh" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-github"></i>
+            </a>
+        </div>
+    </div>
 </footer>
 
 <!-- Подключаем JavaScript -->

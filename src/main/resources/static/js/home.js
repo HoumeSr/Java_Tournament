@@ -179,14 +179,93 @@ function initAuthButtons() {
     
     if (regBtn) {
         regBtn.addEventListener('click', () => {
-            alert('✨ Регистрация нового аккаунта: создайте профиль, чтобы участвовать в турнирах.');
+            window.location.href = '/register';
         });
     }
     
     if (loginBtn) {
         loginBtn.addEventListener('click', () => {
-            alert('🔐 Вход в личный кабинет. Введите email и пароль (демо-режим).');
+            window.location.href = '/login';
         });
+    }
+}
+
+// ========== ПРОВЕРКА АВТОРИЗАЦИИ ==========
+// Функция для проверки, авторизован ли пользователь
+function isUserLoggedIn() {
+    // Проверяем наличие токена/сессии в localStorage или cookies
+    // Пример: return localStorage.getItem('authToken') !== null;
+    
+    // ДЛЯ ТЕСТА: сейчас возвращаем false (не авторизован)
+    // Замените на свою логику проверки (например, проверка JWT токена)
+    return localStorage.getItem('userLoggedIn') === 'true';
+}
+
+// Функция для получения данных пользователя (имя, аватар)
+function getUserData() {
+    return {
+        username: localStorage.getItem('username') || 'Player',
+        avatar: localStorage.getItem('userAvatar') || null
+    };
+}
+
+// Функция для выхода из аккаунта (опционально)
+function logout() {
+    localStorage.removeItem('userLoggedIn');
+    localStorage.removeItem('username');
+    localStorage.removeItem('userAvatar');
+    updateAuthButtons(); // Обновляем кнопки
+    window.location.reload(); // Перезагружаем страницу
+}
+
+// ========== УПРАВЛЕНИЕ КНОПКАМИ АВТОРИЗАЦИИ ==========
+function updateAuthButtons() {
+    const authContainer = document.getElementById('authButtons');
+    if (!authContainer) return;
+    
+    const isLoggedIn = isUserLoggedIn();
+    
+    if (isLoggedIn) {
+        const userData = getUserData();
+        const firstLetter = userData.username.charAt(0).toUpperCase();
+        
+        // Показываем иконку профиля
+        authContainer.innerHTML = `
+            <div class="profile-icon" id="profileIcon">
+                <i class="fas fa-user-circle"></i>
+                <span class="profile-badge"></span>
+            </div>
+        `;
+        
+        // Добавляем обработчик клика на иконку профиля
+        const profileIcon = document.getElementById('profileIcon');
+        if (profileIcon) {
+            profileIcon.addEventListener('click', () => {
+                window.location.href = '/profile';
+            });
+        }
+    } else {
+        // Показываем кнопки входа и регистрации
+        authContainer.innerHTML = `
+            <button class="btn-outline" id="registerBtn">Регистрация</button>
+            <button class="btn-primary" id="loginBtn">Вход</button>
+        `;
+        
+        // Перепривязываем обработчики
+        const regBtn = document.getElementById('registerBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        
+        if (regBtn) {
+            regBtn.addEventListener('click', () => {
+                window.location.href = '/register';
+            });
+        }
+        
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                window.location.href = '/login';
+            });
+        }
     }
 }
 
@@ -195,24 +274,5 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCategories();
     renderTournaments();
     initNavBar();
-    initAuthButtons();
+    updateAuthButtons();
 });
-
-function initAuthButtons() {
-    const regBtn = document.getElementById('registerBtn');
-    const loginBtn = document.getElementById('loginBtn');
-    
-    if (regBtn) {
-        regBtn.addEventListener('click', () => {
-            // Перенаправление на страницу регистрации
-            window.location.href = '/register';
-        });
-    }
-    
-    if (loginBtn) {
-        loginBtn.addEventListener('click', () => {
-            // Перенаправление на страницу входа
-            window.location.href = '/login';
-        });
-    }
-}
