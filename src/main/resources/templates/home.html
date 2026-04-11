@@ -2,10 +2,61 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="${pageTitle}">Главная</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Бобры — Главная страница турниров</title>
+    
+    <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
+    <link rel="shortcut icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    
+    <!-- Подключаем CSS -->
+    <link th:href="@{/css/home.css}" rel="stylesheet" type="text/css"/>
+    <link href="/css/home.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
-<h1 th:text="${pageTitle}">Главная</h1>
-<p>Проект запущен</p>
+
+<header class="navbar">
+    <div class="logo-area">
+        <div class="site-title">⚡ Бобры</div>
+        <div class="nav-links">
+            <a data-nav="teams" class="nav-item">Команды</a>
+            <a data-nav="matches" class="nav-item active-nav">Матчи</a>
+            <a data-nav="rating" class="nav-item">Рейтинг</a>
+        </div>
+    </div>
+    <div class="auth-buttons">
+        <button class="btn-outline" id="registerBtn">Регистрация</button>
+        <button class="btn-primary" id="loginBtn">Вход</button>
+    </div>
+</header>
+
+<main class="container">
+    <!-- выбор категории -->
+    <div class="categories-section">
+        <div class="categories-grid" id="categoriesContainer">
+            <!-- Категории генерируются через JS -->
+        </div>
+    </div>
+
+    <!-- блок турниров -->
+    <div class="tournaments-header">
+        <div class="tournaments-title">🏆 Турниры</div>
+        <div class="tournaments-count" id="tournamentCount">0 событий</div>
+    </div>
+    <div id="tournamentsGrid" class="tournaments-grid">
+        <!-- Карточки турниров генерируются через JS -->
+    </div>
+</main>
+
+<footer>
+    © 2026 Бобры — платформа соревнований. Присоединяйся к битвам!
+</footer>
+
+<!-- Подключаем JavaScript -->
+<script th:src="@{/js/home.js}"></script>
+<script src="/js/home.js"></script>
+
 </body>
 </html>
