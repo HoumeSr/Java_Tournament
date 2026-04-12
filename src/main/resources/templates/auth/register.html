@@ -3,18 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Регистрация | Смена фоновых изображений</title>
+  <title>Регистрация | Бобры</title>
 
   <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
   <link rel="shortcut icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
   
-  <link th:href="@{/css/register.css}" rel="stylesheet" type="text/css"/>
-  <link href="/css/register.css" rel="stylesheet" type="text/css"/>
+  <link th:href="@{/css/register.css}" rel="stylesheet">
 </head>
 <body>
 
 <div class="register-container">
-  <!-- Левая панель: карусель фоновых изображений -->
   <div class="hero-panel">
     <div class="slideshow-bg" id="slideshowBg"></div>
     <div class="hero-content">
@@ -25,38 +23,37 @@
     <div class="slider-dots" id="sliderDots"></div>
   </div>
 
-  <!-- Правая часть: форма регистрации -->
   <div class="form-panel">
     <div class="form-header">
       <h2>Создать аккаунт</h2>
       <p>Заполните данные, чтобы начать путешествие</p>
     </div>
 
-    <form class="register-form" id="registrationForm" action="#" method="post" th:action="@{/register}">
+    <form class="register-form" id="registrationForm" th:action="@{/register}" method="post">
       <div class="name-row">
         <div class="input-group">
           <label for="firstName">Имя</label>
-          <input type="text" id="firstName" name="firstName" placeholder="Алексей" autocomplete="given-name" required>
+          <input type="text" id="firstName" name="firstName" placeholder="Алексей" required>
         </div>
         <div class="input-group">
           <label for="lastName">Фамилия</label>
-          <input type="text" id="lastName" name="lastName" placeholder="Иванов" autocomplete="family-name" required>
+          <input type="text" id="lastName" name="lastName" placeholder="Иванов" required>
         </div>
       </div>
 
       <div class="input-group">
         <label for="email">Электронная почта</label>
-        <input type="email" id="email" name="email" placeholder="hello@example.com" autocomplete="email" required>
+        <input type="email" id="email" name="email" placeholder="hello@example.com" required>
       </div>
 
       <div class="input-group">
         <label for="password">Пароль</label>
-        <input type="password" id="password" name="password" placeholder="Пароль должен содержать хотя бы 8 символов" autocomplete="new-password" required>
+        <input type="password" id="password" name="password" placeholder="Минимум 6 символов" required>
       </div>
 
       <div class="input-group">
         <label for="confirmPassword">Подтверждение пароля</label>
-        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="••••••••" autocomplete="off" required>
+        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="••••••••" required>
       </div>
 
       <button type="submit" class="btn-register">Зарегистрироваться →</button>
@@ -68,10 +65,8 @@
   </div>
 </div>
 
-<div id="demoToast" class="demo-toast" style="opacity: 0; visibility: hidden;">✅ Действие выполнено</div>
+<div id="demoToast" class="demo-toast"></div>
 
 <script th:src="@{/js/register.js}"></script>
-<script src="/js/register.js"></script>
-
 </body>
 </html>

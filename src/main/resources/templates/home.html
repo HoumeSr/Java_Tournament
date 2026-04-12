@@ -3,19 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Бобры — Главная страница турниров</title>
+    <title>Бобры — Турнирная платформа</title>
     
     <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
     <link rel="shortcut icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
 
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
-    <!-- Font Awesome 6 (официальные иконки) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Подключаем CSS -->
-    <link th:href="@{/css/home.css}" rel="stylesheet" type="text/css"/>
-    <link href="/css/home.css" rel="stylesheet" type="text/css"/>
+    <link th:href="@{/css/home.css}" rel="stylesheet">
 </head>
 <body>
 
@@ -28,30 +24,21 @@
             <a data-nav="rating" class="nav-item">Рейтинг</a>
         </div>
     </div>
-    <div class="auth-buttons" id="authButtons">
-    <!-- Контент будет динамически меняться через JS -->
-    </div>
+    <div class="auth-buttons" id="authButtons"></div>
 </header>
 
-<<main class="container">
-    <!-- выбор категории -->
+<main class="container">
     <div class="categories-section">
-        <div class="categories-grid" id="categoriesContainer">
-            <!-- Категории генерируются через JS -->
-        </div>
+        <div class="categories-grid" id="categoriesContainer"></div>
     </div>
 
-    <!-- блок турниров -->
     <div class="tournaments-header">
         <div class="tournaments-title">🏆 Турниры</div>
         <div class="tournaments-count" id="tournamentCount">0 событий</div>
     </div>
-    <div id="tournamentsGrid" class="tournaments-grid">
-        <!-- Карточки турниров генерируются через JS -->
-    </div>
+    <div id="tournamentsGrid" class="tournaments-grid"></div>
 </main>
 
-<!-- ПОДВАЛ С СОЦСЕТЯМИ -->
 <footer class="modern-footer">
     <div class="footer-content">
         <div class="footer-info">
@@ -59,24 +46,14 @@
             <p class="footer-tagline">Турнирная платформа нового поколения</p>
             <p class="footer-copyright">© 2026 Бобры. Создано с ❤️ командой <span class="team-name">Космо-Бобры</span>. Все права защищены.</p>
         </div>
-        
         <div class="footer-social">
-            <a href="https://vk.com/ilnurmuhametzanov" class="social-icon vk" target="_blank" rel="noopener noreferrer">
-                <i class="fab fa-vk"></i>
-            </a>
-            <a href="https://discord.gg/your_link" class="social-icon discord" target="_blank">
-                <i class="fab fa-discord"></i>
-            </a>
-            <a href="https://github.com/HoumeSr" class="social-icon gh" target="_blank" rel="noopener noreferrer">
-                <i class="fab fa-github"></i>
-            </a>
+            <a href="https://vk.com/ilnurmuhametzanov" class="social-icon vk" target="_blank"><i class="fab fa-vk"></i></a>
+            <a href="https://discord.gg/zur_chelovek" class="social-icon discord" target="_blank"><i class="fab fa-discord"></i></a>
+            <a href="https://github.com/HoumeSr" class="social-icon gh" target="_blank"><i class="fab fa-github"></i></a>
         </div>
     </div>
 </footer>
 
-<!-- Подключаем JavaScript -->
 <script th:src="@{/js/home.js}"></script>
-<script src="/js/home.js"></script>
-
 </body>
 </html>

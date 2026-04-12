@@ -125,17 +125,9 @@ body {
     padding: 0 2rem;
 }
 
-/* ========== СЕКЦИЯ КАТЕГОРИЙ (СТАРЫЙ СТИЛЬ) ========== */
+/* ========== СЕКЦИЯ КАТЕГОРИЙ ========== */
 .categories-section {
     margin-bottom: 3rem;
-}
-
-.section-label {
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: var(--text-secondary);
-    margin-bottom: 1rem;
 }
 
 .categories-grid {
@@ -169,27 +161,6 @@ body {
     background: #1e293b;
     border-color: #475569;
     color: white;
-}
-/* Адаптив для маленьких экранов */
-@media (max-width: 640px) {
-    .categories-grid {
-        gap: 0.8rem;
-    }
-    
-    .cat-btn {
-        padding: 0.5rem 0.8rem;
-        min-width: 70px;
-    }
-    
-    .cat-icon {
-        width: 36px;
-        height: 36px;
-        font-size: 1.6rem;
-    }
-    
-    .cat-label {
-        font-size: 0.7rem;
-    }
 }
 
 /* ========== ЗАГОЛОВОК ТУРНИРОВ ========== */
