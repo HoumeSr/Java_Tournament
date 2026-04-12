@@ -1,8 +1,8 @@
+
+@REM ALERT: При существовании БД она будет пересоздана этим скриптом
 @REM setup_db.bat localhost 5432 postgres postgres
-
-
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 set PGHOST=%1
 set PGPORT=%2
@@ -14,6 +14,7 @@ if "%PGPORT%"=="" set PGPORT=5432
 if "%PGUSER%"=="" set PGUSER=postgres
 if "%PGPASSWORD%"=="" set PGPASSWORD=postgres
 
+set PGDBNAME=tournament_db
 
 where psql >nul 2>nul
 if errorlevel 1 (
@@ -27,30 +28,32 @@ echo Port: %PGPORT%
 echo User: %PGUSER%
 echo Configuring PostgreSQL...
 
-psql -h %PGHOST% -p %PGPORT% -U %PGUSER% -d postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+psql -h %PGHOST% -p %PGPORT% -U %PGUSER% -d postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" >nul 2>&1
+
+for /f "tokens=*" %%i in ('psql -h %PGHOST% -p %PGPORT% -U %PGUSER% -d postgres -t -A -c "SELECT 1 FROM pg_database WHERE datname='%PGDBNAME%';" 2^>nul') do set DB_EXISTS=%%i
+
+if "%DB_EXISTS%"=="1" (
+    echo Database %PGDBNAME% exists. Dropping it...
+
+    psql -h %PGHOST% -p %PGPORT% -U %PGUSER% -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='%PGDBNAME%' AND pid <> pg_backend_pid();" >nul 2>&1
+
+    psql -h %PGHOST% -p %PGPORT% -U %PGUSER% -d postgres -c "DROP DATABASE %PGDBNAME%;"
+    if errorlevel 1 (
+        echo ERROR: Failed to drop database %PGDBNAME%.
+        exit /b 1
+    )
+    echo Database %PGDBNAME% dropped.
+)
+
+echo Creating database %PGDBNAME%...
+psql -h %PGHOST% -p %PGPORT% -U %PGUSER% -d postgres -c "CREATE DATABASE %PGDBNAME%;"
 if errorlevel 1 (
-    echo ERROR: Failed to alter postgres user password.
+    echo ERROR: Failed to create database %PGDBNAME%.
     exit /b 1
 )
 
-psql -h %PGHOST% -p %PGPORT% -U %PGUSER% -d postgres -t -A -c "SELECT 1 FROM pg_database WHERE datname='tournament_db';" > temp_db_check.txt
-set /p DB_EXISTS=<temp_db_check.txt
-del temp_db_check.txt
-
-if not "%DB_EXISTS%"=="1" (
-    echo Creating database tournament_db...
-    psql -h %PGHOST% -p %PGPORT% -U %PGUSER% -d postgres -c "CREATE DATABASE tournament_db;"
-    if errorlevel 1 (
-        echo ERROR: Failed to create database tournament_db.
-        exit /b 1
-    )
-) else (
-    echo Database tournament_db already exists.
-)
 echo Done.
-echo Database: tournament_db
-echo User: postgres
-echo Password: postgres
+echo Database: %PGDBNAME%
+echo User: %PGUSER%
 
 endlocal
-pause
