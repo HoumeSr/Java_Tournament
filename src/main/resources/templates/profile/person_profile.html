@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Бобры — Профиль</title>
+    
+    <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
+    <link rel="shortcut icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link th:href="@{/css/profile.css}" rel="stylesheet" type="text/css"/>
+    <link href="/css/profile.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+
+<header class="navbar">
+    <div class="logo-area">
+        <div class="site-title">⚡ Бобры</div>
+        <div class="nav-links">
+            <a th:href="@{/}" class="nav-item">Главная</a>
+            <a data-nav="teams" class="nav-item">Команды</a>
+            <a data-nav="matches" class="nav-item">Матчи</a>
+            <a data-nav="rating" class="nav-item">Рейтинг</a>
+        </div>
+    </div>
+    <div class="auth-buttons" id="authButtons"></div>
+</header>
+
+<main class="container">
+    <div class="profile-grid">
+        <!-- Левая колонка - аватар и статистика -->
+        <div class="profile-sidebar">
+            <div class="avatar-section">
+                <div class="avatar-wrapper">
+                    <div class="avatar-large" id="avatarPreview">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <button class="avatar-edit-btn" id="changeAvatarBtn" title="Сменить фото">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                </div>
+                <h2 class="profile-username" id="displayUsername">БоевойБобёр</h2>
+                <p class="profile-member-since">Участник с <span id="displayCreatedAt">15.01.2025</span></p>
+                <button class="btn-edit-sidebar" id="editProfileBtn">
+                    <i class="fas fa-pen"></i> Редактировать
+                </button>
+            </div>
+
+<!-- Скрытый input для загрузки файла -->
+<input type="file" id="avatarUpload" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
+            
+            <div class="stats-card">
+                <h3>📊 Статистика</h3>
+                <div class="stat-item">
+                    <span class="stat-label">Турниров участвовал</span>
+                    <span class="stat-value" id="tournamentsCount">24</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Побед</span>
+                    <span class="stat-value" id="winsCount">12</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Рейтинг</span>
+                    <span class="stat-value" id="rating">1847</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка - информация -->
+        <div class="profile-main">
+            <!-- Убран заголовок "Мой профиль" -->
+
+            <!-- Режим просмотра -->
+            <div class="info-card" id="viewMode">
+                <div class="info-row">
+                    <div class="info-label"><i class="fas fa-id-card"></i> ID пользователя</div>
+                    <div class="info-value" id="displayId">#10042</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label"><i class="fas fa-user"></i> Имя пользователя</div>
+                    <div class="info-value" id="displayUsernameField">БоевойБобёр</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label"><i class="fas fa-envelope"></i> Email</div>
+                    <div class="info-value" id="displayEmail">bobr@arenatop.ru</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label"><i class="fas fa-globe"></i> Страна</div>
+                    <div class="info-value" id="displayCountry">Россия</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label"><i class="fas fa-calendar-alt"></i> Дата регистрации</div>
+                    <div class="info-value" id="displayCreatedAtField">15 января 2025, 12:00</div>
+                </div>
+                <div class="info-row full-width">
+                    <div class="info-label"><i class="fas fa-info-circle"></i> Дополнительная информация</div>
+                    <div class="info-value bio-text" id="displayBio">КМС по шахматам, играю в CS2, организую любительские турниры</div>
+                </div>
+            </div>
+
+            <!-- Режим редактирования (скрыт по умолчанию) -->
+            <div class="edit-card" id="editMode" style="display: none;">
+                <form id="profileForm">
+                    <div class="edit-row">
+                        <label><i class="fas fa-user"></i> Имя пользователя</label>
+                        <input type="text" id="editUsername" class="edit-input" value="БоевойБобёр" required>
+                    </div>
+                    <div class="edit-row">
+                        <label><i class="fas fa-envelope"></i> Email</label>
+                        <input type="email" id="editEmail" class="edit-input" value="bobr@arenatop.ru" required>
+                    </div>
+                    <div class="edit-row">
+                        <label><i class="fas fa-globe"></i> Страна</label>
+                        <select id="editCountry" class="edit-input">
+                            <option value="">— Выберите страну —</option>
+                            <option value="Россия" selected>🇷🇺 Россия</option>
+                            <option value="Беларусь">🇧🇾 Беларусь</option>
+                            <option value="Казахстан">🇰🇿 Казахстан</option>
+                            <option value="Украина">🇺🇦 Украина</option>
+                            <option value="Германия">🇩🇪 Германия</option>
+                            <option value="США">🇺🇸 США</option>
+                            <option value="Великобритания">🇬🇧 Великобритания</option>
+                            <option value="Франция">🇫🇷 Франция</option>
+                            <option value="Испания">🇪🇸 Испания</option>
+                            <option value="Италия">🇮🇹 Италия</option>
+                            <option value="Китай">🇨🇳 Китай</option>
+                            <option value="Япония">🇯🇵 Япония</option>
+                            <option value="Корея">🇰🇷 Корея</option>
+                            <option value="Бразилия">🇧🇷 Бразилия</option>
+                            <option value="Другая">🌍 Другая</option>
+                        </select>
+                    </div>
+                    <div class="edit-row">
+                        <label><i class="fas fa-info-circle"></i> Дополнительная информация</label>
+                        <textarea id="editBio" class="edit-textarea" rows="4" placeholder="Например: КМС по шахматам, 1000+ часов в CS2, организатор турниров...">КМС по шахматам, играю в CS2, организую любительские турниры</textarea>
+                    </div>
+                    <div class="edit-actions">
+                        <button type="submit" class="btn-save">
+                            <i class="fas fa-save"></i> Сохранить
+                        </button>
+                        <button type="button" class="btn-cancel" id="cancelEditBtn">
+                            <i class="fas fa-times"></i> Отмена
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Кнопка смены пароля -->
+            <div class="password-card">
+                <div class="password-info">
+                    <i class="fas fa-lock"></i>
+                    <div>
+                        <h4>Безопасность</h4>
+                        <p>Хотите сменить пароль?</p>
+                    </div>
+                </div>
+                <button class="btn-password" id="changePasswordBtn">
+                    <i class="fas fa-key"></i> Сменить пароль
+                </button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- ПОДВАЛ -->
+<footer class="modern-footer">
+    <div class="footer-content">
+        <div class="footer-info">
+            <div class="footer-logo">⚡ Бобры</div>
+            <p class="footer-tagline">Турнирная платформа нового поколения</p>
+            <p class="footer-copyright">© 2026 Бобры. Создано с ❤️ командой <span class="team-name">Космо-Бобры</span>. Все права защищены.</p>
+        </div>
+        
+        <div class="footer-social">
+            <a href="https://vk.com/ilnurmuhametzanov" class="social-icon vk" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-vk"></i>
+            </a>
+            <a href="https://discord.gg/zur_chelovek" class="social-icon discord" target="_blank">
+                <i class="fab fa-discord"></i>
+            </a>
+            <a href="https://github.com/HoumeSr" class="social-icon gh" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-github"></i>
+            </a>
+        </div>
+    </div>
+</footer>
+
+<script th:src="@{/js/profile.js}"></script>
+<script src="/js/profile.js"></script>
+
+<div id="demoToast" class="demo-toast" style="opacity: 0; visibility: hidden;"></div>
+
+</body>
+</html>

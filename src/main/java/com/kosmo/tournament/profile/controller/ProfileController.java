@@ -10,7 +10,7 @@ public class ProfileController {
     @GetMapping("/profile")
     public String myProfile(Model model) {
         model.addAttribute("pageTitle", "Мой профиль");
-        return "profile/my-profile";
+        return "profile/person_profile";
     }
 
     @GetMapping("/my/tournaments")
