@@ -14,7 +14,7 @@ function showToast(message, isError = false) {
     }, 2500);
 }
 
-// ========== АВТОРИЗАЦИЯ (ТЕСТОВАЯ) ==========
+// ========== АВТОРИЗАЦИЯ ==========
 function isUserLoggedIn() {
     return localStorage.getItem('userLoggedIn') === 'true';
 }
@@ -23,9 +23,7 @@ function updateAuthButtons() {
     const authContainer = document.getElementById('authButtons');
     if (!authContainer) return;
     
-    const isLoggedIn = isUserLoggedIn();
-    
-    if (isLoggedIn) {
+    if (isUserLoggedIn()) {
         const savedAvatar = localStorage.getItem('userAvatar');
         
         authContainer.innerHTML = `
@@ -39,7 +37,6 @@ function updateAuthButtons() {
             </div>
         `;
         
-        // Если есть аватар, применяем стили
         if (savedAvatar) {
             const profileIcon = document.getElementById('profileIcon');
             if (profileIcon) {
@@ -56,9 +53,7 @@ function updateAuthButtons() {
             localStorage.removeItem('userLoggedIn');
             localStorage.removeItem('userAvatar');
             showToast('👋 Вы вышли из аккаунта');
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 500);
+            setTimeout(() => window.location.href = '/', 500);
         });
     } else {
         authContainer.innerHTML = `
@@ -78,14 +73,12 @@ function updateAuthButtons() {
             localStorage.setItem('username', 'БоевойБобёр');
             localStorage.setItem('userEmail', 'bobr@arenatop.ru');
             showToast('✅ Вы вошли как БоевойБобёр');
-            setTimeout(() => {
-                window.location.reload();
-            }, 500);
+            setTimeout(() => window.location.reload(), 500);
         });
     }
 }
 
-// ========== ПРОФИЛЬ (СТАТИЧЕСКАЯ ВЕРСИЯ) ==========
+// ========== ДАННЫЕ ПРОФИЛЯ ==========
 let profileData = {
     id: '#10042',
     username: 'БоевойБобёр',
@@ -106,13 +99,99 @@ function updateDisplayData() {
     document.getElementById('displayCreatedAtField').textContent = profileData.createdAt;
     document.getElementById('displayBio').textContent = profileData.bio;
     
-    // Обновляем поля редактирования
     document.getElementById('editUsername').value = profileData.username;
     document.getElementById('editEmail').value = profileData.email;
     document.getElementById('editCountry').value = profileData.country;
     document.getElementById('editBio').value = profileData.bio;
 }
 
+// ========== АВАТАР ==========
+function setAvatar(avatarData) {
+    const avatarPreview = document.getElementById('avatarPreview');
+    const profileIcon = document.getElementById('profileIcon');
+    
+    localStorage.setItem('userAvatar', avatarData);
+    
+    if (avatarPreview) {
+        avatarPreview.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = avatarData;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '50%';
+        avatarPreview.appendChild(img);
+    }
+    
+    if (profileIcon) {
+        profileIcon.innerHTML = `<img src="${avatarData}" class="avatar-mini">`;
+        profileIcon.style.padding = '0';
+        profileIcon.style.overflow = 'hidden';
+    }
+}
+
+function resetAvatar() {
+    const avatarPreview = document.getElementById('avatarPreview');
+    const profileIcon = document.getElementById('profileIcon');
+    
+    localStorage.removeItem('userAvatar');
+    
+    if (avatarPreview) {
+        avatarPreview.innerHTML = '<i class="fas fa-user-circle"></i>';
+    }
+    
+    if (profileIcon) {
+        profileIcon.innerHTML = '<i class="fas fa-user-circle"></i>';
+        profileIcon.style.padding = '';
+        profileIcon.style.overflow = '';
+    }
+}
+
+function initAvatarChange() {
+    const changeAvatarBtn = document.getElementById('changeAvatarBtn');
+    const avatarUpload = document.getElementById('avatarUpload');
+    const avatarPreview = document.getElementById('avatarPreview');
+    
+    if (!avatarPreview) return;
+    
+    if (changeAvatarBtn && avatarUpload) {
+        changeAvatarBtn.addEventListener('click', () => avatarUpload.click());
+        
+        avatarUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.match('image/jpeg|image/png|image/gif|image/webp')) {
+                showToast('❌ Поддерживаются JPEG, PNG, GIF, WEBP', true);
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('❌ Файл не более 5MB', true);
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setAvatar(e.target.result);
+                showToast('✅ Аватар обновлён!');
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    avatarPreview.addEventListener('dblclick', () => {
+        if (confirm('Сбросить аватар на стандартный?')) {
+            resetAvatar();
+            showToast('🔄 Аватар сброшен');
+        }
+    });
+    
+    const savedAvatar = localStorage.getItem('userAvatar');
+    if (savedAvatar) setAvatar(savedAvatar);
+}
+
+// ========== ПРОФИЛЬ ==========
 function initProfile() {
     const editBtn = document.getElementById('editProfileBtn');
     const cancelBtn = document.getElementById('cancelEditBtn');
@@ -121,8 +200,7 @@ function initProfile() {
     const changePasswordBtn = document.getElementById('changePasswordBtn');
     const profileForm = document.getElementById('profileForm');
     
-    // Редактирование
-    if (editBtn && cancelBtn && viewMode && editMode) {
+    if (editBtn && cancelBtn) {
         editBtn.addEventListener('click', () => {
             viewMode.style.display = 'none';
             editMode.style.display = 'block';
@@ -134,19 +212,17 @@ function initProfile() {
         });
     }
     
-    // Сохранение изменений
     if (profileForm) {
         profileForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
-            // Обновляем данные
             profileData.username = document.getElementById('editUsername').value.trim();
             profileData.email = document.getElementById('editEmail').value.trim();
             profileData.country = document.getElementById('editCountry').value;
             profileData.bio = document.getElementById('editBio').value.trim();
             
             if (!profileData.username || !profileData.email) {
-                showToast('❌ Имя пользователя и email обязательны', true);
+                showToast('❌ Имя и email обязательны', true);
                 return;
             }
             
@@ -158,184 +234,33 @@ function initProfile() {
             updateDisplayData();
             viewMode.style.display = 'block';
             editMode.style.display = 'none';
-            showToast('✅ Профиль успешно обновлён!');
+            showToast('✅ Профиль обновлён!');
         });
     }
     
-    // Смена пароля
     if (changePasswordBtn) {
         changePasswordBtn.addEventListener('click', () => {
-            const newPassword = prompt('Введите новый пароль (минимум 6 символов):');
+            const newPassword = prompt('Новый пароль (мин. 6 символов):');
             if (newPassword && newPassword.length >= 6) {
-                showToast('✅ Пароль успешно изменён!');
-            } else if (newPassword && newPassword.length < 6) {
-                showToast('❌ Пароль должен содержать минимум 6 символов', true);
+                showToast('✅ Пароль изменён!');
+            } else if (newPassword) {
+                showToast('❌ Пароль должен быть не менее 6 символов', true);
             }
         });
     }
     
-    // Заполняем начальные данные
     updateDisplayData();
 }
 
 // ========== НАВИГАЦИЯ ==========
 function initNavBar() {
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
+    document.querySelectorAll('.nav-item').forEach(item => {
         if (item.getAttribute('href') && item.getAttribute('href') !== '#') return;
-        item.addEventListener('click', () => {
-            showToast('📋 Этот раздел в разработке');
-        });
+        item.addEventListener('click', () => showToast('📋 В разработке'));
     });
 }
 
-function initAvatarChange() {
-    const changeAvatarBtn = document.getElementById('changeAvatarBtn');
-    const avatarUpload = document.getElementById('avatarUpload');
-    const avatarPreview = document.getElementById('avatarPreview');
-    
-    if (!avatarPreview) return;
-    
-    // Смена аватара (кнопка камера)
-    if (changeAvatarBtn && avatarUpload) {
-        changeAvatarBtn.addEventListener('click', () => {
-            avatarUpload.click();
-        });
-        
-        avatarUpload.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            if (!file.type.match('image/jpeg') && !file.type.match('image/png') && !file.type.match('image/gif') && !file.type.match('image/webp')) {
-                showToast('❌ Поддерживаются только JPEG, PNG, GIF и WEBP', true);
-                return;
-            }
-            
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('❌ Файл не должен превышать 5MB', true);
-                return;
-            }
-            
-            const reader = new FileReader();
-            
-            reader.onload = (e) => {
-                const avatarData = e.target.result;
-                setAvatar(avatarData);
-                showToast('✅ Аватар успешно обновлён!');
-            };
-            
-            reader.readAsDataURL(file);
-        });
-    }
-    
-    // Двойной клик для сброса аватара
-    avatarPreview.addEventListener('dblclick', () => {
-    if (confirm('Вы уверены, что хотите сбросить аватар на стандартный?')) {
-        resetAvatar();
-        showToast('🔄 Аватар сброшен на стандартный');
-    }
-});
-    
-    // Загружаем сохранённую аватарку
-    const savedAvatar = localStorage.getItem('userAvatar');
-    if (savedAvatar && savedAvatar !== 'reset') {
-        setAvatar(savedAvatar);
-    }
-}
-
-// Функция установки аватара
-function setAvatar(avatarData) {
-    const avatarPreview = document.getElementById('avatarPreview');
-    const profileIcon = document.getElementById('profileIcon');
-    
-    localStorage.setItem('userAvatar', avatarData);
-    
-    if (avatarPreview) {
-        avatarPreview.innerHTML = '';
-        const img = document.createElement('img');
-        img.src = avatarData;
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'cover';
-        img.style.borderRadius = '50%';
-        avatarPreview.appendChild(img);
-    }
-    
-    if (profileIcon) {
-        profileIcon.innerHTML = `<img src="${avatarData}" class="avatar-mini">`;
-        profileIcon.style.padding = '0';
-        profileIcon.style.overflow = 'hidden';
-    }
-}
-
-// Функция сброса аватара
-function resetAvatar() {
-    const avatarPreview = document.getElementById('avatarPreview');
-    const profileIcon = document.getElementById('profileIcon');
-    
-    localStorage.removeItem('userAvatar');
-    
-    if (avatarPreview) {
-        avatarPreview.innerHTML = '<i class="fas fa-user-circle"></i>';
-    }
-    
-    if (profileIcon) {
-        profileIcon.innerHTML = '<i class="fas fa-user-circle"></i>';
-        profileIcon.style.padding = '';
-        profileIcon.style.overflow = '';
-    }
-}
-
-// Функция установки аватара
-function setAvatar(avatarData) {
-    const avatarPreview = document.getElementById('avatarPreview');
-    const profileIcon = document.getElementById('profileIcon');
-    
-    // Сохраняем в localStorage
-    localStorage.setItem('userAvatar', avatarData);
-    
-    // Обновляем аватар в профиле
-    if (avatarPreview) {
-        avatarPreview.innerHTML = '';
-        const img = document.createElement('img');
-        img.src = avatarData;
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'cover';
-        img.style.borderRadius = '50%';
-        avatarPreview.appendChild(img);
-    }
-    
-    // Обновляем иконку в шапке
-    if (profileIcon) {
-        profileIcon.innerHTML = `<img src="${avatarData}" class="avatar-mini">`;
-        profileIcon.style.padding = '0';
-        profileIcon.style.overflow = 'hidden';
-    }
-}
-
-// Функция сброса аватара
-function resetAvatar() {
-    const avatarPreview = document.getElementById('avatarPreview');
-    const profileIcon = document.getElementById('profileIcon');
-    
-    // Удаляем из localStorage
-    localStorage.removeItem('userAvatar');
-    
-    // Восстанавливаем стандартную иконку в профиле
-    if (avatarPreview) {
-        avatarPreview.innerHTML = '<i class="fas fa-user-circle"></i>';
-    }
-    
-    // Восстанавливаем стандартную иконку в шапке
-    if (profileIcon) {
-        profileIcon.innerHTML = '<i class="fas fa-user-circle"></i>';
-        profileIcon.style.padding = '';
-        profileIcon.style.overflow = '';
-    }
-}
-
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
+// ========== ЗАПУСК ==========
 document.addEventListener('DOMContentLoaded', () => {
     updateAuthButtons();
     initProfile();

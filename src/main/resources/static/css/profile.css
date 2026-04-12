@@ -516,23 +516,6 @@ body {
     border: 1px solid rgba(124, 58, 237, 0.2);
 }
 
-/* Индивидуальные цвета при наведении */
-.social-icon:hover {
-    transform: translateY(-4px);
-}
-
-.social-icon:hover i.fa-vk {
-    color: #0077ff;
-}
-
-.social-icon:hover i.fa-telegram-plane {
-    color: #26a5e4;
-}
-
-.social-icon:hover i.fa-github {
-    color: #ffffff;
-}
-
 .social-icon:hover {
     background: rgba(124, 58, 237, 0.15);
     border-color: rgba(124, 58, 237, 0.5);
@@ -778,32 +761,4 @@ body {
     height: 100%;
     object-fit: cover;
     border-radius: 50%;
-}
-
-.profile-icon {
-    overflow: hidden;
-}
-
-/* Кнопка сброса аватара */
-.avatar-reset-btn {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 36px;
-    height: 36px;
-    background: rgba(239, 68, 68, 0.8);
-    border: 2px solid var(--bg-card);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: white;
-    font-size: 0.9rem;
-}
-
-.avatar-reset-btn:hover {
-    background: var(--danger);
-    transform: scale(1.1);
 }
