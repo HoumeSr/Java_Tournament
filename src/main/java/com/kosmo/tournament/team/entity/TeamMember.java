@@ -8,7 +8,7 @@ import java.util.Objects;
 
 @Entity
 @Table(
-        name = "\"TeamMembers\"",
+        name = "TeamMembers",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"teamId", "playerId"})
         }
