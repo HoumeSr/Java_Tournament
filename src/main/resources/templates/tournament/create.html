@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Создание турнира — Бобры</title>
+    
+    <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link th:href="@{/css/create-tournament.css}" rel="stylesheet">
+</head>
+<body>
+
+<header class="navbar">
+    <div class="logo-area">
+        <div class="site-title">⚡ Бобры</div>
+        <div class="nav-links">
+            <a th:href="@{/}" class="nav-item">Главная</a>
+            <a data-nav="teams" class="nav-item">Команды</a>
+            <a data-nav="matches" class="nav-item">Матчи</a>
+            <a data-nav="rating" class="nav-item">Рейтинг</a>
+        </div>
+    </div>
+    <div class="auth-buttons" id="authButtons"></div>
+</header>
+
+<main class="container">
+    <div class="create-header">
+        <h1><i class="fas fa-trophy"></i> Создание турнира</h1>
+        <p>Заполните информацию о новом турнире</p>
+    </div>
+
+    <form id="createTournamentForm" class="create-form">
+        <!-- Основная информация -->
+        <div class="form-section">
+            <h2 class="section-title"><i class="fas fa-info-circle"></i> Основная информация</h2>
+            
+            <div class="form-row">
+                <div class="form-group full-width">
+                    <label for="tournamentName">Название турнира <span class="required">*</span></label>
+                    <input type="text" id="tournamentName" name="name" placeholder="Например: Кубок Москвы 2025" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="category">Категория <span class="required">*</span></label>
+                    <select id="category" name="category" required>
+                        <option value="">— Выберите категорию —</option>
+                        <option value="chess">♟️ Шахматы</option>
+                        <option value="tennis">🎾 Теннис</option>
+                        <option value="esports">🎮 Киберспорт</option>
+                        <option value="football">⚽ Киберфутбол</option>
+                        <option value="fighting">🥋 Файтинги</option>
+                        <option value="hockey">🏒 Хоккей</option>
+                        <option value="basketball">🏀 Баскетбол</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="startDate">Дата начала <span class="required">*</span></label>
+                    <input type="date" id="startDate" name="startDate" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="location">Место проведения</label>
+                    <input type="text" id="location" name="location" placeholder="Москва, Online, etc.">
+                </div>
+
+                <div class="form-group">
+                    <label for="maxPlayers">Макс. участников</label>
+                    <input type="number" id="maxPlayers" name="maxPlayers" min="2" max="256" value="32">
+                </div>
+            </div>
+        </div>
+
+        <!-- Призовой фонд -->
+        <div class="form-section">
+            <h2 class="section-title"><i class="fas fa-medal"></i> Призовой фонд</h2>
+            
+            <div class="form-row">
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="hasPrize" name="hasPrize">
+                    <label for="hasPrize">Есть призовые</label>
+                </div>
+            </div>
+
+            <div id="prizeFields" style="display: none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="prizeAmount">Сумма</label>
+                        <input type="text" id="prizeAmount" name="prizeAmount" placeholder="1 000 000 ₽">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="prizeCurrency">Валюта</label>
+                        <select id="prizeCurrency" name="prizeCurrency">
+                            <option value="RUB">₽ RUB</option>
+                            <option value="USD">$ USD</option>
+                            <option value="EUR">€ EUR</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Формат турнира -->
+        <div class="form-section">
+            <h2 class="section-title"><i class="fas fa-chart-line"></i> Формат турнира</h2>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="visibility">Видимость <span class="required">*</span></label>
+                    <select id="visibility" name="visibility" required>
+                        <option value="public">🌍 Публичный — доступен всем</option>
+                        <option value="private">🔒 Закрытый — только по инвайтам</option>
+                        <option value="official">🏆 Официальный — рейтинговый</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Описание -->
+        <div class="form-section">
+            <h2 class="section-title"><i class="fas fa-file-alt"></i> Описание</h2>
+            
+            <div class="form-row">
+                <div class="form-group full-width">
+                    <label for="description">Описание турнира</label>
+                    <textarea id="description" name="description" rows="5" placeholder="Расскажите участникам о турнире, правилах, расписании..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Изображение -->
+        <div class="form-section">
+            <h2 class="section-title"><i class="fas fa-image"></i> Изображение турнира</h2>
+            
+            <div class="image-upload-area" id="imageUploadArea">
+                <div class="image-preview" id="imagePreview">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Нажмите или перетащите изображение</p>
+                    <span class="image-hint">PNG, JPG, WEBP до 5MB</span>
+                </div>
+                <input type="file" id="tournamentImage" accept="image/jpeg,image/png,image/webp" style="display: none;">
+            </div>
+        </div>
+
+        <!-- Кнопки -->
+        <div class="form-actions">
+            <button type="button" class="btn-cancel-large" id="cancelBtn">
+                <i class="fas fa-times"></i> Отмена
+            </button>
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-check"></i> Создать турнир
+            </button>
+        </div>
+    </form>
+</main>
+
+<!-- ПОДВАЛ -->
+<footer class="modern-footer">
+    <div class="footer-content">
+        <div class="footer-info">
+            <div class="footer-logo">⚡ Бобры</div>
+            <p class="footer-tagline">Турнирная платформа нового поколения</p>
+            <p class="footer-copyright">© 2026 Бобры. Создано с ❤️ командой <span class="team-name">Космо-Бобры</span>. Все права защищены.</p>
+        </div>
+        <div class="footer-social">
+            <a href="https://vk.com/ilnurmuhametzanov" class="social-icon vk" target="_blank"><i class="fab fa-vk"></i></a>
+            <a href="https://discord.gg/zur_chelovek" class="social-icon discord" target="_blank"><i class="fab fa-discord"></i></a>
+            <a href="https://github.com/HoumeSr" class="social-icon gh" target="_blank"><i class="fab fa-github"></i></a>
+        </div>
+    </div>
+</footer>
+
+<div id="demoToast" class="demo-toast"></div>
+
+<script th:src="@{/js/create-tournament.js}"></script>
+</body>
+</html>
