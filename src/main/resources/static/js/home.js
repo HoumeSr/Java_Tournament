@@ -1,4 +1,4 @@
-// ========== ДАННЫЕ ==========
+// ========== ДАННЫЕ ТУРНИРОВ ==========
 const tournamentsData = [
     { id: 1, name: "Гран-при Москва 2025", category: "chess", prize: "1 200 000 ₽", date: "15–20 июня", location: "Online / Москва", players: 128 },
     { id: 2, name: "Кубок мира по рапиду", category: "chess", prize: "$85,000", date: "3–7 июля", location: "Дубай", players: 64 },
@@ -56,36 +56,73 @@ function getFilteredTournaments(category) {
     return tournamentsData.filter(t => t.category === category);
 }
 
-// ========== АВТОРИЗАЦИЯ ==========
-function isUserLoggedIn() {
-    return localStorage.getItem('userLoggedIn') === 'true';
+// ========== АВТОРИЗАЦИЯ И ПРОФИЛЬ В ШАПКЕ ==========
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('/api/auth/check');
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Ошибка проверки авторизации:', error);
+        return { authenticated: false };
+    }
 }
 
 function updateAuthButtons() {
     const authContainer = document.getElementById('authButtons');
     if (!authContainer) return;
     
-    if (isUserLoggedIn()) {
-        authContainer.innerHTML = `
-            <div class="profile-icon" id="profileIcon">
-                <i class="fas fa-user-circle"></i>
-            </div>
-        `;
-        document.getElementById('profileIcon')?.addEventListener('click', () => {
-            window.location.href = '/profile';
+    // Проверяем сессию через AJAX
+    fetch('/api/auth/check')
+        .then(response => response.json())
+        .then(data => {
+            if (data.authenticated) {
+                const username = data.user?.username || 'User';
+                const savedAvatar = localStorage.getItem('userAvatar');
+                
+                authContainer.innerHTML = `
+                    <div class="profile-icon" id="profileIcon">
+                        ${savedAvatar ? `<img src="${savedAvatar}" class="avatar-mini">` : '<i class="fas fa-user-circle"></i>'}
+                    </div>
+                `;
+                
+                const profileIcon = document.getElementById('profileIcon');
+                if (profileIcon) {
+                    if (savedAvatar) {
+                        profileIcon.style.padding = '0';
+                        profileIcon.style.overflow = 'hidden';
+                    }
+                    profileIcon.addEventListener('click', () => {
+                        window.location.href = '/profile';
+                    });
+                }
+            } else {
+                authContainer.innerHTML = `
+                    <button class="btn-outline" id="registerBtn">Регистрация</button>
+                    <button class="btn-primary" id="loginBtn">Вход</button>
+                `;
+                document.getElementById('registerBtn')?.addEventListener('click', () => {
+                    window.location.href = '/register';
+                });
+                document.getElementById('loginBtn')?.addEventListener('click', () => {
+                    window.location.href = '/login';
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            // Fallback: показываем кнопки входа
+            authContainer.innerHTML = `
+                <button class="btn-outline" id="registerBtn">Регистрация</button>
+                <button class="btn-primary" id="loginBtn">Вход</button>
+            `;
+            document.getElementById('registerBtn')?.addEventListener('click', () => {
+                window.location.href = '/register';
+            });
+            document.getElementById('loginBtn')?.addEventListener('click', () => {
+                window.location.href = '/login';
+            });
         });
-    } else {
-        authContainer.innerHTML = `
-            <button class="btn-outline" id="registerBtn">Регистрация</button>
-            <button class="btn-primary" id="loginBtn">Вход</button>
-        `;
-        document.getElementById('registerBtn')?.addEventListener('click', () => {
-            window.location.href = '/register';
-        });
-        document.getElementById('loginBtn')?.addEventListener('click', () => {
-            window.location.href = '/login';
-        });
-    }
 }
 
 // ========== РЕНДЕР КАТЕГОРИЙ ==========

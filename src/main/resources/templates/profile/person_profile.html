@@ -3,16 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Бобры — Профиль</title>
+    <title>Бобры — Мой профиль</title>
     
     <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
-    <link rel="shortcut icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <link th:href="@{/css/profile.css}" rel="stylesheet" type="text/css"/>
-    <link href="/css/profile.css" rel="stylesheet" type="text/css"/>
+    <link th:href="@{/css/profile.css}" rel="stylesheet">
 </head>
 <body>
 
@@ -23,7 +19,7 @@
             <a th:href="@{/}" class="nav-item">Главная</a>
             <a data-nav="teams" class="nav-item">Команды</a>
             <a data-nav="matches" class="nav-item">Матчи</a>
-            <a data-nav="rating" class="nav-item">Рейтинг</a>
+            <a th:href="@{/rating}" class="nav-item">Рейтинг</a>
         </div>
     </div>
     <div class="auth-buttons" id="authButtons"></div>
@@ -42,62 +38,59 @@
                         <i class="fas fa-camera"></i>
                     </button>
                 </div>
-                <h2 class="profile-username" id="displayUsername">БоевойБобёр</h2>
-                <p class="profile-member-since">Участник с <span id="displayCreatedAt">15.01.2025</span></p>
+                <h2 class="profile-username" th:text="${session.username}">Username</h2>
+                <p class="profile-member-since">Участник с <span th:text="${#temporals.format(user.createdAt, 'dd.MM.yyyy')}">01.01.2025</span></p>
                 <button class="btn-edit-sidebar" id="editProfileBtn">
                     <i class="fas fa-pen"></i> Редактировать
                 </button>
             </div>
 
-<!-- Скрытый input для загрузки файла -->
-<input type="file" id="avatarUpload" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
+            <input type="file" id="avatarUpload" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
             
             <div class="stats-card">
                 <h3>📊 Статистика</h3>
                 <div class="stat-item">
                     <span class="stat-label">Турниров участвовал</span>
-                    <span class="stat-value" id="tournamentsCount">24</span>
+                    <span class="stat-value" id="tournamentsCount">0</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Побед</span>
-                    <span class="stat-value" id="winsCount">12</span>
+                    <span class="stat-value" id="winsCount">0</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Рейтинг</span>
-                    <span class="stat-value" id="rating">1847</span>
+                    <span class="stat-value" id="rating">1200</span>
                 </div>
             </div>
         </div>
 
-        <!-- Правая колонка - информация -->
+        <!-- Правая колонка -->
         <div class="profile-main">
-            <!-- Убран заголовок "Мой профиль" -->
-
             <!-- Режим просмотра -->
             <div class="info-card" id="viewMode">
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-id-card"></i> ID пользователя</div>
-                    <div class="info-value" id="displayId">#10042</div>
+                    <div class="info-value" th:text="${session.userId}">#10042</div>
                 </div>
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-user"></i> Имя пользователя</div>
-                    <div class="info-value" id="displayUsernameField">БоевойБобёр</div>
+                    <div class="info-value" th:text="${session.username}">Username</div>
                 </div>
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-envelope"></i> Email</div>
-                    <div class="info-value" id="displayEmail">bobr@arenatop.ru</div>
+                    <div class="info-value" th:text="${user.email}">user@example.com</div>
                 </div>
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-globe"></i> Страна</div>
-                    <div class="info-value" id="displayCountry">Россия</div>
+                    <div class="info-value" id="displayCountry">Не указана</div>
                 </div>
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-calendar-alt"></i> Дата регистрации</div>
-                    <div class="info-value" id="displayCreatedAtField">15 января 2025, 12:00</div>
+                    <div class="info-value" th:text="${#temporals.format(user.createdAt, 'dd MMMM yyyy, HH:mm')}">15 января 2025, 12:00</div>
                 </div>
                 <div class="info-row full-width">
                     <div class="info-label"><i class="fas fa-info-circle"></i> Дополнительная информация</div>
-                    <div class="info-value bio-text" id="displayBio">КМС по шахматам, играю в CS2, организую любительские турниры</div>
+                    <div class="info-value bio-text" id="displayBio">Пока ничего не добавлено</div>
                 </div>
             </div>
 
@@ -106,26 +99,25 @@
                 <form id="profileForm">
                     <div class="edit-row">
                         <label><i class="fas fa-user"></i> Имя пользователя</label>
-                        <input type="text" id="editUsername" class="edit-input" value="БоевойБобёр" required>
+                        <input type="text" id="editUsername" class="edit-input" th:value="${session.username}" required>
                     </div>
                     <div class="edit-row">
                         <label><i class="fas fa-envelope"></i> Email</label>
-                        <input type="email" id="editEmail" class="edit-input" value="bobr@arenatop.ru" required>
+                        <input type="email" id="editEmail" class="edit-input" th:value="${user.email}" required>
                     </div>
                     <div class="edit-row">
                         <label><i class="fas fa-globe"></i> Страна</label>
                         <select id="editCountry" class="edit-input">
                             <option value="">— Выберите страну —</option>
-                            <option value="Россия" selected>🇷🇺 Россия</option>
+                            <option value="Россия">🇷🇺 Россия</option>
                             <option value="Беларусь">🇧🇾 Беларусь</option>
                             <option value="Казахстан">🇰🇿 Казахстан</option>
-                            <option value="Украина">🇺🇦 Украина</option>
-                            <option value="Германия">🇩🇪 Германия</option>
                             <option value="США">🇺🇸 США</option>
-                            <option value="Великобритания">🇬🇧 Великобритания</option>
+                            <option value="Германия">🇩🇪 Германия</option>
                             <option value="Франция">🇫🇷 Франция</option>
-                            <option value="Испания">🇪🇸 Испания</option>
                             <option value="Италия">🇮🇹 Италия</option>
+                            <option value="Испания">🇪🇸 Испания</option>
+                            <option value="Великобритания">🇬🇧 Великобритания</option>
                             <option value="Китай">🇨🇳 Китай</option>
                             <option value="Япония">🇯🇵 Япония</option>
                             <option value="Корея">🇰🇷 Корея</option>
@@ -135,7 +127,7 @@
                     </div>
                     <div class="edit-row">
                         <label><i class="fas fa-info-circle"></i> Дополнительная информация</label>
-                        <textarea id="editBio" class="edit-textarea" rows="4" placeholder="Например: КМС по шахматам, 1000+ часов в CS2, организатор турниров...">КМС по шахматам, играю в CS2, организую любительские турниры</textarea>
+                        <textarea id="editBio" class="edit-textarea" rows="4" placeholder="Например: КМС по шахматам, играю в CS2, организатор турниров..."></textarea>
                     </div>
                     <div class="edit-actions">
                         <button type="submit" class="btn-save">
@@ -161,6 +153,13 @@
                     <i class="fas fa-key"></i> Сменить пароль
                 </button>
             </div>
+
+            <!-- Кнопка выхода -->
+            <div class="logout-card">
+                <button class="btn-logout" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Выйти из аккаунта
+                </button>
+            </div>
         </div>
     </div>
 </main>
@@ -173,25 +172,58 @@
             <p class="footer-tagline">Турнирная платформа нового поколения</p>
             <p class="footer-copyright">© 2026 Бобры. Создано с ❤️ командой <span class="team-name">Космо-Бобры</span>. Все права защищены.</p>
         </div>
-        
         <div class="footer-social">
-            <a href="https://vk.com/ilnurmuhametzanov" class="social-icon vk" target="_blank" rel="noopener noreferrer">
-                <i class="fab fa-vk"></i>
-            </a>
-            <a href="https://discord.gg/zur_chelovek" class="social-icon discord" target="_blank">
-                <i class="fab fa-discord"></i>
-            </a>
-            <a href="https://github.com/HoumeSr" class="social-icon gh" target="_blank" rel="noopener noreferrer">
-                <i class="fab fa-github"></i>
-            </a>
+            <a href="https://vk.com/ilnurmuhametzanov" class="social-icon vk" target="_blank"><i class="fab fa-vk"></i></a>
+            <a href="https://discord.gg/zur_chelovek" class="social-icon discord" target="_blank"><i class="fab fa-discord"></i></a>
+            <a href="https://github.com/HoumeSr" class="social-icon gh" target="_blank"><i class="fab fa-github"></i></a>
         </div>
     </div>
 </footer>
 
 <script th:src="@{/js/profile.js}"></script>
-<script src="/js/profile.js"></script>
+<div id="demoToast" class="demo-toast"></div>
 
-<div id="demoToast" class="demo-toast" style="opacity: 0; visibility: hidden;"></div>
+<!-- Передаём данные с бэкенда в JS -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    window.userData = {
+        id: /*[[${session.userId}]]*/ null,
+        username: /*[[${session.username}]]*/ '',
+        email: /*[[${user.email}]]*/ '',
+        createdAt: /*[[${user.createdAt}]]*/ null
+    };
+    /*]]>*/
+</script>
+
+<!-- Модальное окно смены пароля -->
+<div id="passwordModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-key"></i> Смена пароля</h3>
+            <button class="modal-close" id="closeModalBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-field">
+                <label for="currentPasswordInput">Текущий пароль</label>
+                <input type="password" id="currentPasswordInput" class="modal-input" placeholder="Введите текущий пароль">
+            </div>
+            <div class="modal-field">
+                <label for="newPasswordInput">Новый пароль</label>
+                <input type="password" id="newPasswordInput" class="modal-input" placeholder="Минимум 6 символов">
+                <span class="input-hint" id="newPasswordHint"></span>
+            </div>
+            <div class="modal-field">
+                <label for="confirmPasswordInput">Подтверждение пароля</label>
+                <input type="password" id="confirmPasswordInput" class="modal-input" placeholder="Повторите новый пароль">
+                <span class="input-hint" id="confirmPasswordHint"></span>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal-cancel" id="cancelPasswordBtn">Отмена</button>
+            <button class="btn-modal-submit" id="submitPasswordBtn">Сменить пароль</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
