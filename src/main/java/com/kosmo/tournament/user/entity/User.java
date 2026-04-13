@@ -1,12 +1,11 @@
 package com.kosmo.tournament.user.entity;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "User")
+@Table(name = "\"User\"")
 public class User {
 
     @Id
@@ -19,7 +18,7 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "\"passwordHash\"", nullable = false)
     private String passwordHash;
 
     @Column(nullable = false)
@@ -28,10 +27,23 @@ public class User {
     @Column(nullable = false)
     private Boolean enabled;
 
-    @Column(nullable = false)
+    @Column(name = "\"createdAt\"", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "\"country\"", nullable = false)
+    private String country = "Не указана";
+
     public User() {
+    }
+
+    public User(String username, String email, String passwordHash) {
+        this.username = username;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.role = "PLAYER";
+        this.enabled = true;
+        this.createdAt = LocalDateTime.now();
+        this.country = "Не указана";
     }
 
     @PrePersist
@@ -39,8 +51,10 @@ public class User {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (enabled == null) enabled = true;
         if (role == null) role = "PLAYER";
+        if (country == null) country = "Не указана";
     }
 
+    // Геттеры
     public Long getId() { return id; }
     public String getUsername() { return username; }
     public String getEmail() { return email; }
@@ -48,7 +62,9 @@ public class User {
     public String getRole() { return role; }
     public Boolean getEnabled() { return enabled; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getCountry() { return country; }
 
+    // Сеттеры
     public void setId(Long id) { this.id = id; }
     public void setUsername(String username) { this.username = username; }
     public void setEmail(String email) { this.email = email; }
@@ -56,6 +72,7 @@ public class User {
     public void setRole(String role) { this.role = role; }
     public void setEnabled(Boolean enabled) { this.enabled = enabled; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setCountry(String country) { this.country = country; }
 
     @Override
     public boolean equals(Object o) {
