@@ -3,9 +3,8 @@
     const images = [
         "/images/image1.webp",
         "/images/image2.jpg", 
-        "/images/image3.webp",
-        "/images/image4.webp",
-        "/images/image5.jpg"
+        "/images/image3.jpg",
+        "/images/image4.jpg"
     ];
     
     let currentIndex = 0;
@@ -96,7 +95,7 @@
     
     function resetInterval() {
         if (intervalId) clearInterval(intervalId);
-        intervalId = setInterval(nextSlide, 12000);
+        intervalId = setInterval(nextSlide, 7000);
     }
     
     // ========== ВАЛИДАЦИЯ ФОРМЫ ==========
