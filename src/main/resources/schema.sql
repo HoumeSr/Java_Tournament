@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS "User" (
     "country" TEXT NOT NULL,
     "enabled" BOOLEAN NOT NULL,
     "createdAt" TIMESTAMP NOT NULL,
+    "imageUrl" TEXT,
     PRIMARY KEY("id")
 );
 COMMENT ON COLUMN "User"."role" IS 'PLAYER, ORGANIZER, ADMIN';
@@ -19,6 +20,7 @@ CREATE TABLE IF NOT EXISTS "GameTypes" (
     "code" TEXT NOT NULL,
     "description" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT FALSE,
+    "imageUrl" TEXT,
     PRIMARY KEY("id")
 );
 
@@ -28,6 +30,7 @@ CREATE TABLE IF NOT EXISTS "Team" (
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
     "captainId" INTEGER,
+    "imageUrl" TEXT,
     PRIMARY KEY("id"),
     CONSTRAINT "fk_team_captain" FOREIGN KEY ("captainId") REFERENCES "User"("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
@@ -46,6 +49,7 @@ CREATE TABLE IF NOT EXISTS "Tournament" (
     "registrationDeadline" TIMESTAMP,
     "maxParticipants" INTEGER,               -- максимальное количество игроков/команд
     "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+    "imageUrl" TEXT,
     PRIMARY KEY("id"),
     CONSTRAINT "fk_tournament_organizer" FOREIGN KEY ("organizerId") REFERENCES "User"("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
     CONSTRAINT "fk_tournament_game_type" FOREIGN KEY ("gameType") REFERENCES "GameTypes"("id") ON UPDATE NO ACTION ON DELETE NO ACTION
