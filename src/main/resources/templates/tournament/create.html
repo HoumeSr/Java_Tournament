@@ -6,10 +6,8 @@
     <title>Создание турнира — Бобры</title>
     
     <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
     <link th:href="@{/css/create-tournament.css}" rel="stylesheet">
 </head>
 <body>
@@ -21,7 +19,7 @@
             <a th:href="@{/}" class="nav-item">Главная</a>
             <a data-nav="teams" class="nav-item">Команды</a>
             <a data-nav="matches" class="nav-item">Матчи</a>
-            <a data-nav="rating" class="nav-item">Рейтинг</a>
+            <a th:href="@{/rating}" class="nav-item">Рейтинг</a>
         </div>
     </div>
     <div class="auth-buttons" id="authButtons"></div>
@@ -73,9 +71,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="maxPlayers">Макс. участников</label>
-                    <input type="number" id="maxPlayers" name="maxPlayers" min="2" max="256" value="32">
-                </div>
+    <label for="maxPlayers">Макс. участников</label>
+    <input type="number" id="maxPlayers" name="maxPlayers" min="2" max="256" value="32">
+    <div class="number-controls">
+        <div class="number-up">▲</div>
+        <div class="number-down">▼</div>
+    </div>
+</div>
             </div>
         </div>
 

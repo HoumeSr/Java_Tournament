@@ -14,48 +14,67 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
-// ========== АВТОРИЗАЦИЯ ==========
-function isUserLoggedIn() {
-    return localStorage.getItem('userLoggedIn') === 'true';
-}
-
+// ========== АВТОРИЗАЦИЯ В ШАПКЕ ==========
 function updateAuthButtons() {
     const authContainer = document.getElementById('authButtons');
     if (!authContainer) return;
     
-    if (isUserLoggedIn()) {
-        authContainer.innerHTML = `
-            <div class="profile-icon" id="profileIcon">
-                <i class="fas fa-user-circle"></i>
-            </div>
-        `;
-        document.getElementById('profileIcon')?.addEventListener('click', () => {
-            window.location.href = '/profile';
+    fetch('/api/auth/check')
+        .then(response => response.json())
+        .then(data => {
+            if (data.authenticated) {
+                const savedAvatar = localStorage.getItem('userAvatar');
+                
+                if (savedAvatar && savedAvatar !== 'null' && savedAvatar !== 'undefined') {
+                    authContainer.innerHTML = `
+                        <div class="profile-icon" id="profileIcon">
+                            <img src="${savedAvatar}" class="avatar-mini">
+                        </div>
+                    `;
+                    const profileIcon = document.getElementById('profileIcon');
+                    if (profileIcon) {
+                        profileIcon.style.padding = '0';
+                        profileIcon.style.overflow = 'hidden';
+                        profileIcon.addEventListener('click', () => {
+                            window.location.href = '/profile';
+                        });
+                    }
+                } else {
+                    authContainer.innerHTML = `
+                        <div class="profile-icon" id="profileIcon">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                    `;
+                    document.getElementById('profileIcon')?.addEventListener('click', () => {
+                        window.location.href = '/profile';
+                    });
+                }
+            } else {
+                authContainer.innerHTML = `
+                    <button class="btn-outline" id="registerBtn">Регистрация</button>
+                    <button class="btn-primary" id="loginBtn">Вход</button>
+                `;
+                document.getElementById('registerBtn')?.addEventListener('click', () => {
+                    window.location.href = '/register';
+                });
+                document.getElementById('loginBtn')?.addEventListener('click', () => {
+                    window.location.href = '/login';
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            authContainer.innerHTML = `
+                <button class="btn-outline" id="registerBtn">Регистрация</button>
+                <button class="btn-primary" id="loginBtn">Вход</button>
+            `;
+            document.getElementById('registerBtn')?.addEventListener('click', () => {
+                window.location.href = '/register';
+            });
+            document.getElementById('loginBtn')?.addEventListener('click', () => {
+                window.location.href = '/login';
+            });
         });
-    } else {
-        authContainer.innerHTML = `
-            <button class="btn-outline" id="registerBtn">Регистрация</button>
-            <button class="btn-primary" id="loginBtn">Вход</button>
-        `;
-        document.getElementById('registerBtn')?.addEventListener('click', () => {
-            window.location.href = '/register';
-        });
-        document.getElementById('loginBtn')?.addEventListener('click', () => {
-            window.location.href = '/login';
-        });
-    }
-}
-
-// ========== ПОКАЗ/СКРЫТИЕ ПОЛЕЙ ПРИЗОВЫХ ==========
-function initPrizeToggle() {
-    const hasPrizeCheckbox = document.getElementById('hasPrize');
-    const prizeFields = document.getElementById('prizeFields');
-    
-    if (!hasPrizeCheckbox || !prizeFields) return;
-    
-    hasPrizeCheckbox.addEventListener('change', () => {
-        prizeFields.style.display = hasPrizeCheckbox.checked ? 'block' : 'none';
-    });
 }
 
 // ========== ВАЛИДАЦИЯ ДАТ ==========
@@ -70,6 +89,18 @@ function validateDates() {
         }
     }
     return true;
+}
+
+// ========== ПОКАЗ/СКРЫТИЕ ПОЛЕЙ ПРИЗОВЫХ ==========
+function initPrizeToggle() {
+    const hasPrizeCheckbox = document.getElementById('hasPrize');
+    const prizeFields = document.getElementById('prizeFields');
+    
+    if (!hasPrizeCheckbox || !prizeFields) return;
+    
+    hasPrizeCheckbox.addEventListener('change', () => {
+        prizeFields.style.display = hasPrizeCheckbox.checked ? 'block' : 'none';
+    });
 }
 
 // ========== ЗАГРУЗКА ИЗОБРАЖЕНИЯ ==========
@@ -137,7 +168,6 @@ function initFormSubmit() {
     form.addEventListener('submit', (e) => {
         e.preventDefault();
         
-        // Сбор данных
         const tournamentData = {
             name: document.getElementById('tournamentName').value.trim(),
             category: document.getElementById('category').value,
@@ -152,7 +182,6 @@ function initFormSubmit() {
             image: uploadedImage
         };
         
-        // Валидация
         if (!tournamentData.name) {
             showToast('❌ Введите название турнира', true);
             return;
@@ -170,21 +199,15 @@ function initFormSubmit() {
         
         if (!validateDates()) return;
         
-        // Имитация отправки
         console.log('Данные турнира:', tournamentData);
-        
-        // Показываем успех
         showToast('✅ Турнир успешно создан!');
         
-        // Очищаем форму
         form.reset();
         uploadedImage = null;
         
-        // Скрываем поля призовых
         const prizeFields = document.getElementById('prizeFields');
         if (prizeFields) prizeFields.style.display = 'none';
         
-        // Сбрасываем изображение
         const preview = document.getElementById('imagePreview');
         if (preview) {
             preview.innerHTML = `
@@ -195,7 +218,6 @@ function initFormSubmit() {
             preview.classList.remove('has-image');
         }
         
-        // Перенаправление через 2 секунды
         setTimeout(() => {
             window.location.href = '/';
         }, 2000);
@@ -234,6 +256,37 @@ function setMinDate() {
     }
 }
 
+function initNumberControls() {
+    const numberInput = document.getElementById('maxPlayers');
+    if (!numberInput) return;
+    
+    const controls = numberInput.nextElementSibling;
+    if (!controls || !controls.classList.contains('number-controls')) return;
+    
+    const upBtn = controls.querySelector('.number-up');
+    const downBtn = controls.querySelector('.number-down');
+    
+    if (upBtn) {
+        upBtn.addEventListener('click', () => {
+            let value = parseInt(numberInput.value) || 0;
+            const max = parseInt(numberInput.getAttribute('max')) || 256;
+            if (value < max) {
+                numberInput.value = value + 1;
+            }
+        });
+    }
+    
+    if (downBtn) {
+        downBtn.addEventListener('click', () => {
+            let value = parseInt(numberInput.value) || 0;
+            const min = parseInt(numberInput.getAttribute('min')) || 2;
+            if (value > min) {
+                numberInput.value = value - 1;
+            }
+        });
+    }
+}
+
 // ========== ЗАПУСК ==========
 document.addEventListener('DOMContentLoaded', () => {
     updateAuthButtons();
@@ -243,4 +296,5 @@ document.addEventListener('DOMContentLoaded', () => {
     initCancel();
     initNavBar();
     setMinDate();
+    initNumberControls();
 });

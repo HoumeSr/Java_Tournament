@@ -227,10 +227,22 @@ function initNavBar() {
     });
 }
 
+function updateCreateTournamentButton() {
+    const btn = document.getElementById('createTournamentBtn');
+    if (!btn) return;
+    
+    fetch('/api/auth/check')
+        .then(response => response.json())
+        .then(data => {
+            btn.style.display = data.authenticated ? 'flex' : 'none';
+        });
+}
+
 // ========== ЗАПУСК ==========
 document.addEventListener('DOMContentLoaded', () => {
     renderCategories();
     renderTournaments();
     initNavBar();
     updateAuthButtons();
+    updateCreateTournamentButton();
 });
