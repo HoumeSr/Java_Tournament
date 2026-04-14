@@ -9,7 +9,9 @@ CREATE TABLE IF NOT EXISTS "User" (
     "enabled" BOOLEAN NOT NULL,
     "createdAt" TIMESTAMP NOT NULL,
     "imageUrl" TEXT,
-    PRIMARY KEY("id")
+    PRIMARY KEY("id"),
+    UNIQUE("username"),
+    UNIQUE("email")
 );
 COMMENT ON COLUMN "User"."role" IS 'PLAYER, ORGANIZER, ADMIN';
 
