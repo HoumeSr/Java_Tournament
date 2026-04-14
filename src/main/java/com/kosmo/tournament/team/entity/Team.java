@@ -1,28 +1,41 @@
 package com.kosmo.tournament.team.entity;
 
-import com.kosmo.tournament.profile.entity.PlayerProfile;
-import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import com.kosmo.tournament.user.entity.User;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+
 @Entity
-@Table(name = "Team")
+@Table(name = "\"Team\"")
 public class Team {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "\"name\"", nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(name = "\"createdAt\"", nullable = false)
     private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "captainId")
-    private PlayerProfile captain;
+    @JoinColumn(name = "\"captainId\"")
+    private User captain;
+
+    @Column(name = "\"imageUrl\"")
+    private String imageUrl;
 
     public Team() {
     }
@@ -30,17 +43,20 @@ public class Team {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
+        if (imageUrl == null) imageUrl = "DEFAULT_TEAM_IMAGE.jpg";
     }
 
     public Long getId() { return id; }
     public String getName() { return name; }
     public LocalDateTime getCreatedAt() { return createdAt; }
-    public PlayerProfile getCaptain() { return captain; }
+    public User getCaptain() { return captain; }
+    public String getImageUrl() { return imageUrl; }
 
     public void setId(Long id) { this.id = id; }
     public void setName(String name) { this.name = name; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public void setCaptain(PlayerProfile captain) { this.captain = captain; }
+    public void setCaptain(User captain) { this.captain = captain; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
     @Override
     public boolean equals(Object o) {

@@ -1,14 +1,23 @@
 package com.kosmo.tournament.match.entity;
 
-import com.kosmo.tournament.team.entity.Team;
-import com.kosmo.tournament.tournament.entity.Tournament;
-import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import com.kosmo.tournament.team.entity.Team;
+import com.kosmo.tournament.tournament.entity.Tournament;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
 @Entity
-@Table(name = "MatchTeam")
+@Table(name = "\"MatchTeam\"")
 public class MatchTeam {
 
     @Id
@@ -16,30 +25,32 @@ public class MatchTeam {
     private Long id;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "tournamentId", nullable = false)
+    @JoinColumn(name = "\"tournamentId\"", nullable = false)
     private Tournament tournament;
 
+    @Column(name = "\"roundNumber\"")
     private Integer roundNumber;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "team1Id", nullable = false)
+    @JoinColumn(name = "\"team1Id\"", nullable = false)
     private Team team1;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "team2Id", nullable = false)
+    @JoinColumn(name = "\"team2Id\"", nullable = false)
     private Team team2;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "winnerTeamId")
+    @JoinColumn(name = "\"winnerTeamId\"")
     private Team winnerTeam;
 
-    @Column(nullable = false)
+    @Column(name = "\"status\"", nullable = false)
     private String status;
 
+    @Column(name = "\"scheduledAt\"")
     private LocalDateTime scheduledAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "nextMatchId")
+    @JoinColumn(name = "\"nextMatchId\"")
     private MatchTeam nextMatch;
 
     public MatchTeam() {

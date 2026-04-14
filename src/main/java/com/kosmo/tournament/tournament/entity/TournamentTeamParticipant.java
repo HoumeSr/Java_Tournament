@@ -1,18 +1,23 @@
 package com.kosmo.tournament.tournament.entity;
 
-import com.kosmo.tournament.team.entity.Team;
-import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import com.kosmo.tournament.team.entity.Team;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+
 @Entity
-@Table(
-        name = "TournamentTeamParticipant",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"tournamentId", "teamId"})
-        }
-)
+@Table(name = "\"TournamentTeamParticipant\"")
 public class TournamentTeamParticipant {
 
     @Id
@@ -20,22 +25,23 @@ public class TournamentTeamParticipant {
     private Long id;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "tournamentId", nullable = false)
+    @JoinColumn(name = "\"tournamentId\"", nullable = false)
     private Tournament tournament;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "teamId", nullable = false)
+    @JoinColumn(name = "\"teamId\"", nullable = false)
     private Team team;
 
-    @Column(nullable = false)
+    @Column(name = "\"status\"", nullable = false)
     private String status;
 
-    @Column(nullable = false)
+    @Column(name = "\"seed\"", nullable = false)
     private Integer seed;
 
-    @Column(nullable = false)
+    @Column(name = "\"joinedAt\"", nullable = false)
     private LocalDateTime joinedAt;
 
+    @Column(name = "\"finalPlace\"")
     private Integer finalPlace;
 
     public TournamentTeamParticipant() {

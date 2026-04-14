@@ -1,18 +1,23 @@
 package com.kosmo.tournament.tournament.entity;
 
-import com.kosmo.tournament.profile.entity.PlayerProfile;
-import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import com.kosmo.tournament.user.entity.User;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+
 @Entity
-@Table(
-        name = "TournamentSoloParticipant",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"tournamentId", "playerProfileId"})
-        }
-)
+@Table(name = "\"TournamentSoloParticipant\"")
 public class TournamentSoloParticipant {
 
     @Id
@@ -20,22 +25,23 @@ public class TournamentSoloParticipant {
     private Long id;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "tournamentId", nullable = false)
+    @JoinColumn(name = "\"tournamentId\"", nullable = false)
     private Tournament tournament;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "playerProfileId", nullable = false)
-    private PlayerProfile playerProfile;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "\"playerProfileId\"")
+    private User player;
 
-    @Column(nullable = false)
+    @Column(name = "\"status\"", nullable = false)
     private String status;
 
-    @Column(nullable = false)
+    @Column(name = "\"seed\"", nullable = false)
     private Integer seed;
 
-    @Column(nullable = false)
+    @Column(name = "\"joinedAt\"", nullable = false)
     private LocalDateTime joinedAt;
 
+    @Column(name = "\"finalPlace\"")
     private Integer finalPlace;
 
     public TournamentSoloParticipant() {
@@ -48,7 +54,7 @@ public class TournamentSoloParticipant {
 
     public Long getId() { return id; }
     public Tournament getTournament() { return tournament; }
-    public PlayerProfile getPlayerProfile() { return playerProfile; }
+    public User getPlayer() { return player; }
     public String getStatus() { return status; }
     public Integer getSeed() { return seed; }
     public LocalDateTime getJoinedAt() { return joinedAt; }
@@ -56,7 +62,7 @@ public class TournamentSoloParticipant {
 
     public void setId(Long id) { this.id = id; }
     public void setTournament(Tournament tournament) { this.tournament = tournament; }
-    public void setPlayerProfile(PlayerProfile playerProfile) { this.playerProfile = playerProfile; }
+    public void setPlayer(User player) { this.player = player; }
     public void setStatus(String status) { this.status = status; }
     public void setSeed(Integer seed) { this.seed = seed; }
     public void setJoinedAt(LocalDateTime joinedAt) { this.joinedAt = joinedAt; }

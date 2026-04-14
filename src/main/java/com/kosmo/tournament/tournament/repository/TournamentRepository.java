@@ -1,9 +1,10 @@
 package com.kosmo.tournament.tournament.repository;
 
-import com.kosmo.tournament.tournament.entity.Tournament;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
+import com.kosmo.tournament.tournament.entity.Tournament;
 
 public interface TournamentRepository extends JpaRepository<Tournament, Long> {
     boolean existsByTitle(String title);

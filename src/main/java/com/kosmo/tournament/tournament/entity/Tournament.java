@@ -1,52 +1,67 @@
 package com.kosmo.tournament.tournament.entity;
 
-import com.kosmo.tournament.gametype.entity.GameType;
-import com.kosmo.tournament.user.entity.User;
-import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import com.kosmo.tournament.gametype.entity.GameType;
+import com.kosmo.tournament.user.entity.User;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+
 @Entity
-@Table(name = "Tournament")
+@Table(name = "\"Tournament\"")
 public class Tournament {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "\"title\"", nullable = false, unique = true)
     private String title;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(name = "\"description\"", nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
+    @Column(name = "\"participantType\"", nullable = false)
     private String participantType;
 
-    @Column(nullable = false)
+    @Column(name = "\"access\"", nullable = false)
     private String access;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "gameType", nullable = false)
+    @JoinColumn(name = "\"gameType\"", nullable = false)
     private GameType gameType;
 
-    @Column(nullable = false)
+    @Column(name = "\"status\"", nullable = false)
     private String status;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "organizerId", nullable = false)
+    @JoinColumn(name = "\"organizerId\"", nullable = false)
     private User organizer;
 
-    @Column(nullable = false)
+    @Column(name = "\"startDate\"", nullable = false)
     private LocalDateTime startDate;
 
+    @Column(name = "\"registrationDeadline\"")
     private LocalDateTime registrationDeadline;
 
+    @Column(name = "\"maxParticipants\"")
     private Integer maxParticipants;
 
-    @Column(nullable = false)
+    @Column(name = "\"createdAt\"", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "\"imageUrl\"")
+    private String imageUrl;
 
     public Tournament() {
     }
@@ -54,6 +69,9 @@ public class Tournament {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
+        if (participantType == null) participantType = "SOLO";
+        if (access == null) access = "OPEN";
+        if (startDate == null) startDate = LocalDateTime.now();
     }
 
     public Long getId() { return id; }
@@ -68,6 +86,7 @@ public class Tournament {
     public LocalDateTime getRegistrationDeadline() { return registrationDeadline; }
     public Integer getMaxParticipants() { return maxParticipants; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getImageUrl() { return imageUrl; }
 
     public void setId(Long id) { this.id = id; }
     public void setTitle(String title) { this.title = title; }
@@ -81,6 +100,7 @@ public class Tournament {
     public void setRegistrationDeadline(LocalDateTime registrationDeadline) { this.registrationDeadline = registrationDeadline; }
     public void setMaxParticipants(Integer maxParticipants) { this.maxParticipants = maxParticipants; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
     @Override
     public boolean equals(Object o) {

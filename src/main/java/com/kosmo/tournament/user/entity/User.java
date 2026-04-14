@@ -1,8 +1,15 @@
 package com.kosmo.tournament.user.entity;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "\"User\"")
@@ -33,6 +40,9 @@ public class User {
     @Column(name = "\"country\"", nullable = false)
     private String country = "Не указана";
 
+    @Column(name = "\"imageUrl\"")
+    private String imageUrl;
+
     public User() {
     }
 
@@ -52,6 +62,7 @@ public class User {
         if (enabled == null) enabled = true;
         if (role == null) role = "PLAYER";
         if (country == null) country = "Не указана";
+        if (imageUrl == null) imageUrl = "DEFAULT_USER_IMAGE.jpg";
     }
 
     // Геттеры
