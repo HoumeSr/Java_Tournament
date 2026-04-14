@@ -6,10 +6,12 @@ CREATE TABLE IF NOT EXISTS "User" (
     "passwordHash" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT "PLAYER",                     -- PLAYER, ORGANIZER, ADMIN
     "country" TEXT NOT NULL,
-    "enabled" BOOLEAN NOT NULL DEFAULT FALSE,
-    "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
-    "imageUrl" TEXT DEFAULT "DEFAULT_USER_IMAGE.jpg",
-    PRIMARY KEY("id")
+    "enabled" BOOLEAN NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL,
+    "imageUrl" TEXT,
+    PRIMARY KEY("id"),
+    UNIQUE("username"),
+    UNIQUE("email")
 );
 COMMENT ON COLUMN "User"."role" IS 'PLAYER, ORGANIZER, ADMIN';
 

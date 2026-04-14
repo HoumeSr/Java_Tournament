@@ -11,101 +11,413 @@ function showToast(message, isError = false) {
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.visibility = 'hidden';
-    }, 2500);
+    }, 3000);
 }
 
-// ========== АВТОРИЗАЦИЯ ==========
-function isUserLoggedIn() {
-    return localStorage.getItem('userLoggedIn') === 'true';
-}
-
+// ========== АВТОРИЗАЦИЯ В ШАПКЕ ==========
 function updateAuthButtons() {
     const authContainer = document.getElementById('authButtons');
     if (!authContainer) return;
     
-    if (isUserLoggedIn()) {
-        const savedAvatar = localStorage.getItem('userAvatar');
-        
-        authContainer.innerHTML = `
-            <div class="profile-wrapper">
-                <div class="profile-icon" id="profileIcon">
-                    ${savedAvatar ? `<img src="${savedAvatar}" class="avatar-mini">` : '<i class="fas fa-user-circle"></i>'}
-                </div>
-                <button class="logout-mini" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
-            </div>
-        `;
-        
-        if (savedAvatar) {
-            const profileIcon = document.getElementById('profileIcon');
-            if (profileIcon) {
-                profileIcon.style.padding = '0';
-                profileIcon.style.overflow = 'hidden';
+    fetch('/api/auth/check')
+        .then(response => response.json())
+        .then(data => {
+            if (data.authenticated) {
+                const savedAvatar = localStorage.getItem('userAvatar');
+                
+                authContainer.innerHTML = `
+                    <div class="profile-icon" id="profileIcon">
+                        ${savedAvatar ? `<img src="${savedAvatar}" class="avatar-mini">` : '<i class="fas fa-user-circle"></i>'}
+                    </div>
+                `;
+                
+                const profileIcon = document.getElementById('profileIcon');
+                if (profileIcon) {
+                    if (savedAvatar) {
+                        profileIcon.style.padding = '0';
+                        profileIcon.style.overflow = 'hidden';
+                    }
+                    profileIcon.addEventListener('click', () => {
+                        window.location.href = '/profile';
+                    });
+                }
+            } else {
+                authContainer.innerHTML = `
+                    <button class="btn-outline" id="registerBtn">Регистрация</button>
+                    <button class="btn-primary" id="loginBtn">Вход</button>
+                `;
+                document.getElementById('registerBtn')?.addEventListener('click', () => {
+                    window.location.href = '/register';
+                });
+                document.getElementById('loginBtn')?.addEventListener('click', () => {
+                    window.location.href = '/login';
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            authContainer.innerHTML = `
+                <button class="btn-outline" id="registerBtn">Регистрация</button>
+                <button class="btn-primary" id="loginBtn">Вход</button>
+            `;
+            document.getElementById('registerBtn')?.addEventListener('click', () => {
+                window.location.href = '/register';
+            });
+            document.getElementById('loginBtn')?.addEventListener('click', () => {
+                window.location.href = '/login';
+            });
+        });
+}
+
+// ========== ЛОКАЛЬНЫЕ ДАННЫЕ ПРОФИЛЯ ==========
+let profileData = {
+    country: localStorage.getItem('userCountry') || '',
+    bio: localStorage.getItem('userBio') || ''
+};
+
+function loadSavedData() {
+    const savedCountry = localStorage.getItem('userCountry');
+    const savedBio = localStorage.getItem('userBio');
+    
+    if (savedCountry) {
+        document.getElementById('displayCountry').textContent = savedCountry;
+        profileData.country = savedCountry;
+    }
+    
+    if (savedBio) {
+        document.getElementById('displayBio').textContent = savedBio;
+        profileData.bio = savedBio;
+    }
+    
+    const editCountry = document.getElementById('editCountry');
+    const editBio = document.getElementById('editBio');
+    
+    if (editCountry && savedCountry) {
+        for (let option of editCountry.options) {
+            if (option.value === savedCountry) {
+                option.selected = true;
+                break;
             }
         }
-        
-        document.getElementById('profileIcon')?.addEventListener('click', () => {
-            window.location.href = '/profile';
-        });
-        
-        document.getElementById('logoutBtn')?.addEventListener('click', () => {
-            localStorage.removeItem('userLoggedIn');
-            localStorage.removeItem('userAvatar');
-            showToast('👋 Вы вышли из аккаунта');
-            setTimeout(() => window.location.href = '/', 500);
-        });
-    } else {
-        authContainer.innerHTML = `
-            <button class="btn-outline" id="registerBtn">Регистрация</button>
-            <button class="btn-primary" id="loginBtn">Вход</button>
-            <button class="btn-test" id="testLoginBtn">🧪 Тест</button>
-        `;
-        
-        document.getElementById('registerBtn')?.addEventListener('click', () => {
-            window.location.href = '/register';
-        });
-        document.getElementById('loginBtn')?.addEventListener('click', () => {
-            window.location.href = '/login';
-        });
-        document.getElementById('testLoginBtn')?.addEventListener('click', () => {
-            localStorage.setItem('userLoggedIn', 'true');
-            localStorage.setItem('username', 'БоевойБобёр');
-            localStorage.setItem('userEmail', 'bobr@arenatop.ru');
-            showToast('✅ Вы вошли как БоевойБобёр');
-            setTimeout(() => window.location.reload(), 500);
-        });
+    }
+    
+    if (editBio && savedBio) {
+        editBio.value = savedBio;
     }
 }
 
-// ========== ДАННЫЕ ПРОФИЛЯ ==========
-let profileData = {
-    id: '#10042',
-    username: 'БоевойБобёр',
-    email: 'bobr@arenatop.ru',
-    country: 'Россия',
-    createdAt: '15 января 2025, 12:00',
-    createdAtShort: '15.01.2025',
-    bio: 'КМС по шахматам, играю в CS2, организую любительские турниры'
-};
-
-function updateDisplayData() {
-    document.getElementById('displayId').textContent = profileData.id;
-    document.getElementById('displayUsername').textContent = profileData.username;
-    document.getElementById('displayUsernameField').textContent = profileData.username;
-    document.getElementById('displayEmail').textContent = profileData.email;
-    document.getElementById('displayCountry').textContent = profileData.country;
-    document.getElementById('displayCreatedAt').textContent = profileData.createdAtShort;
-    document.getElementById('displayCreatedAtField').textContent = profileData.createdAt;
-    document.getElementById('displayBio').textContent = profileData.bio;
+function saveProfileDataLocally(country, bio) {
+    if (country) {
+        localStorage.setItem('userCountry', country);
+        document.getElementById('displayCountry').textContent = country;
+        profileData.country = country;
+    } else {
+        localStorage.removeItem('userCountry');
+        document.getElementById('displayCountry').textContent = 'Не указана';
+        profileData.country = '';
+    }
     
-    document.getElementById('editUsername').value = profileData.username;
-    document.getElementById('editEmail').value = profileData.email;
-    document.getElementById('editCountry').value = profileData.country;
-    document.getElementById('editBio').value = profileData.bio;
+    if (bio) {
+        localStorage.setItem('userBio', bio);
+        document.getElementById('displayBio').textContent = bio;
+        profileData.bio = bio;
+    } else {
+        localStorage.removeItem('userBio');
+        document.getElementById('displayBio').textContent = 'Пока ничего не добавлено';
+        profileData.bio = '';
+    }
+}
+
+// ========== РЕДАКТИРОВАНИЕ ПРОФИЛЯ ==========
+function initProfile() {
+    const editBtn = document.getElementById('editProfileBtn');
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    const viewMode = document.getElementById('viewMode');
+    const editMode = document.getElementById('editMode');
+    const profileForm = document.getElementById('profileForm');
+    
+    // Открыть форму редактирования
+    if (editBtn && cancelBtn && viewMode && editMode) {
+        editBtn.addEventListener('click', () => {
+            viewMode.style.display = 'none';
+            editMode.style.display = 'block';
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            viewMode.style.display = 'block';
+            editMode.style.display = 'none';
+        });
+    }
+    
+    // Сохранение изменений профиля
+    if (profileForm) {
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('editUsername').value.trim();
+            const email = document.getElementById('editEmail').value.trim();
+            const country = document.getElementById('editCountry').value;
+            const bio = document.getElementById('editBio').value.trim();
+            
+            if (!username || !email) {
+                showToast('❌ Имя пользователя и email обязательны', true);
+                return;
+            }
+            
+            if (!email.includes('@')) {
+                showToast('❌ Введите корректный email', true);
+                return;
+            }
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('email', email);
+                if (country) formData.append('country', country);
+                if (bio) formData.append('bio', bio);
+                
+                const response = await fetch('/api/profile/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Обновляем отображение
+                    document.getElementById('displayUsername').textContent = username;
+                    document.getElementById('displayUsernameField').textContent = username;
+                    document.getElementById('displayEmail').textContent = email;
+                    if (country) document.getElementById('displayCountry').textContent = country;
+                    if (bio) document.getElementById('displayBio').textContent = bio;
+                    
+                    // Сохраняем локально
+                    saveProfileDataLocally(country, bio);
+                    
+                    viewMode.style.display = 'block';
+                    editMode.style.display = 'none';
+                    showToast('✅ ' + data.message);
+                } else {
+                    showToast('❌ ' + data.message, true);
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showToast('❌ Ошибка соединения с сервером', true);
+            }
+        });
+    }
+    
+    loadSavedData();
+}
+
+// ========== МОДАЛЬНОЕ ОКНО СМЕНЫ ПАРОЛЯ ==========
+let isModalOpen = false;
+
+function openPasswordModal() {
+    const modal = document.getElementById('passwordModal');
+    if (!modal) return;
+    
+    document.getElementById('currentPasswordInput').value = '';
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('confirmPasswordInput').value = '';
+    
+    document.querySelectorAll('.modal-input').forEach(input => {
+        input.classList.remove('error');
+    });
+    document.getElementById('newPasswordHint').innerHTML = '';
+    document.getElementById('confirmPasswordHint').innerHTML = '';
+    
+    modal.style.display = 'flex';
+    isModalOpen = true;
+    document.body.style.overflow = 'hidden';
+}
+
+function closePasswordModal() {
+    const modal = document.getElementById('passwordModal');
+    if (!modal) return;
+    
+    modal.style.display = 'none';
+    isModalOpen = false;
+    document.body.style.overflow = '';
+}
+
+function initPasswordModal() {
+    const changePasswordBtn = document.getElementById('changePasswordBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+    const submitPasswordBtn = document.getElementById('submitPasswordBtn');
+    const newPasswordInput = document.getElementById('newPasswordInput');
+    const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+    
+    if (!changePasswordBtn) return;
+    
+    changePasswordBtn.addEventListener('click', openPasswordModal);
+    closeModalBtn?.addEventListener('click', closePasswordModal);
+    cancelPasswordBtn?.addEventListener('click', closePasswordModal);
+    
+    window.addEventListener('click', (e) => {
+        if (isModalOpen && e.target.classList.contains('modal')) {
+            closePasswordModal();
+        }
+    });
+    
+    function validateNewPassword() {
+        const newPassword = newPasswordInput.value;
+        const hint = document.getElementById('newPasswordHint');
+        
+        if (newPassword.length === 0) {
+            hint.innerHTML = '';
+            newPasswordInput.classList.remove('error', 'success');
+            return false;
+        }
+        
+        if (newPassword.length < 6) {
+            hint.innerHTML = '❌ Пароль должен содержать минимум 6 символов';
+            hint.className = 'input-hint error';
+            newPasswordInput.classList.add('error');
+            newPasswordInput.classList.remove('success');
+            return false;
+        } else {
+            hint.innerHTML = '✅ Хороший пароль';
+            hint.className = 'input-hint success';
+            newPasswordInput.classList.remove('error');
+            newPasswordInput.classList.add('success');
+            return true;
+        }
+    }
+    
+    function validateConfirmPassword() {
+        const newPassword = newPasswordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        const hint = document.getElementById('confirmPasswordHint');
+        
+        if (confirmPassword.length === 0) {
+            hint.innerHTML = '';
+            confirmPasswordInput.classList.remove('error', 'success');
+            return false;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            hint.innerHTML = '❌ Пароли не совпадают';
+            hint.className = 'input-hint error';
+            confirmPasswordInput.classList.add('error');
+            confirmPasswordInput.classList.remove('success');
+            return false;
+        } else {
+            hint.innerHTML = '✅ Пароли совпадают';
+            hint.className = 'input-hint success';
+            confirmPasswordInput.classList.remove('error');
+            confirmPasswordInput.classList.add('success');
+            return true;
+        }
+    }
+    
+    newPasswordInput?.addEventListener('input', () => {
+        validateNewPassword();
+        validateConfirmPassword();
+    });
+    
+    confirmPasswordInput?.addEventListener('input', validateConfirmPassword);
+    
+    submitPasswordBtn?.addEventListener('click', async () => {
+        const currentPassword = document.getElementById('currentPasswordInput').value;
+        const newPassword = newPasswordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        
+        if (!currentPassword) {
+            showToast('❌ Введите текущий пароль', true);
+            return;
+        }
+        
+        if (!validateNewPassword()) {
+            showToast('❌ Новый пароль должен содержать минимум 6 символов', true);
+            return;
+        }
+        
+        if (!validateConfirmPassword()) {
+            showToast('❌ Пароли не совпадают', true);
+            return;
+        }
+        
+        submitPasswordBtn.disabled = true;
+        submitPasswordBtn.textContent = 'Отправка...';
+        
+        try {
+            const formData = new URLSearchParams();
+            formData.append('currentPassword', currentPassword);
+            formData.append('newPassword', newPassword);
+            
+            const response = await fetch('/api/profile/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast('✅ ' + data.message);
+                closePasswordModal();
+            } else {
+                showToast('❌ ' + data.message, true);
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            showToast('❌ Ошибка соединения с сервером', true);
+        } finally {
+            submitPasswordBtn.disabled = false;
+            submitPasswordBtn.textContent = 'Сменить пароль';
+        }
+    });
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isModalOpen) {
+            closePasswordModal();
+        }
+    });
+}
+
+// ========== ВЫХОД ИЗ АККАУНТА ==========
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                localStorage.removeItem('userCountry');
+                localStorage.removeItem('userBio');
+                localStorage.removeItem('userAvatar');
+                
+                showToast('👋 Вы вышли из аккаунта');
+                setTimeout(() => {
+                    window.location.href = data.redirectUrl || '/';
+                }, 500);
+            }
+        } catch (error) {
+            console.error('Ошибка при выходе:', error);
+            showToast('❌ Ошибка при выходе', true);
+        }
+    });
 }
 
 // ========== АВАТАР ==========
+let uploadedImage = null;
+
 function setAvatar(avatarData) {
     const avatarPreview = document.getElementById('avatarPreview');
     const profileIcon = document.getElementById('profileIcon');
@@ -191,72 +503,12 @@ function initAvatarChange() {
     if (savedAvatar) setAvatar(savedAvatar);
 }
 
-// ========== ПРОФИЛЬ ==========
-function initProfile() {
-    const editBtn = document.getElementById('editProfileBtn');
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    const viewMode = document.getElementById('viewMode');
-    const editMode = document.getElementById('editMode');
-    const changePasswordBtn = document.getElementById('changePasswordBtn');
-    const profileForm = document.getElementById('profileForm');
-    
-    if (editBtn && cancelBtn) {
-        editBtn.addEventListener('click', () => {
-            viewMode.style.display = 'none';
-            editMode.style.display = 'block';
-        });
-        
-        cancelBtn.addEventListener('click', () => {
-            viewMode.style.display = 'block';
-            editMode.style.display = 'none';
-        });
-    }
-    
-    if (profileForm) {
-        profileForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            profileData.username = document.getElementById('editUsername').value.trim();
-            profileData.email = document.getElementById('editEmail').value.trim();
-            profileData.country = document.getElementById('editCountry').value;
-            profileData.bio = document.getElementById('editBio').value.trim();
-            
-            if (!profileData.username || !profileData.email) {
-                showToast('❌ Имя и email обязательны', true);
-                return;
-            }
-            
-            if (!profileData.email.includes('@')) {
-                showToast('❌ Введите корректный email', true);
-                return;
-            }
-            
-            updateDisplayData();
-            viewMode.style.display = 'block';
-            editMode.style.display = 'none';
-            showToast('✅ Профиль обновлён!');
-        });
-    }
-    
-    if (changePasswordBtn) {
-        changePasswordBtn.addEventListener('click', () => {
-            const newPassword = prompt('Новый пароль (мин. 6 символов):');
-            if (newPassword && newPassword.length >= 6) {
-                showToast('✅ Пароль изменён!');
-            } else if (newPassword) {
-                showToast('❌ Пароль должен быть не менее 6 символов', true);
-            }
-        });
-    }
-    
-    updateDisplayData();
-}
-
 // ========== НАВИГАЦИЯ ==========
 function initNavBar() {
-    document.querySelectorAll('.nav-item').forEach(item => {
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
         if (item.getAttribute('href') && item.getAttribute('href') !== '#') return;
-        item.addEventListener('click', () => showToast('📋 В разработке'));
+        item.addEventListener('click', () => showToast('📋 Этот раздел в разработке'));
     });
 }
 
@@ -264,6 +516,8 @@ function initNavBar() {
 document.addEventListener('DOMContentLoaded', () => {
     updateAuthButtons();
     initProfile();
-    initNavBar();
     initAvatarChange();
+    initNavBar();
+    initLogout();
+    initPasswordModal();
 });

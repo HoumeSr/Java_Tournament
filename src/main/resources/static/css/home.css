@@ -519,3 +519,70 @@ body {
 .profile-badge {
     animation: pulse-green 2s infinite;
 }
+
+/* ========== ПРОФИЛЬ ИКОНКА В ШАПКЕ ========== */
+.profile-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(96, 165, 250, 0.1));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid rgba(124, 58, 237, 0.3);
+}
+
+.profile-icon:hover {
+    transform: scale(1.05);
+    background: rgba(124, 58, 237, 0.25);
+    border-color: var(--accent);
+}
+
+.profile-icon i {
+    font-size: 1.3rem;
+    color: var(--text-primary);
+}
+
+.profile-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* Мини-аватар */
+.avatar-mini {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.tournaments-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn-create-tournament-header {
+    background: linear-gradient(135deg, var(--accent), #6d28d9);
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 40px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.btn-create-tournament-header:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
+}

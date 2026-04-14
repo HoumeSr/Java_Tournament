@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Создание команды — Бобры</title>
+    
+    <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link th:href="@{/css/create-team.css}" rel="stylesheet">
+</head>
+<body>
+
+<header class="navbar">
+    <div class="logo-area">
+        <div class="site-title">⚡ Бобры</div>
+        <div class="nav-links">
+            <a th:href="@{/}" class="nav-item">Главная</a>
+            <a data-nav="teams" class="nav-item active-nav">Команды</a>
+            <a data-nav="matches" class="nav-item">Матчи</a>
+            <a th:href="@{/rating}" class="nav-item">Рейтинг</a>
+        </div>
+    </div>
+    <div class="auth-buttons" id="authButtons"></div>
+</header>
+
+<main class="container">
+    <div class="create-header">
+        <h1><i class="fas fa-users"></i> Создание команды</h1>
+        <p>Заполните информацию о команде</p>
+    </div>
+
+    <form id="createTeamForm" class="create-form">
+        <!-- Основная информация -->
+        <div class="form-section">
+            <h2 class="section-title"><i class="fas fa-info-circle"></i> Основная информация</h2>
+            
+            <div class="form-row">
+                <div class="form-group full-width">
+                    <label for="teamName">Название команды <span class="required">*</span></label>
+                    <input type="text" id="teamName" name="teamName" placeholder="Например: Космо-Бобры" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="captain">Капитан <span class="required">*</span></label>
+                    <input type="text" id="captain" name="captain" placeholder="Ваш никнейм" required>
+                    <span class="input-hint">Введите ваш username</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="telegram">Telegram для связи</label>
+                    <input type="text" id="telegram" name="telegram" placeholder="@username">
+                </div>
+            </div>
+        </div>
+
+   <input type="hidden" th:value="${teamSize}" id="teamSizeHidden">
+
+        <!-- Состав команды -->
+        <div class="form-section">
+            <h2 class="section-title"><i class="fas fa-user-friends"></i> Состав команды</h2>
+            
+            <!-- Первый игрок (капитан) - readonly -->
+            <div class="member-row">
+                <div class="member-number">1</div>
+                <div class="member-input">
+                    <input type="text" id="member1" placeholder="Капитан" readonly disabled>
+                </div>
+            </div>
+            
+            <!-- Остальные игроки -->
+            <div th:each="i, iterStat : ${#numbers.sequence(2, teamSize)}" class="member-row">
+                <div class="member-number" th:text="${iterStat.index + 2}">2</div>
+                <div class="member-input">
+                    <input type="text" th:name="'member' + ${iterStat.index + 2}" placeholder="Никнейм игрока" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- Дополнительная информация -->
+        <div class="form-section">
+            <h2 class="section-title"><i class="fas fa-file-alt"></i> Дополнительная информация</h2>
+            
+            <div class="form-row">
+                <div class="form-group full-width">
+                    <textarea id="description" name="description" rows="4" placeholder="Расскажите о вашей команде, достижениях, целях..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Кнопки -->
+        <div class="form-actions">
+            <button type="button" class="btn-cancel-large" id="cancelBtn">
+                <i class="fas fa-times"></i> Отмена
+            </button>
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-check"></i> Создать команду
+            </button>
+        </div>
+    </form>
+</main>
+
+<!-- ПОДВАЛ -->
+<footer class="modern-footer">
+    <div class="footer-content">
+        <div class="footer-info">
+            <div class="footer-logo">⚡ Бобры</div>
+            <p class="footer-tagline">Турнирная платформа нового поколения</p>
+            <p class="footer-copyright">© 2026 Бобры. Создано с ❤️ командой <span class="team-name">Космо-Бобры</span>. Все права защищены.</p>
+        </div>
+        <div class="footer-social">
+            <a href="https://vk.com/ilnurmuhametzanov" class="social-icon vk" target="_blank"><i class="fab fa-vk"></i></a>
+            <a href="https://discord.gg/zur_chelovek" class="social-icon discord" target="_blank"><i class="fab fa-discord"></i></a>
+            <a href="https://github.com/HoumeSr" class="social-icon gh" target="_blank"><i class="fab fa-github"></i></a>
+        </div>
+    </div>
+</footer>
+
+<div id="demoToast" class="demo-toast"></div>
+
+<script th:src="@{/js/create-team.js}"></script>
+</body>
+</html>
