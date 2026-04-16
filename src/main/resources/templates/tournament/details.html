@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Турнир — Бобры</title>
+    
+    <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link th:href="@{/css/tournament.css}" rel="stylesheet">
+</head>
+<body>
+
+<header class="navbar">
+    <div class="logo-area">
+        <div class="site-title">⚡ Бобры</div>
+        <div class="nav-links">
+            <a th:href="@{/}" class="nav-item">Главная</a>
+            <a th:href="@{/teams}" class="nav-item">Команды</a>
+            <a data-nav="matches" class="nav-item active-nav">Матчи</a>
+            <a th:href="@{/rating}" class="nav-item">Рейтинг</a>
+        </div>
+    </div>
+    <div class="auth-buttons" id="authButtons"></div>
+</header>
+
+<main class="container">
+    <div class="tournament-header">
+        <div class="tournament-info">
+            <h1 th:text="${tournament.name}">Кибер Кубок 2025</h1>
+            <div class="tournament-meta">
+                <span class="meta-item"><i class="fas fa-calendar-alt"></i> <span th:text="${#temporals.format(tournament.startDate, 'dd.MM.yyyy')}">15.03.2025</span></span>
+                <span class="meta-item"><i class="fas fa-tag"></i> <span th:text="${tournament.category}">esports</span></span>
+                <span class="meta-item"><i class="fas fa-map-marker-alt"></i> <span th:text="${tournament.location}">Москва</span></span>
+                <span class="meta-item"><i class="fas fa-users"></i> Участников: <span th:text="${#lists.size(tournament.participants)} + '/' + ${tournament.maxParticipants}">8/8</span></span>
+            </div>
+            <div class="tournament-organizer">
+                <i class="fas fa-user-shield"></i> Организатор: <a th:href="@{'/profile/' + ${tournament.organizerId}}" th:text="${tournament.organizer}">BobrMaster</a>
+            </div>
+        </div>
+        <div class="tournament-actions">
+            <a th:href="@{'/tournament/' + ${tournament.id} + '/manage'}" class="btn-manage" th:if="${isOrganizer}">
+                <i class="fas fa-cog"></i> Управление турниром
+            </a>
+        </div>
+    </div>
+
+    <!-- Список участников -->
+    <div class="participants-section">
+        <h2 class="section-title"><i class="fas fa-users"></i> Участники</h2>
+        <div class="participants-list">
+            <div th:each="participant : ${tournament.participants}" class="participant-chip">
+                <span th:text="${participant.name}">Команда</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Турнирная сетка -->
+    <div class="bracket-section">
+        <h2 class="section-title"><i class="fas fa-chart-line"></i> Турнирная сетка</h2>
+        <div class="playoff-bracket">
+            <div th:each="round : ${tournament.rounds}" class="bracket-round">
+                <div class="round-title" th:text="${round.name}">1/4 финала</div>
+                <div class="round-matches">
+                    <div th:each="match : ${round.matches}" class="match-card" th:classappend="${match.finished} ? 'finished' : ''">
+                        <div class="match-teams">
+                            <div class="match-team" th:classappend="${match.winnerId != null && match.winnerId == match.team1Id} ? 'winner' : ''">
+                                <span class="team-name" th:text="${match.team1Name}">Команда 1</span>
+                                <span class="team-score" th:if="${match.team1Score != null}" th:text="${match.team1Score}">0</span>
+                            </div>
+                            <div class="match-vs">VS</div>
+                            <div class="match-team" th:classappend="${match.winnerId != null && match.winnerId == match.team2Id} ? 'winner' : ''">
+                                <span class="team-name" th:text="${match.team2Name}">Команда 2</span>
+                                <span class="team-score" th:if="${match.team2Score != null}" th:text="${match.team2Score}">0</span>
+                            </div>
+                        </div>
+                        <div class="match-status">
+                            <span th:if="${match.finished}" class="status-finished">Завершён</span>
+                            <span th:if="${!match.finished}" class="status-pending">Ожидает</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="modern-footer">
+    <div class="footer-content">
+        <div class="footer-info">
+            <div class="footer-logo">⚡ Бобры</div>
+            <p class="footer-tagline">Турнирная платформа нового поколения</p>
+            <p class="footer-copyright">© 2026 Бобры. Создано с ❤️ командой <span class="team-name">Космо-Бобры</span>. Все права защищены.</p>
+        </div>
+        <div class="footer-social">
+            <a href="https://vk.com/ilnurmuhametzanov" class="social-icon vk" target="_blank"><i class="fab fa-vk"></i></a>
+            <a href="https://discord.gg/zur_chelovek" class="social-icon discord" target="_blank"><i class="fab fa-discord"></i></a>
+            <a href="https://github.com/HoumeSr" class="social-icon gh" target="_blank"><i class="fab fa-github"></i></a>
+        </div>
+    </div>
+</footer>
+
+<div id="demoToast" class="demo-toast"></div>
+
+<script th:src="@{/js/tournament.js}"></script>
+</body>
+</html>

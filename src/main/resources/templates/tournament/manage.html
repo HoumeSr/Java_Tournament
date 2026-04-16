@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Управление турниром — Бобры</title>
+    
+    <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link th:href="@{/css/tournament.css}" rel="stylesheet">
+</head>
+<body>
+
+<header class="navbar">
+    <div class="logo-area">
+        <div class="site-title">⚡ Бобры</div>
+        <div class="nav-links">
+            <a th:href="@{/}" class="nav-item">Главная</a>
+            <a th:href="@{/teams}" class="nav-item">Команды</a>
+            <a data-nav="matches" class="nav-item active-nav">Матчи</a>
+            <a th:href="@{/rating}" class="nav-item">Рейтинг</a>
+        </div>
+    </div>
+    <div class="auth-buttons" id="authButtons"></div>
+</header>
+
+<main class="container">
+    <div class="manage-header">
+        <h1><i class="fas fa-trophy"></i> Управление турниром</h1>
+        <p th:text="${tournament.name}">Кибер Кубок 2025</p>
+        <a th:href="@{'/tournament/' + ${tournament.id}}" class="btn-back">← Вернуться к просмотру</a>
+    </div>
+
+    <!-- Турнирная сетка с управлением -->
+    <div class="manage-section">
+        <h2 class="section-title">Редактирование результатов</h2>
+        
+        <div class="playoff-manage">
+            <div th:each="round : ${tournament.rounds}" class="round-manage">
+                <div class="round-title" th:text="${round.name}">1/4 финала</div>
+                <div class="round-matches">
+                    <div th:each="match : ${round.matches}" class="match-manage-card">
+                        <div class="match-teams-info">
+                            <div class="match-team-name">
+                                <span th:text="${match.team1Name}">Команда 1</span>
+                            </div>
+                            <div class="match-vs">VS</div>
+                            <div class="match-team-name">
+                                <span th:text="${match.team2Name}">Команда 2</span>
+                            </div>
+                        </div>
+                        <div class="match-score-inputs">
+                            <div class="score-input-group">
+                                <label>Счёт команды 1</label>
+                                <input type="number" th:id="'score1_' + ${match.id}" class="score-input" min="0" max="99" placeholder="0">
+                            </div>
+                            <div class="score-input-group">
+                                <label>Счёт команды 2</label>
+                                <input type="number" th:id="'score2_' + ${match.id}" class="score-input" min="0" max="99" placeholder="0">
+                            </div>
+                            <button class="btn-save-score" th:data-match-id="${match.id}" th:data-round="${round.roundNumber}" th:data-match-index="${matchStat.index}">
+                                <i class="fas fa-save"></i> Сохранить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="modern-footer">
+    <div class="footer-content">
+        <div class="footer-info">
+            <div class="footer-logo">⚡ Бобры</div>
+            <p class="footer-tagline">Турнирная платформа нового поколения</p>
+            <p class="footer-copyright">© 2026 Бобры. Создано с ❤️ командой <span class="team-name">Космо-Бобры</span>. Все права защищены.</p>
+        </div>
+        <div class="footer-social">
+            <a href="https://vk.com/ilnurmuhametzanov" class="social-icon vk" target="_blank"><i class="fab fa-vk"></i></a>
+            <a href="https://discord.gg/zur_chelovek" class="social-icon discord" target="_blank"><i class="fab fa-discord"></i></a>
+            <a href="https://github.com/HoumeSr" class="social-icon gh" target="_blank"><i class="fab fa-github"></i></a>
+        </div>
+    </div>
+</footer>
+
+<div id="demoToast" class="demo-toast"></div>
+
+<script th:src="@{/js/tournament-manage.js}"></script>
+</body>
+</html>
