@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.kosmo.tournament.team.dfh.AddTeamMemberDFH;
 import com.kosmo.tournament.team.dfh.CreateTeamDFH;
+import com.kosmo.tournament.team.dfh.InviteTeamMemberDFH;
 import com.kosmo.tournament.team.dfh.TeamFullDFH;
 import com.kosmo.tournament.team.dfh.TeamMemberDFH;
 import com.kosmo.tournament.team.dfh.TeamShortDFH;
@@ -54,5 +55,23 @@ public class TeamApiController {
                                  @RequestBody AddTeamMemberDFH dfh,
                                  Authentication authentication) {
         return teamService.addMember(id, dfh, authentication.getName());
+    }
+    @PostMapping("/{id}/invite")
+    public void inviteUser(@PathVariable Long id,
+                        @RequestBody InviteTeamMemberDFH dfh,
+                        Authentication authentication) {
+        teamService.inviteUserToTeam(id, dfh.getUserId(), authentication.getName());
+    }
+
+    @PostMapping("/invite/{notificationId}/accept")
+    public TeamFullDFH acceptInvite(@PathVariable Long notificationId,
+                                    Authentication authentication) {
+        return teamService.acceptInvite(notificationId, authentication.getName());
+    }
+
+    @PostMapping("/invite/{notificationId}/decline")
+    public void declineInvite(@PathVariable Long notificationId,
+                            Authentication authentication) {
+        teamService.declineInvite(notificationId, authentication.getName());
     }
 }
