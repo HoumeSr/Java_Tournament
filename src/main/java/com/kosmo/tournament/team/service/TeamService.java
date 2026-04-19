@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kosmo.tournament.notification.entity.Notification;
+import com.kosmo.tournament.notification.service.NotificationService;
 import com.kosmo.tournament.team.dfh.AddTeamMemberDFH;
 import com.kosmo.tournament.team.dfh.CreateTeamDFH;
 import com.kosmo.tournament.team.dfh.TeamFullDFH;
@@ -23,13 +25,16 @@ public class TeamService {
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public TeamService(TeamRepository teamRepository,
                        TeamMemberRepository teamMemberRepository,
-                       UserRepository userRepository) {
+                       UserRepository userRepository,
+                       NotificationService notificationService) {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     public List<TeamShortDFH> getMyTeams(String username) {
@@ -119,6 +124,88 @@ public class TeamService {
                 .stream()
                 .map(this::toMemberDFH)
                 .toList();
+    }
+
+    @Transactional
+    public void inviteUserToTeam(Long teamId, Long invitedUserId, String currentUsername) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found"));
+
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("Current user not found"));
+
+        if (team.getCaptain() == null || !team.getCaptain().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Only captain can invite users");
+        }
+
+        User invitedUser = userRepository.findById(invitedUserId)
+                .orElseThrow(() -> new RuntimeException("Invited user not found"));
+
+        if (teamMemberRepository.existsByTeamIdAndPlayerId(teamId, invitedUserId)) {
+            throw new RuntimeException("User already in team");
+        }
+
+        notificationService.createTeamInvite(invitedUser, team);
+    }
+
+    @Transactional
+    public TeamFullDFH acceptInvite(Long notificationId, String currentUsername) {
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Notification notification = notificationService.getById(notificationId);
+
+        if (!notification.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("This notification does not belong to current user");
+        }
+
+        if (!"TEAM_INVITE".equals(notification.getType())) {
+            throw new RuntimeException("Notification is not a team invite");
+        }
+
+        if (!"PENDING".equals(notification.getStatus())) {
+            throw new RuntimeException("Invitation already processed");
+        }
+
+        Team team = notification.getTeam();
+        if (team == null) {
+            throw new RuntimeException("Team not found in notification");
+        }
+
+        if (!teamMemberRepository.existsByTeamIdAndPlayerId(team.getId(), currentUser.getId())) {
+            TeamMember teamMember = new TeamMember();
+            teamMember.setTeam(team);
+            teamMember.setPlayer(currentUser);
+            teamMember.setRole("MEMBER");
+            teamMemberRepository.save(teamMember);
+        }
+
+        notificationService.markAccepted(notification);
+
+        boolean owner = team.getCaptain() != null && team.getCaptain().getId().equals(currentUser.getId());
+        return toFullDFH(team, owner);
+    }
+
+    @Transactional
+    public void declineInvite(Long notificationId, String currentUsername) {
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Notification notification = notificationService.getById(notificationId);
+
+        if (!notification.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("This notification does not belong to current user");
+        }
+
+        if (!"TEAM_INVITE".equals(notification.getType())) {
+            throw new RuntimeException("Notification is not a team invite");
+        }
+
+        if (!"PENDING".equals(notification.getStatus())) {
+            throw new RuntimeException("Invitation already processed");
+        }
+
+        notificationService.markDeclined(notification);
     }
 
     private TeamShortDFH toShortDFH(Team team) {
