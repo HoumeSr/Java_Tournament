@@ -79,8 +79,8 @@ public class MatchTeam {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof MatchTeam matchTeam)) return false;
-        return Objects.equals(id, matchTeam.id);
+        if (!(o instanceof MatchTeam that)) return false;
+        return Objects.equals(id, that.id);
     }
 
     @Override
