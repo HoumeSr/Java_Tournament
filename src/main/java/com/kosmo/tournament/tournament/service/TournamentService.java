@@ -1,42 +1,38 @@
 package com.kosmo.tournament.tournament.service;
 
-import com.kosmo.tournament.tournament.dto.TournamentShortResponse;
+import com.kosmo.tournament.tournament.dfh.TournamentShortDFH;
 import com.kosmo.tournament.tournament.entity.Tournament;
 import com.kosmo.tournament.tournament.repository.TournamentRepository;
-import com.kosmo.tournament.user.entity.User;
-import com.kosmo.tournament.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
-
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class TournamentService {
 
-    private final UserRepository userRepository;
     private final TournamentRepository tournamentRepository;
 
-    public TournamentService(UserRepository userRepository,
-                             TournamentRepository tournamentRepository) {
-        this.userRepository = userRepository;
+    public TournamentService(TournamentRepository tournamentRepository) {
         this.tournamentRepository = tournamentRepository;
     }
 
-    public List<TournamentShortResponse> getMyTournaments(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public List<TournamentShortDFH> getMyTournaments(String username) {
+        List<Tournament> tournaments = tournamentRepository.findAll();
+        List<TournamentShortDFH> result = new ArrayList<>();
 
-        List<Tournament> tournaments = tournamentRepository.findByOrganizerId(user.getId());
+        for (Tournament tournament : tournaments) {
+            TournamentShortDFH dfh = new TournamentShortDFH();
+            dfh.setTournamentId(tournament.getId());
+            dfh.setName(tournament.getTitle());                 // ✅ getTitle() вместо getName()
+            dfh.setStatus(tournament.getStatus());
+            dfh.setCurrentPlayers(0);                           // ✅ Заглушка, т.к. поля нет в Entity
+            dfh.setMaxPlayers(tournament.getMaxParticipants()); // ✅ getMaxParticipants() вместо getMaxPlayers()
+            dfh.setStartDate(tournament.getStartDate() != null ? tournament.getStartDate().toString() : null);
+            dfh.setImageUrl(tournament.getImageUrl());
 
-        return tournaments.stream()
-                .map(this::toShortResponse)
-                .toList();
-    }
+            result.add(dfh);
+        }
 
-    private TournamentShortResponse toShortResponse(Tournament tournament) {
-        return new TournamentShortResponse(
-                tournament.getId(),
-                tournament.getTitle(),
-                tournament.getStatus()
-        );
+        return result;
     }
 }

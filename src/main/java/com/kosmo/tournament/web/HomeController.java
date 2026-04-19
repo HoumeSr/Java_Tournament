@@ -217,7 +217,6 @@ public class HomeController {
         } else {
             response.put("authenticated", false);
         }
-
         return response;
     }
 }
