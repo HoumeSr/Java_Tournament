@@ -100,8 +100,8 @@ CREATE TABLE IF NOT EXISTS "TournamentSoloParticipant" (
     "finalPlace" INTEGER,
     PRIMARY KEY("id"),
     CONSTRAINT "fk_soloparticipant_tournament" FOREIGN KEY ("tournamentId") REFERENCES "Tournament"("id") ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT "fk_soloparticipant_player" FOREIGN KEY ("playerId") REFERENCES "User"("id") ON UPDATE CASCADE ON DELETE NO action,
-    CONSTRAINT "uq_soloparticipant_tournament_player" UNIQUE ("tournamentId", "playerId")
+    CONSTRAINT "fk_soloparticipant_player" FOREIGN KEY ("playerProfileId") REFERENCES "User"("id") ON UPDATE CASCADE ON DELETE NO action,
+    CONSTRAINT "uq_soloparticipant_tournament_player" UNIQUE ("tournamentId", "playerProfileId")
 );
 COMMENT ON COLUMN "TournamentSoloParticipant"."seed" IS 'Используется для формирования сетки.';
 
