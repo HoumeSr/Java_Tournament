@@ -80,7 +80,7 @@ body {
     border-bottom-color: var(--accent);
 }
 
-/* ========== КНОПКИ АВТОРИЗАЦИИ ========== */
+/* ========== АВТОРИЗАЦИЯ ========== */
 .auth-buttons {
     display: flex;
     gap: 0.9rem;
@@ -147,192 +147,125 @@ body {
 
 /* ========== ОСНОВНОЙ КОНТЕЙНЕР ========== */
 .container {
-    max-width: 1400px;
+    max-width: 100%;
     margin: 2rem auto;
     padding: 0 2rem;
+    overflow-x: auto;
 }
 
-/* ========== ШАПКА ТУРНИРА ========== */
+/* ========== ЗАГОЛОВОК ========== */
 .tournament-header {
-    background: var(--bg-card);
-    border-radius: 1.5rem;
-    padding: 2rem;
-    border: 1px solid var(--border-dim);
+    text-align: center;
     margin-bottom: 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 1rem;
 }
 
-.tournament-info h1 {
+.tournament-header h1 {
     font-size: 2rem;
     font-weight: 700;
-    margin-bottom: 0.8rem;
+    background: linear-gradient(135deg, #c084fc, #60a5fa);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    margin-bottom: 0.5rem;
 }
 
-.tournament-meta {
+.tournament-header p {
+    color: var(--text-secondary);
+}
+
+/* ========== УПРАВЛЕНИЕ ========== */
+.bracket-controls {
     display: flex;
-    gap: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
     flex-wrap: wrap;
-    margin-bottom: 0.8rem;
 }
 
-.meta-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.bracket-controls label {
     color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-.meta-item i {
-    color: var(--accent);
-}
-
-.tournament-organizer {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-.tournament-organizer i {
-    color: var(--gold);
-    margin-right: 0.3rem;
-}
-
-.tournament-organizer a {
-    color: var(--accent);
-    text-decoration: none;
-}
-
-.tournament-organizer a:hover {
-    text-decoration: underline;
-}
-
-.btn-manage {
-    background: rgba(124, 58, 237, 0.15);
-    border: 1px solid var(--accent);
-    padding: 0.7rem 1.5rem;
-    border-radius: 2rem;
-    font-weight: 600;
-    color: var(--accent);
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.btn-manage:hover {
-    background: var(--accent);
-    color: white;
-    transform: translateY(-2px);
-}
-
-/* ========== СТАДИИ ТУРНИРА ========== */
-.stage {
-    margin-bottom: 2.5rem;
-}
-
-.stage-title {
-    font-size: 1.3rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-dim);
-}
-
-/* Группы */
-.groups-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-}
-
-.group-card {
-    background: var(--bg-card);
-    border-radius: 1rem;
-    border: 1px solid var(--border-dim);
-    overflow: hidden;
-}
-
-.group-header {
-    background: var(--bg-secondary);
-    padding: 0.8rem 1rem;
-    font-weight: 600;
-    border-bottom: 1px solid var(--border-dim);
-}
-
-.group-teams {
-    padding: 0.5rem;
-}
-
-.group-team {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.6rem 0.8rem;
-    border-bottom: 1px solid var(--border-dim);
-}
-
-.group-team:last-child {
-    border-bottom: none;
-}
-
-.group-team.winner {
-    background: rgba(16, 185, 129, 0.1);
-    border-left: 3px solid var(--success);
-}
-
-.team-name {
     font-weight: 500;
 }
 
-.team-result {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
+.teams-select {
+    padding: 0.6rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 0.8rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
 }
 
-/* Плей-офф сетка */
-.playoff-bracket {
+.btn-generate {
+    background: var(--accent);
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.8rem;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
     display: flex;
-    gap: 2rem;
-    overflow-x: auto;
-    padding: 1rem 0;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.bracket-round {
-    flex: 1;
-    min-width: 280px;
+.btn-generate:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
 }
 
-.round-title {
+/* ========== ТУРНИРНАЯ СЕТКА С ЛИНИЯМИ ========== */
+.bracket {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    min-width: fit-content;
+    padding: 2rem 1rem;
+}
+
+.round {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    position: relative;
+}
+
+.round-header {
     text-align: center;
     padding: 0.5rem;
     background: var(--bg-secondary);
     border-radius: 0.5rem;
-    margin-bottom: 1rem;
     font-weight: 600;
     font-size: 0.85rem;
+    margin-bottom: 2rem;
+    white-space: nowrap;
 }
 
-.round-matches {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+.match-wrapper {
+    position: relative;
+    margin: 1rem 0;
 }
 
-.match-card {
+.match {
     background: var(--bg-card);
     border-radius: 0.8rem;
     border: 1px solid var(--border-dim);
     overflow: hidden;
+    width: 260px;
     transition: all 0.2s;
+    position: relative;
+    z-index: 2;
 }
 
-.match-card.finished {
+.match:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.match.finished {
     border-color: var(--success);
 }
 
@@ -340,19 +273,32 @@ body {
     padding: 0.8rem;
 }
 
-.match-team {
+.team {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0.4rem 0;
+    font-size: 0.85rem;
 }
 
-.match-team.winner {
+.team.winner {
     color: var(--success);
     font-weight: 600;
 }
 
-.match-vs {
+.team-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.team-score {
+    margin-left: 0.5rem;
+    font-weight: 500;
+}
+
+.vs {
     text-align: center;
     font-size: 0.7rem;
     color: var(--text-secondary);
@@ -360,7 +306,7 @@ body {
 }
 
 .match-status {
-    padding: 0.5rem;
+    padding: 0.4rem;
     text-align: center;
     border-top: 1px solid var(--border-dim);
     font-size: 0.7rem;
@@ -374,132 +320,7 @@ body {
     color: var(--text-secondary);
 }
 
-/* ========== УПРАВЛЕНИЕ ========== */
-.manage-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
 
-.manage-header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #c084fc, #60a5fa);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    margin-bottom: 0.5rem;
-}
-
-.manage-header p {
-    color: var(--text-secondary);
-    margin-bottom: 1rem;
-}
-
-.btn-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--accent);
-    text-decoration: none;
-    font-size: 0.9rem;
-}
-
-.btn-back:hover {
-    text-decoration: underline;
-}
-
-.manage-section {
-    background: var(--bg-card);
-    border-radius: 1.5rem;
-    padding: 1.5rem;
-    border: 1px solid var(--border-dim);
-    margin-bottom: 1.5rem;
-}
-
-.section-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-dim);
-}
-
-.groups-manage {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 1.5rem;
-}
-
-.group-manage-card {
-    background: var(--bg-secondary);
-    border-radius: 1rem;
-    overflow: hidden;
-}
-
-.group-matches {
-    padding: 1rem;
-}
-
-.match-manage {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.8rem 0;
-    border-bottom: 1px solid var(--border-dim);
-}
-
-.match-manage:last-child {
-    border-bottom: none;
-}
-
-.match-info {
-    font-size: 0.85rem;
-}
-
-.match-vs {
-    font-size: 0.7rem;
-    color: var(--text-secondary);
-    margin: 0 0.3rem;
-}
-
-.match-score {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-
-.score-input {
-    width: 45px;
-    padding: 0.3rem;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-dim);
-    border-radius: 0.5rem;
-    color: var(--text-primary);
-    text-align: center;
-    font-size: 0.85rem;
-}
-
-.score-sep {
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.btn-save-score {
-    background: rgba(124, 58, 237, 0.15);
-    border: 1px solid var(--accent);
-    padding: 0.3rem 0.8rem;
-    border-radius: 0.5rem;
-    font-weight: 500;
-    color: var(--accent);
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.7rem;
-}
-
-.btn-save-score:hover {
-    background: var(--accent);
-    color: white;
-}
 
 /* ========== ПОДВАЛ ========== */
 .modern-footer {
@@ -507,11 +328,13 @@ body {
     padding: 2rem 2rem 1.5rem;
     background: linear-gradient(180deg, #0f1117 0%, #0a0c10 100%);
     border-top: 1px solid var(--border-dim);
+    position: relative;
 }
 
 .modern-footer::before {
     content: '';
     position: absolute;
+    top: 0;
     left: 0;
     right: 0;
     height: 1px;
@@ -642,27 +465,16 @@ body {
         padding: 0 1rem;
     }
     
-    .tournament-header {
-        flex-direction: column;
+    .bracket {
+        gap: 1.5rem;
     }
     
-    .tournament-meta {
-        flex-direction: column;
-        gap: 0.5rem;
+    .match {
+        width: 220px;
     }
     
-    .playoff-bracket {
-        flex-direction: column;
-    }
-    
-    .groups-container,
-    .groups-manage {
-        grid-template-columns: 1fr;
-    }
-    
-    .match-manage {
-        flex-direction: column;
-        gap: 0.5rem;
+    .team {
+        font-size: 0.75rem;
     }
     
     .modern-footer {
@@ -683,117 +495,202 @@ body {
     }
 }
 
-/* ========== УЧАСТНИКИ ========== */
-.participants-section {
-    background: var(--bg-card);
-    border-radius: 1.5rem;
-    padding: 1.5rem;
-    border: 1px solid var(--border-dim);
-    margin-bottom: 1.5rem;
-}
-
-.participants-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.8rem;
-}
-
-.participant-chip {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-dim);
-    border-radius: 2rem;
-    padding: 0.5rem 1.2rem;
-    font-size: 0.85rem;
-    color: var(--text-primary);
-}
-
-/* ========== УПРАВЛЕНИЕ ========== */
-.manage-section {
-    background: var(--bg-card);
-    border-radius: 1.5rem;
-    padding: 1.5rem;
-    border: 1px solid var(--border-dim);
-}
-
-.playoff-manage {
-    display: flex;
-    gap: 2rem;
+/* ========== ТУРНИРНАЯ СЕТКА ========== */
+.bracket-container {
+    position: relative;
     overflow-x: auto;
-    padding: 1rem 0;
+    padding: 2rem 1rem;
+    min-height: 500px;
 }
 
-.round-manage {
-    flex: 1;
-    min-width: 320px;
-}
-
-.match-manage-card {
-    background: var(--bg-primary);
-    border-radius: 1rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border: 1px solid var(--border-dim);
-}
-
-.match-teams-info {
+.bracket {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-dim);
+    justify-content: center;
+    gap: 5rem;
+    min-width: fit-content;
 }
 
-.match-team-name {
-    font-weight: 500;
-    font-size: 0.9rem;
-}
-
-.match-score-inputs {
-    display: flex;
-    align-items: flex-end;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.score-input-group {
+.round {
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
+    min-width: 280px;
 }
 
-.score-input-group label {
-    font-size: 0.7rem;
+.round-header {
+    text-align: center;
+    padding: 0.5rem 1rem;
+    background: var(--bg-secondary);
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 2rem;
+    white-space: nowrap;
+}
+
+.matches-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    height: 100%;
+    gap: 2rem;
+}
+
+/* ========== КАРТОЧКА МАТЧА ========== */
+.match {
+    background: var(--bg-card);
+    border-radius: 1rem;
+    border: 1px solid var(--border-dim);
+    overflow: hidden;
+    width: 280px;
+    transition: all 0.2s;
+}
+
+.match:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.match.finished {
+    border-color: var(--success);
+}
+
+/* Блок команд */
+.match-teams {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* Команда */
+.team {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.8rem 1rem;
+    transition: all 0.2s;
+    position: relative;
+}
+
+/* Разделительная линия между командами */
+.match-divider-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-dim), transparent);
+    margin: 0;
+}
+
+/* Аватар команды */
+.team-avatar {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(96, 165, 250, 0.1));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.team-avatar i {
+    font-size: 0.9rem;
     color: var(--text-secondary);
 }
 
-.score-input {
-    width: 70px;
-    padding: 0.5rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-dim);
-    border-radius: 0.5rem;
-    color: var(--text-primary);
-    text-align: center;
+/* Название команды */
+.team-name {
+    flex: 1;
     font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.btn-save-score {
-    background: var(--accent);
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    font-weight: 500;
-    color: white;
-    cursor: pointer;
-    transition: all 0.2s;
+/* Победитель */
+.team.winner {
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), transparent);
+    border-left: 3px solid var(--success);
+}
+
+.team.winner .team-name {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.team.winner .team-avatar {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+.team.winner .team-avatar i {
+    color: var(--success);
+}
+
+/* Проигравший */
+.team.loser {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.05), transparent);
+    border-left: 3px solid var(--danger);
+    opacity: 0.7;
+}
+
+.team.loser .team-name {
+    color: var(--danger);
+    text-decoration: line-through;
+}
+
+.team.loser .team-avatar {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.team.loser .team-avatar i {
+    color: var(--danger);
+}
+
+/* Бейджи победителя и проигравшего */
+.winner-badge {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--success), #059669);
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    gap: 0.3rem;
-    font-size: 0.8rem;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
-.btn-save-score:hover {
-    background: var(--accent-hover);
-    transform: translateY(-2px);
+.winner-badge i {
+    font-size: 0.7rem;
+    color: white;
+}
+
+.loser-badge {
+    width: 24px;
+    height: 24px;
+    background: rgba(239, 68, 68, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.loser-badge i {
+    font-size: 0.7rem;
+    color: var(--danger);
+}
+
+/* Статус матча */
+.match-status {
+    padding: 0.5rem;
+    text-align: center;
+    border-top: 1px solid var(--border-dim);
+    font-size: 0.7rem;
+    background: var(--bg-secondary);
+}
+
+.status-finished {
+    color: var(--success);
+}
+
+.status-pending {
+    color: var(--text-secondary);
 }
