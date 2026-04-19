@@ -48,6 +48,7 @@ public class Tournament {
     @JoinColumn(name = "\"organizerId\"", nullable = false)
     private User organizer;
 
+    
     @Column(name = "\"startDate\"", nullable = false)
     private LocalDateTime startDate;
 

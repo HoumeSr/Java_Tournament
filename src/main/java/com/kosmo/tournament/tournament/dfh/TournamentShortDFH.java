@@ -21,6 +21,7 @@ public class TournamentShortDFH {
     public String getOrganizerUsername() { return organizerUsername; }
     public String getImageUrl() { return imageUrl; }
 
+    
     public void setId(Long id) { this.id = id; }
     public void setTitle(String title) { this.title = title; }
     public void setStatus(String status) { this.status = status; }

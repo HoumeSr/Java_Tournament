@@ -83,6 +83,7 @@ public class TournamentService {
     public TournamentFullDFH createTournament(CreateTournamentDFH dfh, String username) {
         validateCreateTournament(dfh);
 
+        
         User organizer = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 

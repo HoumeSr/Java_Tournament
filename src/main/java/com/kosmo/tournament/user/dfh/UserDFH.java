@@ -15,6 +15,7 @@ public class UserDFH {
     public UserDFH() {
     }
 
+    
     public Long getUserId() { return userId; }
     public String getUsername() { return username; }
     public String getEmail() { return email; }

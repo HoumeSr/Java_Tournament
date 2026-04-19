@@ -51,6 +51,7 @@ public class UserService {
         return count != null ? count : 0;
     }
 
+    
     private Integer getWinPercent(Long userId) {
         String sql = """
             SELECT COALESCE(
