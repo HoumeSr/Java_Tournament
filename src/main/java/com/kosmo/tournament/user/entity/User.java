@@ -74,6 +74,7 @@ public class User {
     public Boolean getEnabled() { return enabled; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public String getCountry() { return country; }
+    public String getImageUrl() {return imageUrl; }
 
     // Сеттеры
     public void setId(Long id) { this.id = id; }
@@ -84,6 +85,7 @@ public class User {
     public void setEnabled(Boolean enabled) { this.enabled = enabled; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setCountry(String country) { this.country = country; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
     @Override
     public boolean equals(Object o) {
