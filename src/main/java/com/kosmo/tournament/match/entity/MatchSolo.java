@@ -79,8 +79,8 @@ public class MatchSolo {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof MatchSolo matchSolo)) return false;
-        return Objects.equals(id, matchSolo.id);
+        if (!(o instanceof MatchSolo that)) return false;
+        return Objects.equals(id, that.id);
     }
 
     @Override
