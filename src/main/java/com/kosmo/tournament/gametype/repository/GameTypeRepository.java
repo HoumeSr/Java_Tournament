@@ -11,4 +11,5 @@ public interface GameTypeRepository extends JpaRepository<GameType, Long> {
     Optional<GameType> findByCode(String code);
     List<GameType> findByIsActiveTrue();
     boolean existsByCode(String code);
+    boolean existsByName(String name);
 }
