@@ -13,4 +13,7 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
     List<Tournament> findByOrganizerId(Long organizerId);
     List<Tournament> findByParticipantType(String participantType);
     List<Tournament> findByGameTypeId(Long gameTypeId);
+
+    List<Tournament> findAllByOrderByCreatedAtDesc();
+    List<Tournament> findByTitleContainingIgnoreCase(String title);
 }
