@@ -13,44 +13,58 @@ public class UserService {
     private final UserRepository userRepository;
     private final JdbcTemplate jdbcTemplate;
 
-    public UserService(UserRepository userRepository,
-                       JdbcTemplate jdbcTemplate) {
+    public UserService(UserRepository userRepository, JdbcTemplate jdbcTemplate) {
         this.userRepository = userRepository;
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public UserDFH getUserProfile(Long requestedUserId, String currentUsername) {
+    public UserDFH getUserDFH(Long requestedUserId, String currentUsername) {
         User requestedUser = userRepository.findById(requestedUserId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         boolean owner = currentUsername != null
                 && currentUsername.equals(requestedUser.getUsername());
 
-        Integer countMatch = getUserCountMatch(requestedUserId);
+        UserDFH dfh = new UserDFH();
+        dfh.setUserId(requestedUser.getId());
+        dfh.setUsername(requestedUser.getUsername());
+        dfh.setEmail(owner ? requestedUser.getEmail() : null);
+        dfh.setRole(requestedUser.getRole());
+        dfh.setCountry(requestedUser.getCountry());
+        dfh.setEnabled(requestedUser.getEnabled());
+        dfh.setImageUrl(requestedUser.getImageUrl());
+        dfh.setMatchCount(getMatchCount(requestedUser.getId()));
+        dfh.setWinPercent(getWinPercent(requestedUser.getId()));
+        dfh.setOwner(owner);
 
-        UserDFH response = new UserDFH();
-        response.setUserId(requestedUser.getId());
-        response.setUsername(requestedUser.getUsername());
-        response.setEmail(owner ? requestedUser.getEmail() : null);
-        response.setRole(requestedUser.getRole());
-        response.setCountry(requestedUser.getCountry());
-        response.setEnabled(requestedUser.getEnabled());
-        response.setImageUrl(requestedUser.getImageUrl());
-        response.setCountMatch(countMatch);
-        response.setPercentWin(percentWin);
-        response.setOwner(owner);
-
-        return response;
+        return dfh;
     }
 
-    private Integer getUserCountMatch(Long userId) {
+    private Integer getMatchCount(Long userId) {
         String sql = """
-            SELECT COALESCE(MAX(ug.rating), 0)
-            FROM "UserGames" ug
-            WHERE ug."userId" = ?
+            SELECT COUNT(*)
+            FROM "MatchSolo"
+            WHERE "player1Id" = ? OR "player2Id" = ?
         """;
 
-        Integer rating = jdbcTemplate.queryForObject(sql, Integer.class, userId);
-        return rating != null ? rating : 0;
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, userId, userId);
+        return count != null ? count : 0;
+    }
+
+    private Integer getWinPercent(Long userId) {
+        String sql = """
+            SELECT COALESCE(
+                ROUND(
+                    100.0 * SUM(CASE WHEN "winnerPlayerId" = ? THEN 1 ELSE 0 END)
+                    / NULLIF(COUNT(*), 0)
+                ),
+                0
+            )
+            FROM "MatchSolo"
+            WHERE "player1Id" = ? OR "player2Id" = ?
+        """;
+
+        Integer winPercent = jdbcTemplate.queryForObject(sql, Integer.class, userId, userId, userId);
+        return winPercent != null ? winPercent : 0;
     }
 }
