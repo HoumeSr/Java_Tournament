@@ -8,9 +8,9 @@ public class UserDFH {
     private String country;
     private Boolean enabled;
     private String imageUrl;
-    private Integer countMatch;
+    private Integer matchCount;
+    private Integer winPercent;
     private boolean owner;
-    private Integer percentWin;
 
     public UserDFH() {
     }
@@ -22,8 +22,8 @@ public class UserDFH {
     public String getCountry() { return country; }
     public Boolean getEnabled() { return enabled; }
     public String getImageUrl() { return imageUrl; }
-    public Integer getCountMatch() { return countMatch; }
-    public Integer getPercentWin() { return percentWin; }
+    public Integer getMatchCount() { return matchCount; }
+    public Integer getWinPercent() { return winPercent; }
     public boolean isOwner() { return owner; }
 
     public void setUserId(Long userId) { this.userId = userId; }
@@ -33,7 +33,7 @@ public class UserDFH {
     public void setCountry(String country) { this.country = country; }
     public void setEnabled(Boolean enabled) { this.enabled = enabled; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-    public void setCountMatch(Integer countMatch) { this.countMatch = countMatch; }
-    public void setPercentWin(Integer percentWin) { this.percentWin = percentWin; }
+    public void setMatchCount(Integer matchCount) { this.matchCount = matchCount; }
+    public void setWinPercent(Integer winPercent) { this.winPercent = winPercent; }
     public void setOwner(boolean owner) { this.owner = owner; }
 }
