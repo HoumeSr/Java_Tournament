@@ -15,6 +15,8 @@
     --text-primary: #f1f5f9;
     --text-secondary: #a1a9b8;
     --danger: #ef4444;
+    --success: #10b981;
+    --warning: #f59e0b;
 }
 
 body {
@@ -24,7 +26,7 @@ body {
     line-height: 1.5;
 }
 
-/* ========== НАВИГАЦИОННАЯ ПАНЕЛЬ (СТАТИЧНАЯ) ========== */
+/* ========== НАВИГАЦИОННАЯ ПАНЕЛЬ ========== */
 .navbar {
     position: sticky;
     top: 0;
@@ -148,6 +150,9 @@ body {
     cursor: pointer;
     transition: all 0.2s;
     color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .cat-btn.active-cat {
@@ -161,6 +166,19 @@ body {
     background: #1e293b;
     border-color: #475569;
     color: white;
+}
+
+.category-count {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-left: 6px;
+}
+
+.cat-btn.active-cat .category-count {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 /* ========== ЗАГОЛОВОК ТУРНИРОВ ========== */
@@ -183,6 +201,33 @@ body {
     padding: 0.2rem 0.7rem;
     border-radius: 30px;
     font-size: 0.8rem;
+}
+
+.tournaments-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn-create-tournament-header {
+    background: linear-gradient(135deg, var(--accent), #6d28d9);
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 40px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.btn-create-tournament-header:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
 }
 
 /* ========== СЕТКА КАРТОЧЕК ТУРНИРОВ ========== */
@@ -222,17 +267,34 @@ body {
     padding: 0.8rem;
 }
 
-.category-badge {
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
-    padding: 0.25rem 0.9rem;
-    border-radius: 40px;
-    font-size: 0.7rem;
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #ddd;
-    border: 0.5px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+}
+
+.status-badge.open {
+    background: var(--success);
+    color: white;
+}
+
+.status-badge.in-progress {
+    background: var(--warning);
+    color: white;
+}
+
+.status-badge.finished {
+    background: #6b7280;
+    color: white;
+}
+
+.status-badge.draft {
+    background: #6b7280;
+    color: white;
 }
 
 .card-content {
@@ -247,24 +309,26 @@ body {
     line-height: 1.3;
 }
 
-.tourney-details {
+.tourney-meta {
     display: flex;
-    gap: 1rem;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    margin: 0.75rem 0;
+    gap: 8px;
+    margin: 8px 0;
     flex-wrap: wrap;
 }
 
-.detail-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
+.meta-badge {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #a0a0a0;
 }
 
-.prize {
-    color: #facc15;
-    font-weight: 600;
+.organizer {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 8px;
 }
 
 .card-footer {
@@ -282,6 +346,11 @@ body {
     padding: 0.25rem 0.8rem;
     border-radius: 50px;
     cursor: pointer;
+    transition: 0.2s;
+}
+
+.register-badge:hover {
+    background: rgba(124, 58, 237, 0.4);
 }
 
 .arrow-link {
@@ -302,7 +371,62 @@ body {
     color: var(--text-secondary);
 }
 
-/* ========== СОВРЕМЕННЫЙ ПОДВАЛ ========== */
+/* ========== ПРОФИЛЬ ИКОНКА ========== */
+.profile-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(96, 165, 250, 0.1));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid rgba(124, 58, 237, 0.3);
+}
+
+.profile-icon:hover {
+    transform: scale(1.05);
+    background: rgba(124, 58, 237, 0.25);
+    border-color: var(--accent);
+}
+
+.profile-icon i {
+    font-size: 1.3rem;
+    color: var(--text-primary);
+}
+
+.profile-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.avatar-mini {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* ========== TOAST УВЕДОМЛЕНИЯ ========== */
+.demo-toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #1f2937;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+/* ========== ПОДВАЛ ========== */
 .modern-footer {
     margin-top: 4rem;
     padding: 2rem 2rem 1.5rem;
@@ -384,30 +508,6 @@ body {
     border: 1px solid rgba(124, 58, 237, 0.2);
 }
 
-/* Индивидуальные цвета при наведении */
-.social-icon:hover {
-    transform: translateY(-4px);
-}
-
-.social-icon:hover i.fa-vk {
-    color: #0077ff;
-}
-
-.social-icon:hover i.fa-telegram-plane {
-    color: #26a5e4;
-}
-
-.social-icon:hover i.fa-github {
-    color: #ffffff;
-}
-
-.social-icon:hover {
-    background: rgba(124, 58, 237, 0.15);
-    border-color: rgba(124, 58, 237, 0.5);
-    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.2);
-}
-
-/* Альтернативный вариант - градиент при наведении */
 .social-icon.vk:hover {
     background: #0077ff;
     border-color: #0077ff;
@@ -419,37 +519,11 @@ body {
     border-color: #5865f2;
     color: white;
 }
+
 .social-icon.gh:hover {
     background: #ffffff;
     border-color: #ffffff;
     color: #0a0c10;
-}
-
-/* Убираем изменение цвета иконки, если фон меняется */
-.social-icon.vk:hover i,
-.social-icon.tg:hover i,
-.social-icon.gh:hover i {
-    color: inherit;
-}
-
-/* Адаптив */
-@media (max-width: 700px) {
-    .modern-footer {
-        padding: 1.5rem;
-    }
-    
-    .footer-content {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .footer-info {
-        align-items: center;
-    }
-    
-    .footer-social {
-        justify-content: center;
-    }
 }
 
 /* ========== АДАПТИВНОСТЬ ========== */
@@ -470,119 +544,21 @@ body {
     .container {
         padding: 0 1.2rem;
     }
-}
-
-/* ========== ПРОФИЛЬ ИКОНКА ========== */
-.profile-icon {
-    width: 44px;
-    height: 44px;
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(96, 165, 250, 0.1));
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(124, 58, 237, 0.3);
-    position: relative;
-}
-
-.profile-icon:hover {
-    transform: scale(1.05);
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(96, 165, 250, 0.2));
-    border-color: var(--accent);
-    box-shadow: 0 0 15px rgba(124, 58, 237, 0.3);
-}
-
-.profile-icon i {
-    font-size: 1.3rem;
-    color: var(--text-primary);
-}
-
-.profile-badge {
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    width: 14px;
-    height: 14px;
-    background: #10b981;
-    border-radius: 50%;
-    border: 2px solid var(--bg-primary);
-}
-
-/* Анимация для иконки профиля */
-@keyframes pulse-green {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.2); opacity: 0.7; }
-}
-
-.profile-badge {
-    animation: pulse-green 2s infinite;
-}
-
-/* ========== ПРОФИЛЬ ИКОНКА В ШАПКЕ ========== */
-.profile-icon {
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(96, 165, 250, 0.1));
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: 1px solid rgba(124, 58, 237, 0.3);
-}
-
-.profile-icon:hover {
-    transform: scale(1.05);
-    background: rgba(124, 58, 237, 0.25);
-    border-color: var(--accent);
-}
-
-.profile-icon i {
-    font-size: 1.3rem;
-    color: var(--text-primary);
-}
-
-.profile-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-}
-
-/* Мини-аватар */
-.avatar-mini {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-}
-
-.tournaments-actions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.btn-create-tournament-header {
-    background: linear-gradient(135deg, var(--accent), #6d28d9);
-    border: none;
-    padding: 0.5rem 1.2rem;
-    border-radius: 40px;
-    font-weight: 600;
-    color: white;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-    text-decoration: none;
-}
-
-.btn-create-tournament-header:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
+    
+    .modern-footer {
+        padding: 1.5rem;
+    }
+    
+    .footer-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .footer-info {
+        align-items: center;
+    }
+    
+    .footer-social {
+        justify-content: center;
+    }
 }

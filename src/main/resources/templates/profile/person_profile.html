@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
@@ -34,13 +34,13 @@
                     <div class="avatar-large" id="avatarPreview">
                         <i class="fas fa-user-circle"></i>
                     </div>
-                    <button class="avatar-edit-btn" id="changeAvatarBtn" title="Сменить фото">
+                    <button class="avatar-edit-btn" id="changeAvatarBtn" title="Сменить фото" style="display: none;">
                         <i class="fas fa-camera"></i>
                     </button>
                 </div>
-                <h2 class="profile-username" th:text="${session.username}">Username</h2>
-                <p class="profile-member-since">Участник с <span th:text="${#temporals.format(user.createdAt, 'dd.MM.yyyy')}">01.01.2025</span></p>
-                <button class="btn-edit-sidebar" id="editProfileBtn">
+                <h2 class="profile-username" id="profileUsername">Загрузка...</h2>
+                <p class="profile-member-since">Участник с <span id="memberSince">--</span></p>
+                <button class="btn-edit-sidebar" id="editProfileBtn" style="display: none;">
                     <i class="fas fa-pen"></i> Редактировать
                 </button>
             </div>
@@ -62,6 +62,12 @@
                     <span class="stat-value" id="rating">1200</span>
                 </div>
             </div>
+            
+            <!-- Список игр пользователя (UserGameStatsDFH) -->
+            <div class="games-card" id="gamesCard" style="display: none;">
+                <h3>🎮 Игры</h3>
+                <div class="games-list" id="gamesList"></div>
+            </div>
         </div>
 
         <!-- Правая колонка -->
@@ -70,15 +76,15 @@
             <div class="info-card" id="viewMode">
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-id-card"></i> ID пользователя</div>
-                    <div class="info-value" th:text="${session.userId}">#10042</div>
+                    <div class="info-value" id="userId">--</div>
                 </div>
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-user"></i> Имя пользователя</div>
-                    <div class="info-value" th:text="${session.username}">Username</div>
+                    <div class="info-value" id="displayUsername">--</div>
                 </div>
-                <div class="info-row">
+                <div class="info-row" id="emailRow" style="display: none;">
                     <div class="info-label"><i class="fas fa-envelope"></i> Email</div>
-                    <div class="info-value" th:text="${user.email}">user@example.com</div>
+                    <div class="info-value" id="displayEmail">--</div>
                 </div>
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-globe"></i> Страна</div>
@@ -86,11 +92,15 @@
                 </div>
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-calendar-alt"></i> Дата регистрации</div>
-                    <div class="info-value" th:text="${#temporals.format(user.createdAt, 'dd MMMM yyyy, HH:mm')}">15 января 2025, 12:00</div>
+                    <div class="info-value" id="createdAt">--</div>
                 </div>
                 <div class="info-row full-width">
                     <div class="info-label"><i class="fas fa-info-circle"></i> Дополнительная информация</div>
                     <div class="info-value bio-text" id="displayBio">Пока ничего не добавлено</div>
+                </div>
+                <div class="info-row" id="roleRow" style="display: none;">
+                    <div class="info-label"><i class="fas fa-shield-alt"></i> Роль</div>
+                    <div class="info-value" id="displayRole">--</div>
                 </div>
             </div>
 
@@ -99,11 +109,11 @@
                 <form id="profileForm">
                     <div class="edit-row">
                         <label><i class="fas fa-user"></i> Имя пользователя</label>
-                        <input type="text" id="editUsername" class="edit-input" th:value="${session.username}" required>
+                        <input type="text" id="editUsername" class="edit-input" required>
                     </div>
                     <div class="edit-row">
                         <label><i class="fas fa-envelope"></i> Email</label>
-                        <input type="email" id="editEmail" class="edit-input" th:value="${user.email}" required>
+                        <input type="email" id="editEmail" class="edit-input" required>
                     </div>
                     <div class="edit-row">
                         <label><i class="fas fa-globe"></i> Страна</label>
@@ -141,7 +151,7 @@
             </div>
 
             <!-- Кнопка смены пароля -->
-            <div class="password-card">
+            <div class="password-card" id="passwordCard" style="display: none;">
                 <div class="password-info">
                     <i class="fas fa-lock"></i>
                     <div>
@@ -155,7 +165,7 @@
             </div>
 
             <!-- Кнопка выхода -->
-            <div class="logout-card">
+            <div class="logout-card" id="logoutCard" style="display: none;">
                 <button class="btn-logout" id="logoutBtn">
                     <i class="fas fa-sign-out-alt"></i> Выйти из аккаунта
                 </button>
@@ -182,18 +192,6 @@
 
 <script th:src="@{/js/profile.js}"></script>
 <div id="demoToast" class="demo-toast"></div>
-
-<!-- Передаём данные с бэкенда в JS -->
-<script th:inline="javascript">
-    /*<![CDATA[*/
-    window.userData = {
-        id: /*[[${session.userId}]]*/ null,
-        username: /*[[${session.username}]]*/ '',
-        email: /*[[${user.email}]]*/ '',
-        createdAt: /*[[${user.createdAt}]]*/ null
-    };
-    /*]]>*/
-</script>
 
 <!-- Модальное окно смены пароля -->
 <div id="passwordModal" class="modal" style="display: none;">
@@ -224,6 +222,11 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Передаём ID текущего пользователя из сессии
+    window.currentUserId = /*[[${session.userId}]]*/ null;
+</script>
 
 </body>
 </html>
