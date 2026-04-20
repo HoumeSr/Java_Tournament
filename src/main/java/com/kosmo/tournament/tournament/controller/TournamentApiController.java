@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kosmo.tournament.tournament.dfh.CreateTournamentDFH;
-import com.kosmo.tournament.tournament.dfh.TournamentFullDFH;
-import com.kosmo.tournament.tournament.dfh.TournamentShortDFH;
+import com.kosmo.tournament.tournament.dto.CreateTournamentDTO;
+import com.kosmo.tournament.tournament.dto.TournamentFullDTO;
+import com.kosmo.tournament.tournament.dto.TournamentShortDTO;
 import com.kosmo.tournament.tournament.service.TournamentService;
 
 @RestController
@@ -33,7 +33,7 @@ public class TournamentApiController {
      * GET /api/tournaments - список всех турниров (TournamentShortDFH)
      */
     @GetMapping
-    public List<TournamentShortDFH> getAllTournaments() {
+    public List<TournamentShortDTO> getAllTournaments() {
         return tournamentService.getAllTournaments();
     }
 
@@ -41,7 +41,7 @@ public class TournamentApiController {
      * GET /api/tournaments/{id} - полная информация о турнире (TournamentFullDFH)
      */
     @GetMapping("/{id}")
-    public TournamentFullDFH getTournament(@PathVariable Long id, Authentication authentication) {
+    public TournamentFullDTO getTournament(@PathVariable Long id, Authentication authentication) {
         String currentUsername = authentication != null ? authentication.getName() : null;
         return tournamentService.getTournamentById(id, currentUsername);
     }
@@ -50,7 +50,7 @@ public class TournamentApiController {
      * GET /api/tournaments/my - мои турниры (как организатор)
      */
     @GetMapping("/my")
-    public List<TournamentShortDFH> getMyTournaments(Authentication authentication) {
+    public List<TournamentShortDTO> getMyTournaments(Authentication authentication) {
         if (authentication == null) {
             return List.of();
         }
@@ -61,7 +61,7 @@ public class TournamentApiController {
      * GET /api/tournaments/status/{status} - турниры по статусу
      */
     @GetMapping("/status/{status}")
-    public List<TournamentShortDFH> getTournamentsByStatus(@PathVariable String status) {
+    public List<TournamentShortDTO> getTournamentsByStatus(@PathVariable String status) {
         return tournamentService.getTournamentsByStatus(status);
     }
 
@@ -69,7 +69,7 @@ public class TournamentApiController {
      * GET /api/tournaments/gametype/{gameTypeId} - турниры по типу игры
      */
     @GetMapping("/gametype/{gameTypeId}")
-    public List<TournamentShortDFH> getTournamentsByGameType(@PathVariable Long gameTypeId) {
+    public List<TournamentShortDTO> getTournamentsByGameType(@PathVariable Long gameTypeId) {
         return tournamentService.getTournamentsByGameType(gameTypeId);
     }
 
@@ -77,7 +77,7 @@ public class TournamentApiController {
      * GET /api/tournaments/search - поиск по названию
      */
     @GetMapping("/search")
-    public List<TournamentShortDFH> searchTournaments(@RequestParam String title) {
+    public List<TournamentShortDTO> searchTournaments(@RequestParam String title) {
         return tournamentService.searchByTitle(title);
     }
 
@@ -85,7 +85,7 @@ public class TournamentApiController {
      * POST /api/tournaments - создание турнира (принимает CreateTournamentDFH)
      */
     @PostMapping
-    public ResponseEntity<?> createTournament(@RequestBody CreateTournamentDFH createDFH, 
+    public ResponseEntity<?> createTournament(@RequestBody CreateTournamentDTO createDFH, 
                                                Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -93,7 +93,7 @@ public class TournamentApiController {
         }
 
         try {
-            TournamentFullDFH created = tournamentService.createTournament(createDFH, authentication.getName());
+            TournamentFullDTO created = tournamentService.createTournament(createDFH, authentication.getName());
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(Map.of("success", true, "tournament", created, "message", "Турнир успешно создан"));
         } catch (RuntimeException e) {
