@@ -1,3 +1,6 @@
+// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+let currentUserDFH = null;
+
 // ========== УВЕДОМЛЕНИЯ ==========
 function showToast(message, isError = false) {
     const toast = document.getElementById('demoToast');
@@ -14,117 +17,113 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
-// ========== АВТОРИЗАЦИЯ В ШАПКЕ ==========
-function updateAuthButtons() {
-    const authContainer = document.getElementById('authButtons');
-    if (!authContainer) return;
+// ========== ЗАГРУЗКА ПРОФИЛЯ ЧЕРЕЗ API ==========
+async function loadUserProfile() {
+    const userId = window.currentUserId;
     
-    fetch('/api/auth/check')
-        .then(response => response.json())
-        .then(data => {
-            if (data.authenticated) {
-                const savedAvatar = localStorage.getItem('userAvatar');
-                
-                authContainer.innerHTML = `
-                    <div class="profile-icon" id="profileIcon">
-                        ${savedAvatar ? `<img src="${savedAvatar}" class="avatar-mini">` : '<i class="fas fa-user-circle"></i>'}
-                    </div>
-                `;
-                
-                const profileIcon = document.getElementById('profileIcon');
-                if (profileIcon) {
-                    if (savedAvatar) {
-                        profileIcon.style.padding = '0';
-                        profileIcon.style.overflow = 'hidden';
-                    }
-                    profileIcon.addEventListener('click', () => {
-                        window.location.href = '/profile';
-                    });
-                }
-            } else {
-                authContainer.innerHTML = `
-                    <button class="btn-outline" id="registerBtn">Регистрация</button>
-                    <button class="btn-primary" id="loginBtn">Вход</button>
-                `;
-                document.getElementById('registerBtn')?.addEventListener('click', () => {
-                    window.location.href = '/register';
-                });
-                document.getElementById('loginBtn')?.addEventListener('click', () => {
-                    window.location.href = '/login';
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка:', error);
-            authContainer.innerHTML = `
-                <button class="btn-outline" id="registerBtn">Регистрация</button>
-                <button class="btn-primary" id="loginBtn">Вход</button>
-            `;
-            document.getElementById('registerBtn')?.addEventListener('click', () => {
-                window.location.href = '/register';
-            });
-            document.getElementById('loginBtn')?.addEventListener('click', () => {
-                window.location.href = '/login';
-            });
-        });
-}
-
-// ========== ЛОКАЛЬНЫЕ ДАННЫЕ ПРОФИЛЯ ==========
-let profileData = {
-    country: localStorage.getItem('userCountry') || '',
-    bio: localStorage.getItem('userBio') || ''
-};
-
-function loadSavedData() {
-    const savedCountry = localStorage.getItem('userCountry');
-    const savedBio = localStorage.getItem('userBio');
-    
-    if (savedCountry) {
-        document.getElementById('displayCountry').textContent = savedCountry;
-        profileData.country = savedCountry;
+    if (!userId) {
+        showToast('❌ Пользователь не авторизован', true);
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 1500);
+        return;
     }
     
-    if (savedBio) {
-        document.getElementById('displayBio').textContent = savedBio;
-        profileData.bio = savedBio;
-    }
-    
-    const editCountry = document.getElementById('editCountry');
-    const editBio = document.getElementById('editBio');
-    
-    if (editCountry && savedCountry) {
-        for (let option of editCountry.options) {
-            if (option.value === savedCountry) {
-                option.selected = true;
-                break;
-            }
+    try {
+        const response = await fetch(`/api/users/${userId}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
-    }
-    
-    if (editBio && savedBio) {
-        editBio.value = savedBio;
+        
+        const userDFH = await response.json();
+        currentUserDFH = userDFH;
+        
+        renderProfile(userDFH);
+        
+        // Показываем кнопки редактирования только если owner = true
+        if (userDFH.owner) {
+            document.getElementById('editProfileBtn').style.display = 'flex';
+            document.getElementById('changeAvatarBtn').style.display = 'flex';
+            document.getElementById('emailRow').style.display = 'flex';
+            document.getElementById('roleRow').style.display = 'flex';
+            document.getElementById('passwordCard').style.display = 'flex';
+            document.getElementById('logoutCard').style.display = 'block';
+        }
+        
+    } catch (error) {
+        console.error('Ошибка загрузки профиля:', error);
+        showToast('❌ Не удалось загрузить профиль', true);
     }
 }
 
-function saveProfileDataLocally(country, bio) {
-    if (country) {
-        localStorage.setItem('userCountry', country);
-        document.getElementById('displayCountry').textContent = country;
-        profileData.country = country;
-    } else {
-        localStorage.removeItem('userCountry');
-        document.getElementById('displayCountry').textContent = 'Не указана';
-        profileData.country = '';
+// ========== ОТОБРАЖЕНИЕ ПРОФИЛЯ ==========
+function renderProfile(userDFH) {
+    // Левая колонка
+    document.getElementById('profileUsername').textContent = userDFH.username;
+    
+    // Форматируем дату регистрации
+    if (userDFH.createdAt) {
+        const date = new Date(userDFH.createdAt);
+        document.getElementById('memberSince').textContent = date.toLocaleDateString('ru-RU');
     }
     
-    if (bio) {
-        localStorage.setItem('userBio', bio);
-        document.getElementById('displayBio').textContent = bio;
-        profileData.bio = bio;
-    } else {
-        localStorage.removeItem('userBio');
-        document.getElementById('displayBio').textContent = 'Пока ничего не добавлено';
-        profileData.bio = '';
+    // Статистика
+    document.getElementById('tournamentsCount').textContent = userDFH.totalTournaments || 0;
+    document.getElementById('winsCount').textContent = userDFH.totalWins || 0;
+    document.getElementById('rating').textContent = userDFH.rating || 1200;
+    
+    // Игры пользователя (UserGameStatsDFH)
+    if (userDFH.games && userDFH.games.length > 0) {
+        const gamesCard = document.getElementById('gamesCard');
+        const gamesList = document.getElementById('gamesList');
+        gamesList.innerHTML = '';
+        
+        userDFH.games.forEach(game => {
+            const gameItem = document.createElement('div');
+            gameItem.className = 'game-item';
+            gameItem.innerHTML = `
+                <span class="game-name">${escapeHtml(game.gameName)}</span>
+                <div class="game-stats">
+                    <span class="match-count">${game.matchCount} матчей</span>
+                    <span class="win-percent">${game.winPercent}%</span>
+                </div>
+            `;
+            gamesList.appendChild(gameItem);
+        });
+        
+        gamesCard.style.display = 'block';
+    }
+    
+    // Правая колонка - режим просмотра
+    document.getElementById('userId').textContent = userDFH.userId;
+    document.getElementById('displayUsername').textContent = userDFH.username;
+    
+    if (userDFH.owner) {
+        document.getElementById('displayEmail').textContent = userDFH.email || '—';
+    }
+    
+    document.getElementById('displayCountry').textContent = userDFH.country || 'Не указана';
+    
+    if (userDFH.createdAt) {
+        const date = new Date(userDFH.createdAt);
+        document.getElementById('createdAt').textContent = date.toLocaleString('ru-RU');
+    }
+    
+    document.getElementById('displayBio').textContent = userDFH.bio || 'Пока ничего не добавлено';
+    
+    if (userDFH.owner && userDFH.role) {
+        const roleMap = {
+            'PLAYER': 'Игрок',
+            'ORGANIZER': 'Организатор',
+            'ADMIN': 'Администратор'
+        };
+        document.getElementById('displayRole').textContent = roleMap[userDFH.role] || userDFH.role;
+    }
+    
+    // Загружаем аватар если есть
+    if (userDFH.imageUrl) {
+        setAvatar(userDFH.imageUrl);
     }
 }
 
@@ -139,6 +138,24 @@ function initProfile() {
     // Открыть форму редактирования
     if (editBtn && cancelBtn && viewMode && editMode) {
         editBtn.addEventListener('click', () => {
+            // Заполняем форму текущими данными
+            if (currentUserDFH) {
+                document.getElementById('editUsername').value = currentUserDFH.username || '';
+                document.getElementById('editEmail').value = currentUserDFH.email || '';
+                
+                if (currentUserDFH.country) {
+                    const countrySelect = document.getElementById('editCountry');
+                    for (let option of countrySelect.options) {
+                        if (option.value === currentUserDFH.country) {
+                            option.selected = true;
+                            break;
+                        }
+                    }
+                }
+                
+                document.getElementById('editBio').value = currentUserDFH.bio || '';
+            }
+            
             viewMode.style.display = 'none';
             editMode.style.display = 'block';
         });
@@ -149,15 +166,15 @@ function initProfile() {
         });
     }
     
-    // Сохранение изменений профиля
+    // Сохранение изменений профиля - отправляем UpdateUserDFH
     if (profileForm) {
         profileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const username = document.getElementById('editUsername').value.trim();
             const email = document.getElementById('editEmail').value.trim();
-            const country = document.getElementById('editCountry').value;
-            const bio = document.getElementById('editBio').value.trim();
+            const country = document.getElementById('editCountry').value || null;
+            const bio = document.getElementById('editBio').value.trim() || null;
             
             if (!username || !email) {
                 showToast('❌ Имя пользователя и email обязательны', true);
@@ -169,39 +186,33 @@ function initProfile() {
                 return;
             }
             
+            const updateData = {
+                username: username,
+                email: email,
+                country: country,
+                bio: bio
+            };
+            
             try {
-                const formData = new URLSearchParams();
-                formData.append('username', username);
-                formData.append('email', email);
-                if (country) formData.append('country', country);
-                if (bio) formData.append('bio', bio);
-                
-                const response = await fetch('/api/profile/update', {
-                    method: 'POST',
+                const response = await fetch('/api/users/update', {
+                    method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
+                        'Content-Type': 'application/json'
                     },
-                    body: formData
+                    body: JSON.stringify(updateData)
                 });
                 
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Обновляем отображение
-                    document.getElementById('displayUsername').textContent = username;
-                    document.getElementById('displayUsernameField').textContent = username;
-                    document.getElementById('displayEmail').textContent = email;
-                    if (country) document.getElementById('displayCountry').textContent = country;
-                    if (bio) document.getElementById('displayBio').textContent = bio;
-                    
-                    // Сохраняем локально
-                    saveProfileDataLocally(country, bio);
+                if (response.ok) {
+                    const updatedUser = await response.json();
+                    currentUserDFH = updatedUser;
+                    renderProfile(updatedUser);
                     
                     viewMode.style.display = 'block';
                     editMode.style.display = 'none';
-                    showToast('✅ ' + data.message);
+                    showToast('✅ Профиль успешно обновлён');
                 } else {
-                    showToast('❌ ' + data.message, true);
+                    const error = await response.json();
+                    showToast('❌ ' + (error.message || 'Ошибка обновления'), true);
                 }
             } catch (error) {
                 console.error('Ошибка:', error);
@@ -209,8 +220,6 @@ function initProfile() {
             }
         });
     }
-    
-    loadSavedData();
 }
 
 // ========== МОДАЛЬНОЕ ОКНО СМЕНЫ ПАРОЛЯ ==========
@@ -325,7 +334,6 @@ function initPasswordModal() {
     submitPasswordBtn?.addEventListener('click', async () => {
         const currentPassword = document.getElementById('currentPasswordInput').value;
         const newPassword = newPasswordInput.value;
-        const confirmPassword = confirmPasswordInput.value;
         
         if (!currentPassword) {
             showToast('❌ Введите текущий пароль', true);
@@ -346,25 +354,24 @@ function initPasswordModal() {
         submitPasswordBtn.textContent = 'Отправка...';
         
         try {
-            const formData = new URLSearchParams();
-            formData.append('currentPassword', currentPassword);
-            formData.append('newPassword', newPassword);
-            
-            const response = await fetch('/api/profile/change-password', {
+            const response = await fetch('/api/users/change-password', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
+                    'Content-Type': 'application/json'
                 },
-                body: formData
+                body: JSON.stringify({
+                    currentPassword: currentPassword,
+                    newPassword: newPassword
+                })
             });
             
             const data = await response.json();
             
-            if (data.success) {
-                showToast('✅ ' + data.message);
+            if (response.ok && data.success) {
+                showToast('✅ ' + (data.message || 'Пароль успешно изменён'));
                 closePasswordModal();
             } else {
-                showToast('❌ ' + data.message, true);
+                showToast('❌ ' + (data.message || 'Ошибка смены пароля'), true);
             }
         } catch (error) {
             console.error('Ошибка:', error);
@@ -382,47 +389,10 @@ function initPasswordModal() {
     });
 }
 
-// ========== ВЫХОД ИЗ АККАУНТА ==========
-function initLogout() {
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (!logoutBtn) return;
-    
-    logoutBtn.addEventListener('click', async () => {
-        try {
-            const response = await fetch('/api/auth/logout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                localStorage.removeItem('userCountry');
-                localStorage.removeItem('userBio');
-                localStorage.removeItem('userAvatar');
-                
-                showToast('👋 Вы вышли из аккаунта');
-                setTimeout(() => {
-                    window.location.href = data.redirectUrl || '/';
-                }, 500);
-            }
-        } catch (error) {
-            console.error('Ошибка при выходе:', error);
-            showToast('❌ Ошибка при выходе', true);
-        }
-    });
-}
-
 // ========== АВАТАР ==========
-let uploadedImage = null;
-
 function setAvatar(avatarData) {
     const avatarPreview = document.getElementById('avatarPreview');
     const profileIcon = document.getElementById('profileIcon');
-    
-    localStorage.setItem('userAvatar', avatarData);
     
     if (avatarPreview) {
         avatarPreview.innerHTML = '';
@@ -435,27 +405,11 @@ function setAvatar(avatarData) {
         avatarPreview.appendChild(img);
     }
     
-    if (profileIcon) {
-        profileIcon.innerHTML = `<img src="${avatarData}" class="avatar-mini">`;
-        profileIcon.style.padding = '0';
-        profileIcon.style.overflow = 'hidden';
-    }
-}
-
-function resetAvatar() {
-    const avatarPreview = document.getElementById('avatarPreview');
-    const profileIcon = document.getElementById('profileIcon');
-    
-    localStorage.removeItem('userAvatar');
-    
-    if (avatarPreview) {
-        avatarPreview.innerHTML = '<i class="fas fa-user-circle"></i>';
-    }
-    
-    if (profileIcon) {
-        profileIcon.innerHTML = '<i class="fas fa-user-circle"></i>';
-        profileIcon.style.padding = '';
-        profileIcon.style.overflow = '';
+    if (profileIcon && document.querySelector('.profile-icon')) {
+        const icon = document.querySelector('.profile-icon');
+        icon.innerHTML = `<img src="${avatarData}" class="avatar-mini">`;
+        icon.style.padding = '0';
+        icon.style.overflow = 'hidden';
     }
 }
 
@@ -464,43 +418,118 @@ function initAvatarChange() {
     const avatarUpload = document.getElementById('avatarUpload');
     const avatarPreview = document.getElementById('avatarPreview');
     
-    if (!avatarPreview) return;
+    if (!changeAvatarBtn || !avatarUpload) return;
     
-    if (changeAvatarBtn && avatarUpload) {
-        changeAvatarBtn.addEventListener('click', () => avatarUpload.click());
+    changeAvatarBtn.addEventListener('click', () => avatarUpload.click());
+    
+    avatarUpload.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
         
-        avatarUpload.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
+        if (!file.type.match('image/jpeg|image/png|image/gif|image/webp')) {
+            showToast('❌ Поддерживаются JPEG, PNG, GIF, WEBP', true);
+            return;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('❌ Файл не более 5MB', true);
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const avatarBase64 = e.target.result;
             
-            if (!file.type.match('image/jpeg|image/png|image/gif|image/webp')) {
-                showToast('❌ Поддерживаются JPEG, PNG, GIF, WEBP', true);
-                return;
+            try {
+                const response = await fetch('/api/users/avatar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ imageUrl: avatarBase64 })
+                });
+                
+                if (response.ok) {
+                    setAvatar(avatarBase64);
+                    showToast('✅ Аватар обновлён!');
+                } else {
+                    showToast('❌ Ошибка загрузки аватара', true);
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showToast('❌ Ошибка соединения с сервером', true);
             }
-            
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('❌ Файл не более 5MB', true);
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setAvatar(e.target.result);
-                showToast('✅ Аватар обновлён!');
-            };
-            reader.readAsDataURL(file);
-        });
-    }
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// ========== АВТОРИЗАЦИЯ В ШАПКЕ ==========
+function updateAuthButtons() {
+    const authContainer = document.getElementById('authButtons');
+    if (!authContainer) return;
     
-    avatarPreview.addEventListener('dblclick', () => {
-        if (confirm('Сбросить аватар на стандартный?')) {
-            resetAvatar();
-            showToast('🔄 Аватар сброшен');
+    fetch('/api/auth/check')
+        .then(response => response.json())
+        .then(data => {
+            if (data.authenticated) {
+                authContainer.innerHTML = `
+                    <div class="profile-icon" id="profileIcon">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                `;
+                
+                const profileIcon = document.getElementById('profileIcon');
+                if (profileIcon) {
+                    profileIcon.addEventListener('click', () => {
+                        window.location.href = '/profile';
+                    });
+                }
+            } else {
+                authContainer.innerHTML = `
+                    <button class="btn-outline" id="registerBtn">Регистрация</button>
+                    <button class="btn-primary" id="loginBtn">Вход</button>
+                `;
+                document.getElementById('registerBtn')?.addEventListener('click', () => {
+                    window.location.href = '/register';
+                });
+                document.getElementById('loginBtn')?.addEventListener('click', () => {
+                    window.location.href = '/login';
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+        });
+}
+
+// ========== ВЫХОД ИЗ АККАУНТА ==========
+function initLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (!logoutBtn) return;
+    
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast('👋 Вы вышли из аккаунта');
+                setTimeout(() => {
+                    window.location.href = data.redirectUrl || '/';
+                }, 500);
+            }
+        } catch (error) {
+            console.error('Ошибка при выходе:', error);
+            showToast('❌ Ошибка при выходе', true);
         }
     });
-    
-    const savedAvatar = localStorage.getItem('userAvatar');
-    if (savedAvatar) setAvatar(savedAvatar);
 }
 
 // ========== НАВИГАЦИЯ ==========
@@ -512,9 +541,21 @@ function initNavBar() {
     });
 }
 
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+function escapeHtml(str) {
+    if (!str) return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // ========== ЗАПУСК ==========
 document.addEventListener('DOMContentLoaded', () => {
     updateAuthButtons();
+    loadUserProfile();      // ← Загружаем профиль через API
     initProfile();
     initAvatarChange();
     initNavBar();
