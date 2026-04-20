@@ -1,8 +1,7 @@
-package com.kosmo.tournament.gametype.dfh;
+package com.kosmo.tournament.gametype.dto;
 
-public class GameTypeDFH {
+public class CreateGameTypeDTO {
 
-    private Long id;
     private String name;
     private String code;
     private String description;
@@ -10,10 +9,9 @@ public class GameTypeDFH {
     private String imageUrl;
     private Integer maxPlayers;
 
-    public GameTypeDFH() {
+    public CreateGameTypeDTO() {
     }
 
-    public Long getId() { return id; }
     public String getName() { return name; }
     public String getCode() { return code; }
     public String getDescription() { return description; }
@@ -21,7 +19,6 @@ public class GameTypeDFH {
     public String getImageUrl() { return imageUrl; }
     public Integer getMaxPlayers() { return maxPlayers; }
 
-    public void setId(Long id) { this.id = id; }
     public void setName(String name) { this.name = name; }
     public void setCode(String code) { this.code = code; }
     public void setDescription(String description) { this.description = description; }

@@ -1,13 +1,13 @@
-package com.kosmo.tournament.team.dfh;
+package com.kosmo.tournament.team.dto;
 
-public class TeamShortDFH {
+public class TeamShortDTO {
 
     private Long id;
     private String name;
     private String captainUsername;
     private String imageUrl;
 
-    public TeamShortDFH() {
+    public TeamShortDTO() {
     }
 
     public Long getId() { return id; }

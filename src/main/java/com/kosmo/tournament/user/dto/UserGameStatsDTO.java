@@ -1,15 +1,15 @@
-package com.kosmo.tournament.user.dfh;
+package com.kosmo.tournament.user.dto;
 
-public class UserGameStatsDFH {
+public class UserGameStatsDTO {
 
     private String gameName;
     private Integer matchCount;
     private Integer winPercent;
 
-    public UserGameStatsDFH() {
+    public UserGameStatsDTO() {
     }
 
-    public UserGameStatsDFH(String gameName, Integer matchCount, Integer winPercent) {
+    public UserGameStatsDTO(String gameName, Integer matchCount, Integer winPercent) {
         this.gameName = gameName;
         this.matchCount = matchCount;
         this.winPercent = winPercent;

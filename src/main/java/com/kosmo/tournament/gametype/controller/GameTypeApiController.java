@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kosmo.tournament.gametype.dfh.CreateGameTypeDFH;
-import com.kosmo.tournament.gametype.dfh.GameTypeDFH;
-import com.kosmo.tournament.gametype.dfh.UpdateGameTypeDFH;
+import com.kosmo.tournament.gametype.dto.CreateGameTypeDTO;
+import com.kosmo.tournament.gametype.dto.GameTypeDTO;
+import com.kosmo.tournament.gametype.dto.UpdateGameTypeDTO;
 import com.kosmo.tournament.gametype.service.GameTypeService;
 
 @RestController
@@ -26,38 +26,38 @@ public class GameTypeApiController {
     }
 
     @GetMapping
-    public List<GameTypeDFH> getAllGameTypes() {
+    public List<GameTypeDTO> getAllGameTypes() {
         return gameTypeService.getAllGameTypes();
     }
 
     @GetMapping("/active")
-    public List<GameTypeDFH> getActiveGameTypes() {
+    public List<GameTypeDTO> getActiveGameTypes() {
         return gameTypeService.getActiveGameTypes();
     }
 
     @GetMapping("/{id}")
-    public GameTypeDFH getGameTypeById(@PathVariable Long id) {
+    public GameTypeDTO getGameTypeById(@PathVariable Long id) {
         return gameTypeService.getGameTypeById(id);
     }
 
     @PostMapping
-    public GameTypeDFH createGameType(@RequestBody CreateGameTypeDFH dfh) {
+    public GameTypeDTO createGameType(@RequestBody CreateGameTypeDTO dfh) {
         return gameTypeService.createGameType(dfh);
     }
 
     @PutMapping("/{id}")
-    public GameTypeDFH updateGameType(@PathVariable Long id,
-                                      @RequestBody UpdateGameTypeDFH dfh) {
+    public GameTypeDTO updateGameType(@PathVariable Long id,
+                                      @RequestBody UpdateGameTypeDTO dfh) {
         return gameTypeService.updateGameType(id, dfh);
     }
 
     @PostMapping("/{id}/activate")
-    public GameTypeDFH activate(@PathVariable Long id) {
+    public GameTypeDTO activate(@PathVariable Long id) {
         return gameTypeService.activateGameType(id);
     }
 
     @PostMapping("/{id}/deactivate")
-    public GameTypeDFH deactivate(@PathVariable Long id) {
+    public GameTypeDTO deactivate(@PathVariable Long id) {
         return gameTypeService.deactivateGameType(id);
     }
 }

@@ -7,9 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.kosmo.tournament.gametype.entity.GameType;
 import com.kosmo.tournament.gametype.repository.GameTypeRepository;
-import com.kosmo.tournament.tournament.dfh.CreateTournamentDFH;
-import com.kosmo.tournament.tournament.dfh.TournamentFullDFH;
-import com.kosmo.tournament.tournament.dfh.TournamentShortDFH;
+import com.kosmo.tournament.tournament.dto.CreateTournamentDTO;
+import com.kosmo.tournament.tournament.dto.TournamentFullDTO;
+import com.kosmo.tournament.tournament.dto.TournamentShortDTO;
 import com.kosmo.tournament.tournament.entity.Tournament;
 import com.kosmo.tournament.tournament.repository.TournamentRepository;
 import com.kosmo.tournament.user.entity.User;
@@ -30,14 +30,14 @@ public class TournamentService {
         this.gameTypeRepository = gameTypeRepository;
     }
 
-    public List<TournamentShortDFH> getAllTournaments() {
+    public List<TournamentShortDTO> getAllTournaments() {
         return tournamentRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
-                .map(this::toShortDFH)
+                .map(this::toShortDTO)
                 .toList();
     }
 
-    public TournamentFullDFH getTournamentById(Long id, String currentUsername) {
+    public TournamentFullDTO getTournamentById(Long id, String currentUsername) {
         Tournament tournament = tournamentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
@@ -45,42 +45,42 @@ public class TournamentService {
                 && tournament.getOrganizer() != null
                 && currentUsername.equals(tournament.getOrganizer().getUsername());
 
-        return toFullDFH(tournament, owner);
+        return toFullDTO(tournament, owner);
     }
 
-    public List<TournamentShortDFH> getMyTournaments(String username) {
+    public List<TournamentShortDTO> getMyTournaments(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         return tournamentRepository.findByOrganizerId(user.getId())
                 .stream()
-                .map(this::toShortDFH)
+                .map(this::toShortDTO)
                 .toList();
     }
 
-    public List<TournamentShortDFH> getTournamentsByStatus(String status) {
+    public List<TournamentShortDTO> getTournamentsByStatus(String status) {
         return tournamentRepository.findByStatus(status.toUpperCase())
                 .stream()
-                .map(this::toShortDFH)
+                .map(this::toShortDTO)
                 .toList();
     }
 
-    public List<TournamentShortDFH> getTournamentsByGameType(Long gameTypeId) {
+    public List<TournamentShortDTO> getTournamentsByGameType(Long gameTypeId) {
         return tournamentRepository.findByGameTypeId(gameTypeId)
                 .stream()
-                .map(this::toShortDFH)
+                .map(this::toShortDTO)
                 .toList();
     }
 
-    public List<TournamentShortDFH> searchByTitle(String title) {
+    public List<TournamentShortDTO> searchByTitle(String title) {
         return tournamentRepository.findByTitleContainingIgnoreCase(title)
                 .stream()
-                .map(this::toShortDFH)
+                .map(this::toShortDTO)
                 .toList();
     }
 
     @Transactional
-    public TournamentFullDFH createTournament(CreateTournamentDFH dfh, String username) {
+    public TournamentFullDTO createTournament(CreateTournamentDTO dfh, String username) {
         validateCreateTournament(dfh);
 
         User organizer = userRepository.findByUsername(username)
@@ -108,10 +108,10 @@ public class TournamentService {
 
         Tournament saved = tournamentRepository.save(tournament);
 
-        return toFullDFH(saved, true);
+        return toFullDTO(saved, true);
     }
 
-    private void validateCreateTournament(CreateTournamentDFH dfh) {
+    private void validateCreateTournament(CreateTournamentDTO dfh) {
         if (dfh.getTitle() == null || dfh.getTitle().isBlank()) {
             throw new RuntimeException("Title is required");
         }
@@ -148,8 +148,8 @@ public class TournamentService {
         return value.toUpperCase();
     }
 
-    private TournamentShortDFH toShortDFH(Tournament tournament) {
-        TournamentShortDFH dfh = new TournamentShortDFH();
+    private TournamentShortDTO toShortDTO(Tournament tournament) {
+        TournamentShortDTO dfh = new TournamentShortDTO();
         dfh.setId(tournament.getId());
         dfh.setTitle(tournament.getTitle());
         dfh.setStatus(tournament.getStatus());
@@ -160,8 +160,8 @@ public class TournamentService {
         return dfh;
     }
 
-    private TournamentFullDFH toFullDFH(Tournament tournament, boolean owner) {
-        TournamentFullDFH dfh = new TournamentFullDFH();
+    private TournamentFullDTO toFullDTO(Tournament tournament, boolean owner) {
+        TournamentFullDTO dfh = new TournamentFullDTO();
         dfh.setId(tournament.getId());
         dfh.setTitle(tournament.getTitle());
         dfh.setDescription(tournament.getDescription());

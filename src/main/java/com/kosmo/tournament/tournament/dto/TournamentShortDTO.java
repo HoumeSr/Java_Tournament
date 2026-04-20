@@ -1,6 +1,6 @@
-package com.kosmo.tournament.tournament.dfh;
+package com.kosmo.tournament.tournament.dto;
 
-public class TournamentShortDFH {
+public class TournamentShortDTO {
 
     private Long id;
     private String title;
@@ -10,7 +10,7 @@ public class TournamentShortDFH {
     private String organizerUsername;
     private String imageUrl;
 
-    public TournamentShortDFH() {
+    public TournamentShortDTO() {
     }
 
     public Long getId() { return id; }

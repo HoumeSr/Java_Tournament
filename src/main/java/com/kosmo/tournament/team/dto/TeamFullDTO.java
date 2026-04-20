@@ -1,9 +1,9 @@
-package com.kosmo.tournament.team.dfh;
+package com.kosmo.tournament.team.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-public class TeamFullDFH {
+public class TeamFullDTO {
 
     private Long id;
     private String name;
@@ -12,9 +12,9 @@ public class TeamFullDFH {
     private String imageUrl;
     private LocalDateTime createdAt;
     private boolean owner;
-    private List<TeamMemberDFH> members;
+    private List<TeamMemberDTO> members;
 
-    public TeamFullDFH() {
+    public TeamFullDTO() {
     }
 
     public Long getId() { return id; }
@@ -24,7 +24,7 @@ public class TeamFullDFH {
     public String getImageUrl() { return imageUrl; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public boolean isOwner() { return owner; }
-    public List<TeamMemberDFH> getMembers() { return members; }
+    public List<TeamMemberDTO> getMembers() { return members; }
 
     public void setId(Long id) { this.id = id; }
     public void setName(String name) { this.name = name; }
@@ -33,5 +33,5 @@ public class TeamFullDFH {
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setOwner(boolean owner) { this.owner = owner; }
-    public void setMembers(List<TeamMemberDFH> members) { this.members = members; }
+    public void setMembers(List<TeamMemberDTO> members) { this.members = members; }
 }

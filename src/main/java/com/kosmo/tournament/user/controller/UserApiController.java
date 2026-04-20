@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kosmo.tournament.user.dfh.UserProfileDFH;
+import com.kosmo.tournament.user.dto.UserProfileDTO;
 import com.kosmo.tournament.user.service.UserService;
 
 @RestController
@@ -20,8 +20,8 @@ public class UserApiController {
     }
 
     @GetMapping("/{id}")
-    public UserProfileDFH getUser(@PathVariable Long id, Authentication authentication) {
+    public UserProfileDTO getUser(@PathVariable Long id, Authentication authentication) {
         String currentUsername = authentication != null ? authentication.getName() : null;
-        return userService.getUserDFH(id, currentUsername);
+        return userService.getUserDTO(id, currentUsername);
     }
 }

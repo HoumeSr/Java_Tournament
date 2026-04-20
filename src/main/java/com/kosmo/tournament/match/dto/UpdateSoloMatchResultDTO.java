@@ -1,11 +1,11 @@
-package com.kosmo.tournament.match.dfh;
+package com.kosmo.tournament.match.dto;
 
-public class UpdateSoloMatchResultDFH {
+public class UpdateSoloMatchResultDTO {
 
     private Long winnerUserId;
     private String status;
 
-    public UpdateSoloMatchResultDFH() {
+    public UpdateSoloMatchResultDTO() {
     }
 
     public Long getWinnerUserId() { return winnerUserId; }

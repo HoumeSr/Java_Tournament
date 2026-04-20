@@ -6,9 +6,9 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kosmo.tournament.match.dfh.MatchDFH;
-import com.kosmo.tournament.match.dfh.UpdateSoloMatchResultDFH;
-import com.kosmo.tournament.match.dfh.UpdateTeamMatchResultDFH;
+import com.kosmo.tournament.match.dto.MatchDTO;
+import com.kosmo.tournament.match.dto.UpdateSoloMatchResultDTO;
+import com.kosmo.tournament.match.dto.UpdateTeamMatchResultDTO;
 import com.kosmo.tournament.match.entity.MatchSolo;
 import com.kosmo.tournament.match.entity.MatchTeam;
 import com.kosmo.tournament.match.repository.MatchSoloRepository;
@@ -41,36 +41,36 @@ public class MatchService {
         this.teamMemberRepository = teamMemberRepository;
     }
 
-    public List<MatchDFH> getTournamentMatches(Long tournamentId, String currentUsername) {
-        List<MatchDFH> result = new ArrayList<>();
+    public List<MatchDTO> getTournamentMatches(Long tournamentId, String currentUsername) {
+        List<MatchDTO> result = new ArrayList<>();
 
         result.addAll(
                 matchSoloRepository.findByTournamentId(tournamentId)
                         .stream()
-                        .map(match -> toSoloDFH(match, currentUsername))
+                        .map(match -> toSoloDTO(match, currentUsername))
                         .toList()
         );
 
         result.addAll(
                 matchTeamRepository.findByTournamentId(tournamentId)
                         .stream()
-                        .map(match -> toTeamDFH(match, currentUsername))
+                        .map(match -> toTeamDTO(match, currentUsername))
                         .toList()
         );
 
         return result;
     }
 
-    public List<MatchDFH> getMyMatches(String username) {
+    public List<MatchDTO> getMyMatches(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<MatchDFH> result = new ArrayList<>();
+        List<MatchDTO> result = new ArrayList<>();
 
         result.addAll(
                 matchSoloRepository.findByPlayer1IdOrPlayer2Id(user.getId(), user.getId())
                         .stream()
-                        .map(match -> toSoloDFH(match, username))
+                        .map(match -> toSoloDTO(match, username))
                         .toList()
         );
 
@@ -84,7 +84,7 @@ public class MatchService {
             result.addAll(
                     matchTeamRepository.findByTeam1IdOrTeam2Id(teamId, teamId)
                             .stream()
-                            .map(match -> toTeamDFH(match, username))
+                            .map(match -> toTeamDTO(match, username))
                             .toList()
             );
         }
@@ -92,21 +92,21 @@ public class MatchService {
         return result;
     }
 
-    public MatchDFH getSoloMatch(Long matchId, String currentUsername) {
+    public MatchDTO getSoloMatch(Long matchId, String currentUsername) {
         MatchSolo match = matchSoloRepository.findById(matchId)
                 .orElseThrow(() -> new RuntimeException("Solo match not found"));
-        return toSoloDFH(match, currentUsername);
+        return toSoloDTO(match, currentUsername);
     }
 
-    public MatchDFH getTeamMatch(Long matchId, String currentUsername) {
+    public MatchDTO getTeamMatch(Long matchId, String currentUsername) {
         MatchTeam match = matchTeamRepository.findById(matchId)
                 .orElseThrow(() -> new RuntimeException("Team match not found"));
-        return toTeamDFH(match, currentUsername);
+        return toTeamDTO(match, currentUsername);
     }
 
     @Transactional
-    public MatchDFH updateSoloMatchResult(Long matchId,
-                                          UpdateSoloMatchResultDFH dfh,
+    public MatchDTO updateSoloMatchResult(Long matchId,
+                                          UpdateSoloMatchResultDTO dfh,
                                           String currentUsername) {
         MatchSolo match = matchSoloRepository.findById(matchId)
                 .orElseThrow(() -> new RuntimeException("Solo match not found"));
@@ -120,12 +120,12 @@ public class MatchService {
         match.setStatus(dfh.getStatus() != null ? dfh.getStatus().toUpperCase() : "FINISHED");
 
         MatchSolo saved = matchSoloRepository.save(match);
-        return toSoloDFH(saved, currentUsername);
+        return toSoloDTO(saved, currentUsername);
     }
 
     @Transactional
-    public MatchDFH updateTeamMatchResult(Long matchId,
-                                          UpdateTeamMatchResultDFH dfh,
+    public MatchDTO updateTeamMatchResult(Long matchId,
+                                          UpdateTeamMatchResultDTO dfh,
                                           String currentUsername) {
         MatchTeam match = matchTeamRepository.findById(matchId)
                 .orElseThrow(() -> new RuntimeException("Team match not found"));
@@ -139,7 +139,7 @@ public class MatchService {
         match.setStatus(dfh.getStatus() != null ? dfh.getStatus().toUpperCase() : "FINISHED");
 
         MatchTeam saved = matchTeamRepository.save(match);
-        return toTeamDFH(saved, currentUsername);
+        return toTeamDTO(saved, currentUsername);
     }
 
     private void validateMatchOwner(String organizerUsername, String currentUsername) {
@@ -148,8 +148,8 @@ public class MatchService {
         }
     }
 
-    private MatchDFH toSoloDFH(MatchSolo match, String currentUsername) {
-        MatchDFH dfh = new MatchDFH();
+    private MatchDTO toSoloDTO(MatchSolo match, String currentUsername) {
+        MatchDTO dfh = new MatchDTO();
         dfh.setId(match.getId());
         dfh.setMatchType("SOLO");
         dfh.setTournamentId(match.getTournament().getId());
@@ -175,8 +175,8 @@ public class MatchService {
         return dfh;
     }
 
-    private MatchDFH toTeamDFH(MatchTeam match, String currentUsername) {
-        MatchDFH dfh = new MatchDFH();
+    private MatchDTO toTeamDTO(MatchTeam match, String currentUsername) {
+        MatchDTO dfh = new MatchDTO();
         dfh.setId(match.getId());
         dfh.setMatchType("TEAM");
         dfh.setTournamentId(match.getTournament().getId());
