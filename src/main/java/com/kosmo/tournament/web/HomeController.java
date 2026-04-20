@@ -4,11 +4,11 @@ import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,9 +18,9 @@ public class HomeController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public HomeController(UserRepository userRepository) {
+    public HomeController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
-        this.passwordEncoder = new BCryptPasswordEncoder();
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping("/")
@@ -47,12 +47,16 @@ public class HomeController {
         return "auth/register";
     }
 
+    @GetMapping("/forgot-password")
+    public String forgotPassword() {
+        return "redirect:/login";
+    }
+
     @PostMapping("/register")
     public String registerSubmit(@RequestParam String email,
                                  @RequestParam String password,
                                  @RequestParam String confirmPassword,
                                  Model model) {
-
         String username = email.split("@")[0];
 
         if (!password.equals(confirmPassword)) {
@@ -82,15 +86,9 @@ public class HomeController {
                               @RequestParam String password,
                               HttpServletRequest request,
                               Model model) {
-
         User user = userRepository.findByEmail(email).orElse(null);
 
-        if (user == null) {
-            model.addAttribute("error", "Неверный email или пароль");
-            return "auth/login";
-        }
-
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+        if (user == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
             model.addAttribute("error", "Неверный email или пароль");
             return "auth/login";
         }
@@ -152,13 +150,7 @@ public class HomeController {
 
         User user = userRepository.findByUsername(username).orElse(null);
 
-        if (user == null) {
-            response.put("success", false);
-            response.put("message", "Неверное имя пользователя или пароль");
-            return response;
-        }
-
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+        if (user == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
             response.put("success", false);
             response.put("message", "Неверное имя пользователя или пароль");
             return response;
@@ -181,7 +173,8 @@ public class HomeController {
         response.put("user", Map.of(
                 "id", user.getId(),
                 "username", user.getUsername(),
-                "role", user.getRole()
+                "role", user.getRole(),
+                "imageUrl", user.getImageUrl()
         ));
 
         return response;

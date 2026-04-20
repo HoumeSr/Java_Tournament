@@ -105,6 +105,7 @@ public class TournamentService {
         tournament.setStartDate(dfh.getStartDate());
         tournament.setRegistrationDeadline(dfh.getRegistrationDeadline());
         tournament.setMaxParticipants(dfh.getMaxParticipants());
+        tournament.setMinParticipants(dfh.getMinParticipants());
         tournament.setImageUrl(dfh.getImageUrl());
 
         Tournament saved = tournamentRepository.save(tournament);
@@ -131,6 +132,12 @@ public class TournamentService {
         }
         if (dfh.getMaxParticipants() != null && dfh.getMaxParticipants() < 2) {
             throw new RuntimeException("Max participants must be at least 2");
+        }
+        if (dfh.getMinParticipants() != null && dfh.getMinParticipants() < 2) {
+            throw new RuntimeException("Min participants must be at least 2");
+        }
+        if (dfh.getMinParticipants() != null && dfh.getMaxParticipants() != null && dfh.getMinParticipants() > dfh.getMaxParticipants()) {
+            throw new RuntimeException("Min participants cannot be greater than max participants");
         }
     }
 
@@ -175,6 +182,7 @@ public class TournamentService {
         dfh.setStartDate(tournament.getStartDate());
         dfh.setRegistrationDeadline(tournament.getRegistrationDeadline());
         dfh.setMaxParticipants(tournament.getMaxParticipants());
+        dfh.setMinParticipants(tournament.getMinParticipants());
         dfh.setCreatedAt(tournament.getCreatedAt());
         dfh.setImageUrl(tournament.getImageUrl());
         dfh.setOwner(owner);
