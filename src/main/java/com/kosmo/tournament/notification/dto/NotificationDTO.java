@@ -1,8 +1,8 @@
-package com.kosmo.tournament.notification.dfh;
+package com.kosmo.tournament.notification.dto;
 
 import java.time.LocalDateTime;
 
-public class NotificationDFH {
+public class NotificationDTO {
 
     private Long id;
     private String message;
@@ -12,7 +12,7 @@ public class NotificationDFH {
     private String status;
     private LocalDateTime createdAt;
 
-    public NotificationDFH() {
+    public NotificationDTO() {
     }
 
     public Long getId() { return id; }

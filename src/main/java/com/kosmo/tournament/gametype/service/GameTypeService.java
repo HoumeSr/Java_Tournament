@@ -5,9 +5,9 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kosmo.tournament.gametype.dfh.CreateGameTypeDFH;
-import com.kosmo.tournament.gametype.dfh.GameTypeDFH;
-import com.kosmo.tournament.gametype.dfh.UpdateGameTypeDFH;
+import com.kosmo.tournament.gametype.dto.CreateGameTypeDTO;
+import com.kosmo.tournament.gametype.dto.GameTypeDTO;
+import com.kosmo.tournament.gametype.dto.UpdateGameTypeDTO;
 import com.kosmo.tournament.gametype.entity.GameType;
 import com.kosmo.tournament.gametype.repository.GameTypeRepository;
 
@@ -20,29 +20,29 @@ public class GameTypeService {
         this.gameTypeRepository = gameTypeRepository;
     }
 
-    public List<GameTypeDFH> getAllGameTypes() {
+    public List<GameTypeDTO> getAllGameTypes() {
         return gameTypeRepository.findAll()
                 .stream()
-                .map(this::toDFH)
+                .map(this::toDTO)
                 .toList();
     }
 
-    public List<GameTypeDFH> getActiveGameTypes() {
+    public List<GameTypeDTO> getActiveGameTypes() {
         return gameTypeRepository.findByIsActiveTrue()
                 .stream()
-                .map(this::toDFH)
+                .map(this::toDTO)
                 .toList();
     }
 
-    public GameTypeDFH getGameTypeById(Long id) {
+    public GameTypeDTO getGameTypeById(Long id) {
         GameType gameType = gameTypeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Game type not found"));
 
-        return toDFH(gameType);
+        return toDTO(gameType);
     }
 
     @Transactional
-    public GameTypeDFH createGameType(CreateGameTypeDFH dfh) {
+    public GameTypeDTO createGameType(CreateGameTypeDTO dfh) {
         validateCreate(dfh);
 
         if (gameTypeRepository.existsByCode(dfh.getCode())) {
@@ -58,11 +58,11 @@ public class GameTypeService {
         gameType.setMaxPlayers(dfh.getMaxPlayers());
 
         GameType saved = gameTypeRepository.save(gameType);
-        return toDFH(saved);
+        return toDTO(saved);
     }
 
     @Transactional
-    public GameTypeDFH updateGameType(Long id, UpdateGameTypeDFH dfh) {
+    public GameTypeDTO updateGameType(Long id, UpdateGameTypeDTO dfh) {
         GameType gameType = gameTypeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Game type not found"));
 
@@ -90,28 +90,28 @@ public class GameTypeService {
         }
 
         GameType saved = gameTypeRepository.save(gameType);
-        return toDFH(saved);
+        return toDTO(saved);
     }
 
     @Transactional
-    public GameTypeDFH activateGameType(Long id) {
+    public GameTypeDTO activateGameType(Long id) {
         GameType gameType = gameTypeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Game type not found"));
 
         gameType.setIsActive(true);
-        return toDFH(gameTypeRepository.save(gameType));
+        return toDTO(gameTypeRepository.save(gameType));
     }
 
     @Transactional
-    public GameTypeDFH deactivateGameType(Long id) {
+    public GameTypeDTO deactivateGameType(Long id) {
         GameType gameType = gameTypeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Game type not found"));
 
         gameType.setIsActive(false);
-        return toDFH(gameTypeRepository.save(gameType));
+        return toDTO(gameTypeRepository.save(gameType));
     }
 
-    private void validateCreate(CreateGameTypeDFH dfh) {
+    private void validateCreate(CreateGameTypeDTO dfh) {
         if (dfh.getName() == null || dfh.getName().isBlank()) {
             throw new RuntimeException("Game name is required");
         }
@@ -123,8 +123,8 @@ public class GameTypeService {
         }
     }
 
-    private GameTypeDFH toDFH(GameType gameType) {
-        GameTypeDFH dfh = new GameTypeDFH();
+    private GameTypeDTO toDTO(GameType gameType) {
+        GameTypeDTO dfh = new GameTypeDTO();
         dfh.setId(gameType.getId());
         dfh.setName(gameType.getName());
         dfh.setCode(gameType.getCode());

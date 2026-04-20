@@ -10,12 +10,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kosmo.tournament.team.dfh.AddTeamMemberDFH;
-import com.kosmo.tournament.team.dfh.CreateTeamDFH;
-import com.kosmo.tournament.team.dfh.InviteTeamMemberDFH;
-import com.kosmo.tournament.team.dfh.TeamFullDFH;
-import com.kosmo.tournament.team.dfh.TeamMemberDFH;
-import com.kosmo.tournament.team.dfh.TeamShortDFH;
+import com.kosmo.tournament.team.dto.AddTeamMemberDTO;
+import com.kosmo.tournament.team.dto.CreateTeamDTO;
+import com.kosmo.tournament.team.dto.InviteTeamMemberDTO;
+import com.kosmo.tournament.team.dto.TeamFullDTO;
+import com.kosmo.tournament.team.dto.TeamMemberDTO;
+import com.kosmo.tournament.team.dto.TeamShortDTO;
 import com.kosmo.tournament.team.service.TeamService;
 
 @RestController
@@ -29,42 +29,42 @@ public class TeamApiController {
     }
 
     @GetMapping("/my")
-    public List<TeamShortDFH> getMyTeams(Authentication authentication) {
+    public List<TeamShortDTO> getMyTeams(Authentication authentication) {
         return teamService.getMyTeams(authentication.getName());
     }
 
     @GetMapping("/{id}")
-    public TeamFullDFH getTeam(@PathVariable Long id, Authentication authentication) {
+    public TeamFullDTO getTeam(@PathVariable Long id, Authentication authentication) {
         String currentUsername = authentication != null ? authentication.getName() : null;
         return teamService.getTeamById(id, currentUsername);
     }
 
     @GetMapping("/{id}/members")
-    public List<TeamMemberDFH> getMembers(@PathVariable Long id) {
+    public List<TeamMemberDTO> getMembers(@PathVariable Long id) {
         return teamService.getTeamMembers(id);
     }
 
     @PostMapping
-    public TeamFullDFH createTeam(@RequestBody CreateTeamDFH dfh,
+    public TeamFullDTO createTeam(@RequestBody CreateTeamDTO dfh,
                                   Authentication authentication) {
         return teamService.createTeam(dfh, authentication.getName());
     }
 
     @PostMapping("/{id}/members")
-    public TeamFullDFH addMember(@PathVariable Long id,
-                                 @RequestBody AddTeamMemberDFH dfh,
+    public TeamFullDTO addMember(@PathVariable Long id,
+                                 @RequestBody AddTeamMemberDTO dfh,
                                  Authentication authentication) {
         return teamService.addMember(id, dfh, authentication.getName());
     }
     @PostMapping("/{id}/invite")
     public void inviteUser(@PathVariable Long id,
-                        @RequestBody InviteTeamMemberDFH dfh,
+                        @RequestBody InviteTeamMemberDTO dfh,
                         Authentication authentication) {
         teamService.inviteUserToTeam(id, dfh.getUserId(), authentication.getName());
     }
 
     @PostMapping("/invite/{notificationId}/accept")
-    public TeamFullDFH acceptInvite(@PathVariable Long notificationId,
+    public TeamFullDTO acceptInvite(@PathVariable Long notificationId,
                                     Authentication authentication) {
         return teamService.acceptInvite(notificationId, authentication.getName());
     }

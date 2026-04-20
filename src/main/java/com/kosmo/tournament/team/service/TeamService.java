@@ -7,11 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.kosmo.tournament.notification.entity.Notification;
 import com.kosmo.tournament.notification.service.NotificationService;
-import com.kosmo.tournament.team.dfh.AddTeamMemberDFH;
-import com.kosmo.tournament.team.dfh.CreateTeamDFH;
-import com.kosmo.tournament.team.dfh.TeamFullDFH;
-import com.kosmo.tournament.team.dfh.TeamMemberDFH;
-import com.kosmo.tournament.team.dfh.TeamShortDFH;
+import com.kosmo.tournament.team.dto.AddTeamMemberDTO;
+import com.kosmo.tournament.team.dto.CreateTeamDTO;
+import com.kosmo.tournament.team.dto.TeamFullDTO;
+import com.kosmo.tournament.team.dto.TeamMemberDTO;
+import com.kosmo.tournament.team.dto.TeamShortDTO;
 import com.kosmo.tournament.team.entity.Team;
 import com.kosmo.tournament.team.entity.TeamMember;
 import com.kosmo.tournament.team.repository.TeamMemberRepository;
@@ -37,7 +37,7 @@ public class TeamService {
         this.notificationService = notificationService;
     }
 
-    public List<TeamShortDFH> getMyTeams(String username) {
+    public List<TeamShortDTO> getMyTeams(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -45,11 +45,11 @@ public class TeamService {
                 .stream()
                 .map(TeamMember::getTeam)
                 .distinct()
-                .map(this::toShortDFH)
+                .map(this::toShortDTO)
                 .toList();
     }
 
-    public TeamFullDFH getTeamById(Long teamId, String currentUsername) {
+    public TeamFullDTO getTeamById(Long teamId, String currentUsername) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found"));
 
@@ -57,11 +57,11 @@ public class TeamService {
                 && team.getCaptain() != null
                 && currentUsername.equals(team.getCaptain().getUsername());
 
-        return toFullDFH(team, owner);
+        return toFullDTO(team, owner);
     }
 
     @Transactional
-    public TeamFullDFH createTeam(CreateTeamDFH dfh, String username) {
+    public TeamFullDTO createTeam(CreateTeamDTO dfh, String username) {
         if (dfh.getName() == null || dfh.getName().isBlank()) {
             throw new RuntimeException("Team name is required");
         }
@@ -87,11 +87,11 @@ public class TeamService {
 
         teamMemberRepository.save(captainMember);
 
-        return toFullDFH(savedTeam, true);
+        return toFullDTO(savedTeam, true);
     }
 
     @Transactional
-    public TeamFullDFH addMember(Long teamId, AddTeamMemberDFH dfh, String currentUsername) {
+    public TeamFullDTO addMember(Long teamId, AddTeamMemberDTO dfh, String currentUsername) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found"));
 
@@ -116,13 +116,13 @@ public class TeamService {
 
         teamMemberRepository.save(teamMember);
 
-        return toFullDFH(team, true);
+        return toFullDTO(team, true);
     }
 
-    public List<TeamMemberDFH> getTeamMembers(Long teamId) {
+    public List<TeamMemberDTO> getTeamMembers(Long teamId) {
         return teamMemberRepository.findByTeamId(teamId)
                 .stream()
-                .map(this::toMemberDFH)
+                .map(this::toMemberDTO)
                 .toList();
     }
 
@@ -149,7 +149,7 @@ public class TeamService {
     }
 
     @Transactional
-    public TeamFullDFH acceptInvite(Long notificationId, String currentUsername) {
+    public TeamFullDTO acceptInvite(Long notificationId, String currentUsername) {
         User currentUser = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -183,7 +183,7 @@ public class TeamService {
         notificationService.markAccepted(notification);
 
         boolean owner = team.getCaptain() != null && team.getCaptain().getId().equals(currentUser.getId());
-        return toFullDFH(team, owner);
+        return toFullDTO(team, owner);
     }
 
     @Transactional
@@ -208,8 +208,8 @@ public class TeamService {
         notificationService.markDeclined(notification);
     }
 
-    private TeamShortDFH toShortDFH(Team team) {
-        TeamShortDFH dfh = new TeamShortDFH();
+    private TeamShortDTO toShortDTO(Team team) {
+        TeamShortDTO dfh = new TeamShortDTO();
         dfh.setId(team.getId());
         dfh.setName(team.getName());
         dfh.setCaptainUsername(team.getCaptain() != null ? team.getCaptain().getUsername() : null);
@@ -217,8 +217,8 @@ public class TeamService {
         return dfh;
     }
 
-    private TeamMemberDFH toMemberDFH(TeamMember member) {
-        TeamMemberDFH dfh = new TeamMemberDFH();
+    private TeamMemberDTO toMemberDTO(TeamMember member) {
+        TeamMemberDTO dfh = new TeamMemberDTO();
         dfh.setUserId(member.getPlayer().getId());
         dfh.setUsername(member.getPlayer().getUsername());
         dfh.setRole(member.getRole());
@@ -228,8 +228,8 @@ public class TeamService {
         return dfh;
     }
 
-    private TeamFullDFH toFullDFH(Team team, boolean owner) {
-        TeamFullDFH dfh = new TeamFullDFH();
+    private TeamFullDTO toFullDTO(Team team, boolean owner) {
+        TeamFullDTO dfh = new TeamFullDTO();
         dfh.setId(team.getId());
         dfh.setName(team.getName());
         dfh.setCaptainId(team.getCaptain() != null ? team.getCaptain().getId() : null);

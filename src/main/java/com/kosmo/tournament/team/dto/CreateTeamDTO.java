@@ -1,11 +1,11 @@
-package com.kosmo.tournament.team.dfh;
+package com.kosmo.tournament.team.dto;
 
-public class CreateTeamDFH {
+public class CreateTeamDTO {
 
     private String name;
     private String imageUrl;
 
-    public CreateTeamDFH() {
+    public CreateTeamDTO() {
     }
 
     public String getName() { return name; }

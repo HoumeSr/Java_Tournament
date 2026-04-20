@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.kosmo.tournament.notification.dfh.NotificationDFH;
+import com.kosmo.tournament.notification.dto.NotificationDTO;
 import com.kosmo.tournament.notification.service.NotificationService;
 
 @RestController
@@ -21,7 +21,7 @@ public class NotificationApiController {
     }
 
     @GetMapping("/my")
-    public List<NotificationDFH> getMyNotifications(Authentication authentication) {
+    public List<NotificationDTO> getMyNotifications(Authentication authentication) {
         return notificationService.getMyNotifications(authentication.getName());
     }
 }

@@ -1,8 +1,8 @@
-package com.kosmo.tournament.tournament.dfh;
+package com.kosmo.tournament.tournament.dto;
 
 import java.time.LocalDateTime;
 
-public class CreateTournamentDFH {
+public class CreateTournamentDTO {
 
     private String title;
     private String description;
@@ -15,7 +15,7 @@ public class CreateTournamentDFH {
     private Integer maxParticipants;
     private String imageUrl;
 
-    public CreateTournamentDFH() {
+    public CreateTournamentDTO() {
     }
 
     public String getTitle() { return title; }

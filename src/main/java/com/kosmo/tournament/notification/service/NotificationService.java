@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kosmo.tournament.notification.dfh.NotificationDFH;
+import com.kosmo.tournament.notification.dto.NotificationDTO;
 import com.kosmo.tournament.notification.entity.Notification;
 import com.kosmo.tournament.notification.repository.NotificationRepository;
 import com.kosmo.tournament.team.entity.Team;
@@ -24,13 +24,13 @@ public class NotificationService {
         this.userRepository = userRepository;
     }
 
-    public List<NotificationDFH> getMyNotifications(String username) {
+    public List<NotificationDTO> getMyNotifications(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId())
                 .stream()
-                .map(this::toDFH)
+                .map(this::toDTO)
                 .toList();
     }
 
@@ -75,8 +75,8 @@ public class NotificationService {
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
     }
 
-    private NotificationDFH toDFH(Notification notification) {
-        NotificationDFH dfh = new NotificationDFH();
+    private NotificationDTO toDTO(Notification notification) {
+        NotificationDTO dfh = new NotificationDTO();
         dfh.setId(notification.getId());
         dfh.setMessage(notification.getMessage());
         dfh.setTeamId(notification.getTeam() != null ? notification.getTeam().getId() : null);

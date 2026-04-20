@@ -1,8 +1,8 @@
-package com.kosmo.tournament.tournament.dfh;
+package com.kosmo.tournament.tournament.dto;
 
 import java.time.LocalDateTime;
 
-public class TournamentFullDFH {
+public class TournamentFullDTO {
 
     private Long id;
     private String title;
@@ -20,7 +20,7 @@ public class TournamentFullDFH {
     private String imageUrl;
     private boolean owner;
 
-    public TournamentFullDFH() {
+    public TournamentFullDTO() {
     }
 
     public Long getId() { return id; }

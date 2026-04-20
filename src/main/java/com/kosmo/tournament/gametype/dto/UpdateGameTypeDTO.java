@@ -1,6 +1,6 @@
-package com.kosmo.tournament.gametype.dfh;
+package com.kosmo.tournament.gametype.dto;
 
-public class UpdateGameTypeDFH {
+public class UpdateGameTypeDTO {
 
     private String name;
     private String description;
@@ -8,7 +8,7 @@ public class UpdateGameTypeDFH {
     private String imageUrl;
     private Integer maxPlayers;
 
-    public UpdateGameTypeDFH() {
+    public UpdateGameTypeDTO() {
     }
 
     public String getName() { return name; }

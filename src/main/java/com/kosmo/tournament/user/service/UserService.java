@@ -5,8 +5,8 @@ import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import com.kosmo.tournament.user.dfh.UserGameStatsDFH;
-import com.kosmo.tournament.user.dfh.UserProfileDFH;
+import com.kosmo.tournament.user.dto.UserGameStatsDTO;
+import com.kosmo.tournament.user.dto.UserProfileDTO;
 import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
 
@@ -22,14 +22,14 @@ public class UserService {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public UserProfileDFH getUserDFH(Long requestedUserId, String currentUsername) {
+    public UserProfileDTO getUserDTO(Long requestedUserId, String currentUsername) {
         User requestedUser = userRepository.findById(requestedUserId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         boolean owner = currentUsername != null
                 && currentUsername.equals(requestedUser.getUsername());
 
-        UserProfileDFH dfh = new UserProfileDFH();
+        UserProfileDTO dfh = new UserProfileDTO();
         dfh.setUserId(requestedUser.getId());
         dfh.setUsername(requestedUser.getUsername());
         dfh.setEmail(owner ? requestedUser.getEmail() : null);
@@ -43,7 +43,7 @@ public class UserService {
         return dfh;
     }
 
-    public List<UserGameStatsDFH> getUserGamesStats(Long userId) {
+    public List<UserGameStatsDTO> getUserGamesStats(Long userId) {
         String sql = """
             SELECT
                 gt."name" AS game_name,
@@ -74,7 +74,7 @@ public class UserService {
 
         return jdbcTemplate.query(
                 sql,
-                (rs, rowNum) -> new UserGameStatsDFH(
+                (rs, rowNum) -> new UserGameStatsDTO(
                         rs.getString("game_name"),
                         rs.getInt("match_count"),
                         rs.getInt("win_percent")

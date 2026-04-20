@@ -1,8 +1,8 @@
-package com.kosmo.tournament.match.dfh;
+package com.kosmo.tournament.match.dto;
 
 import java.time.LocalDateTime;
 
-public class MatchDFH {
+public class MatchDTO {
 
     private Long id;
     private String matchType; // SOLO / TEAM
@@ -23,7 +23,7 @@ public class MatchDFH {
 
     private boolean owner;
 
-    public MatchDFH() {
+    public MatchDTO() {
     }
 
     public Long getId() { return id; }

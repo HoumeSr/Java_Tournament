@@ -1,10 +1,10 @@
-package com.kosmo.tournament.team.dfh;
+package com.kosmo.tournament.team.dto;
 
-public class AddTeamMemberDFH {
+public class InviteTeamMemberDTO {
 
     private Long userId;
 
-    public AddTeamMemberDFH() {
+    public InviteTeamMemberDTO() {
     }
 
     public Long getUserId() { return userId; }
