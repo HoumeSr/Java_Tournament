@@ -29,26 +29,17 @@ public class TournamentApiController {
         this.tournamentService = tournamentService;
     }
 
-    /**
-     * GET /api/tournaments - список всех турниров (TournamentShortDFH)
-     */
     @GetMapping
     public List<TournamentShortDTO> getAllTournaments() {
         return tournamentService.getAllTournaments();
     }
 
-    /**
-     * GET /api/tournaments/{id} - полная информация о турнире (TournamentFullDFH)
-     */
     @GetMapping("/{id}")
-    public TournamentFullDTO getTournament(@PathVariable Long id, Authentication authentication) {
+    public TournamentFullDTO getTournamentById(@PathVariable Long id, Authentication authentication) {
         String currentUsername = authentication != null ? authentication.getName() : null;
         return tournamentService.getTournamentById(id, currentUsername);
     }
 
-    /**
-     * GET /api/tournaments/my - мои турниры (как организатор)
-     */
     @GetMapping("/my")
     public List<TournamentShortDTO> getMyTournaments(Authentication authentication) {
         if (authentication == null) {
@@ -57,48 +48,46 @@ public class TournamentApiController {
         return tournamentService.getMyTournaments(authentication.getName());
     }
 
-    /**
-     * GET /api/tournaments/status/{status} - турниры по статусу
-     */
     @GetMapping("/status/{status}")
-    public List<TournamentShortDTO> getTournamentsByStatus(@PathVariable String status) {
+    public List<TournamentShortDTO> getByStatus(@PathVariable String status) {
         return tournamentService.getTournamentsByStatus(status);
     }
 
-    /**
-     * GET /api/tournaments/gametype/{gameTypeId} - турниры по типу игры
-     */
-    @GetMapping("/gametype/{gameTypeId}")
-    public List<TournamentShortDTO> getTournamentsByGameType(@PathVariable Long gameTypeId) {
+    @GetMapping("/game/{gameTypeId}")
+    public List<TournamentShortDTO> getByGameType(@PathVariable Long gameTypeId) {
         return tournamentService.getTournamentsByGameType(gameTypeId);
     }
 
-    /**
-     * GET /api/tournaments/search - поиск по названию
-     */
     @GetMapping("/search")
-    public List<TournamentShortDTO> searchTournaments(@RequestParam String title) {
+    public List<TournamentShortDTO> search(@RequestParam String title) {
         return tournamentService.searchByTitle(title);
     }
 
-    /**
-     * POST /api/tournaments - создание турнира (принимает CreateTournamentDFH)
-     */
     @PostMapping
-    public ResponseEntity<?> createTournament(@RequestBody CreateTournamentDTO createDFH, 
-                                               Authentication authentication) {
+    public ResponseEntity<?> createTournament(@RequestBody CreateTournamentDTO dto,
+                                              Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+                    .body(Map.of(
+                            "success", false,
+                            "message", "Необходимо авторизоваться"
+                    ));
         }
 
         try {
-            TournamentFullDTO created = tournamentService.createTournament(createDFH, authentication.getName());
+            TournamentFullDTO created = tournamentService.createTournament(dto, authentication.getName());
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(Map.of("success", true, "tournament", created, "message", "Турнир успешно создан"));
+                    .body(Map.of(
+                            "success", true,
+                            "message", "Турнир успешно создан",
+                            "tournament", created
+                    ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
-                    .body(Map.of("success", false, "message", e.getMessage()));
+                    .body(Map.of(
+                            "success", false,
+                            "message", e.getMessage()
+                    ));
         }
     }
 }

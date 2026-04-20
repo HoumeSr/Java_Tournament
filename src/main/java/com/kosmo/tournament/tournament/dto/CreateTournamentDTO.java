@@ -13,6 +13,7 @@ public class CreateTournamentDTO {
     private LocalDateTime startDate;
     private LocalDateTime registrationDeadline;
     private Integer maxParticipants;
+    private Integer minParticipants;
     private String imageUrl;
 
     public CreateTournamentDTO() {
@@ -27,6 +28,7 @@ public class CreateTournamentDTO {
     public LocalDateTime getStartDate() { return startDate; }
     public LocalDateTime getRegistrationDeadline() { return registrationDeadline; }
     public Integer getMaxParticipants() { return maxParticipants; }
+    public Integer getMinParticipants() { return minParticipants; }
     public String getImageUrl() { return imageUrl; }
 
     public void setTitle(String title) { this.title = title; }
@@ -38,5 +40,6 @@ public class CreateTournamentDTO {
     public void setStartDate(LocalDateTime startDate) { this.startDate = startDate; }
     public void setRegistrationDeadline(LocalDateTime registrationDeadline) { this.registrationDeadline = registrationDeadline; }
     public void setMaxParticipants(Integer maxParticipants) { this.maxParticipants = maxParticipants; }
+    public void setMinParticipants(Integer minParticipants) { this.minParticipants = minParticipants; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 }

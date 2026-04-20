@@ -16,6 +16,7 @@ public class TournamentFullDTO {
     private LocalDateTime startDate;
     private LocalDateTime registrationDeadline;
     private Integer maxParticipants;
+    private Integer minParticipants;
     private LocalDateTime createdAt;
     private String imageUrl;
     private boolean owner;
@@ -35,6 +36,7 @@ public class TournamentFullDTO {
     public LocalDateTime getStartDate() { return startDate; }
     public LocalDateTime getRegistrationDeadline() { return registrationDeadline; }
     public Integer getMaxParticipants() { return maxParticipants; }
+    public Integer getMinParticipants() { return minParticipants; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public String getImageUrl() { return imageUrl; }
     public boolean isOwner() { return owner; }
@@ -51,6 +53,7 @@ public class TournamentFullDTO {
     public void setStartDate(LocalDateTime startDate) { this.startDate = startDate; }
     public void setRegistrationDeadline(LocalDateTime registrationDeadline) { this.registrationDeadline = registrationDeadline; }
     public void setMaxParticipants(Integer maxParticipants) { this.maxParticipants = maxParticipants; }
+    public void setMinParticipants(Integer minParticipants) { this.minParticipants = minParticipants; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setOwner(boolean owner) { this.owner = owner; }
