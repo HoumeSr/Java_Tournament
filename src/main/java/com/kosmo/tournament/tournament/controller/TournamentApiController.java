@@ -3,6 +3,8 @@ package com.kosmo.tournament.tournament.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.web.bind.annotation.PutMapping;
+import com.kosmo.tournament.tournament.dto.UpdateTournamentDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -82,6 +84,35 @@ public class TournamentApiController {
                             "message", "Турнир успешно создан",
                             "tournament", created
                     ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "success", false,
+                            "message", e.getMessage()
+                    ));
+        }
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateTournament(@PathVariable Long id,
+                                            @RequestBody UpdateTournamentDTO dto,
+                                            Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                            "success", false,
+                            "message", "Необходимо авторизоваться"
+                    ));
+        }
+
+        try {
+            TournamentFullDTO updated = tournamentService.updateTournament(id, dto, authentication.getName());
+            return ResponseEntity.ok(
+                    Map.of(
+                            "success", true,
+                            "message", "Турнир успешно обновлён",
+                            "tournament", updated
+                    )
+            );
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
                     .body(Map.of(

@@ -54,6 +54,9 @@ public class Tournament {
     @Column(name = "\"registrationDeadline\"")
     private LocalDateTime registrationDeadline;
 
+    @Column(name = "\"minParticipants\"")
+    private Integer minParticipants;
+
     @Column(name = "\"maxParticipants\"")
     private Integer maxParticipants;
 
@@ -87,7 +90,9 @@ public class Tournament {
     public Integer getMaxParticipants() { return maxParticipants; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public String getImageUrl() { return imageUrl; }
+    public Integer getMinParticipants() {return minParticipants;}
 
+    public void setMinParticipants(Integer minParticipants) {this.minParticipants = minParticipants;}
     public void setId(Long id) { this.id = id; }
     public void setTitle(String title) { this.title = title; }
     public void setDescription(String description) { this.description = description; }

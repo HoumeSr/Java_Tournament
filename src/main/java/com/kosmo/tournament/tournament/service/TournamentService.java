@@ -10,6 +10,7 @@ import com.kosmo.tournament.gametype.repository.GameTypeRepository;
 import com.kosmo.tournament.tournament.dto.CreateTournamentDTO;
 import com.kosmo.tournament.tournament.dto.TournamentFullDTO;
 import com.kosmo.tournament.tournament.dto.TournamentShortDTO;
+import com.kosmo.tournament.tournament.dto.UpdateTournamentDTO;
 import com.kosmo.tournament.tournament.entity.Tournament;
 import com.kosmo.tournament.tournament.repository.TournamentRepository;
 import com.kosmo.tournament.user.entity.User;
@@ -178,5 +179,91 @@ public class TournamentService {
         dfh.setImageUrl(tournament.getImageUrl());
         dfh.setOwner(owner);
         return dfh;
+    }
+    
+    @Transactional
+    public TournamentFullDTO updateTournament(Long tournamentId,
+                                            UpdateTournamentDTO dto,
+                                            String currentUsername) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+
+        if (currentUsername == null
+                || tournament.getOrganizer() == null
+                || !currentUsername.equals(tournament.getOrganizer().getUsername())) {
+            throw new RuntimeException("Only tournament organizer can update tournament");
+        }
+
+        if (dto.getTitle() != null && !dto.getTitle().isBlank()) {
+            if (!dto.getTitle().equals(tournament.getTitle())
+                    && tournamentRepository.existsByTitle(dto.getTitle())) {
+                throw new RuntimeException("Tournament title already exists");
+            }
+            tournament.setTitle(dto.getTitle());
+        }
+
+        if (dto.getDescription() != null && !dto.getDescription().isBlank()) {
+            tournament.setDescription(dto.getDescription());
+        }
+
+        if (dto.getParticipantType() != null && !dto.getParticipantType().isBlank()) {
+            tournament.setParticipantType(dto.getParticipantType().toUpperCase());
+        }
+
+        if (dto.getAccess() != null && !dto.getAccess().isBlank()) {
+            tournament.setAccess(dto.getAccess().toUpperCase());
+        }
+
+        if (dto.getStatus() != null && !dto.getStatus().isBlank()) {
+            tournament.setStatus(dto.getStatus().toUpperCase());
+        }
+
+        if (dto.getGameTypeId() != null) {
+            GameType gameType = gameTypeRepository.findById(dto.getGameTypeId())
+                    .orElseThrow(() -> new RuntimeException("Game type not found"));
+            tournament.setGameType(gameType);
+        }
+
+        if (dto.getStartDate() != null) {
+            tournament.setStartDate(dto.getStartDate());
+        }
+
+        if (dto.getRegistrationDeadline() != null) {
+            tournament.setRegistrationDeadline(dto.getRegistrationDeadline());
+        }
+
+        if (dto.getMaxParticipants() != null) {
+            if (dto.getMaxParticipants() < 2) {
+                throw new RuntimeException("Max participants must be at least 2");
+            }
+            tournament.setMaxParticipants(dto.getMaxParticipants());
+        }
+
+        if (dto.getMinParticipants() != null) {
+            if (dto.getMinParticipants() < 2) {
+                throw new RuntimeException("Min participants must be at least 2");
+            }
+            tournament.setMinParticipants(dto.getMinParticipants());
+        }
+
+        Integer min = tournament.getMinParticipants();
+        Integer max = tournament.getMaxParticipants();
+
+        if (min != null && max != null && min > max) {
+            throw new RuntimeException("Min participants cannot be greater than max participants");
+        }
+
+        if (tournament.getRegistrationDeadline() != null
+                && tournament.getStartDate() != null
+                && tournament.getRegistrationDeadline().isAfter(tournament.getStartDate())) {
+            throw new RuntimeException("Registration deadline must be before start date");
+        }
+
+        if (dto.getImageUrl() != null) {
+            tournament.setImageUrl(dto.getImageUrl());
+        }
+
+        Tournament saved = tournamentRepository.save(tournament);
+        return toFullDTO(saved, true);
     }
 }
