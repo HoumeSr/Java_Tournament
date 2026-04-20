@@ -223,9 +223,8 @@
     </div>
 </div>
 
-<script>
-    // Передаём ID текущего пользователя из сессии
-    window.currentUserId = /*[[${session.userId}]]*/ null;
+<script th:inline="javascript">
+    window.currentUserId = [[${session.userId}]];
 </script>
 
 </body>

@@ -57,7 +57,7 @@
             </div>
         </div>
 
-   <input type="hidden" th:value="${teamSize}" id="teamSizeHidden">
+   <input type="hidden" value="3" id="teamSizeHidden">
 
         <!-- Состав команды -->
         <div class="form-section">
@@ -72,12 +72,8 @@
             </div>
             
             <!-- Остальные игроки -->
-            <div th:each="i, iterStat : ${#numbers.sequence(2, teamSize)}" class="member-row">
-                <div class="member-number" th:text="${iterStat.index + 2}">2</div>
-                <div class="member-input">
-                    <input type="text" th:name="'member' + ${iterStat.index + 2}" placeholder="Никнейм игрока" required>
-                </div>
-            </div>
+            <div id="membersContainer"></div>
+        </div>
         </div>
 
         <!-- Дополнительная информация -->

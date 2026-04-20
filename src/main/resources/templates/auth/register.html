@@ -30,15 +30,9 @@
     </div>
 
     <form class="register-form" id="registrationForm" th:action="@{/register}" method="post">
-      <div class="name-row">
-        <div class="input-group">
-          <label for="firstName">Имя</label>
-          <input type="text" id="firstName" name="firstName" placeholder="Алексей" required>
-        </div>
-        <div class="input-group">
-          <label for="lastName">Фамилия</label>
-          <input type="text" id="lastName" name="lastName" placeholder="Иванов" required>
-        </div>
+      <div class="input-group">
+        <label for="username">Никнейм</label>
+        <input type="text" id="username" name="username" placeholder="CyberBobr" required>
       </div>
 
       <div class="input-group">

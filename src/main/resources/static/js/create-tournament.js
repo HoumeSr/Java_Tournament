@@ -1,300 +1,179 @@
-// ========== УВЕДОМЛЕНИЯ ==========
-function showToast(message, isError = false) {
-    const toast = document.getElementById('demoToast');
-    if (!toast) return;
-    
-    toast.textContent = message;
-    toast.style.background = isError ? '#b91c1c' : '#1f2937';
-    toast.style.opacity = '1';
-    toast.style.visibility = 'visible';
-    
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.visibility = 'hidden';
-    }, 3000);
-}
+(function() {
+    let uploadedImageName = null;
+    let gameTypes = [];
 
-// ========== АВТОРИЗАЦИЯ В ШАПКЕ ==========
-function updateAuthButtons() {
-    const authContainer = document.getElementById('authButtons');
-    if (!authContainer) return;
-    
-    fetch('/api/auth/check')
-        .then(response => response.json())
-        .then(data => {
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('demoToast');
+        if (!toast) return;
+        toast.textContent = message;
+        toast.style.background = isError ? '#b91c1c' : '#1f2937';
+        toast.style.opacity = '1';
+        toast.style.visibility = 'visible';
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.visibility = 'hidden';
+        }, 3000);
+    }
+
+    function resolveImageUrl(path) {
+        if (!path) return null;
+        if (/^https?:\/\//.test(path) || path.startsWith('/') || path.startsWith('data:')) return path;
+        return '/images/' + path;
+    }
+
+    function updateAuthButtons() {
+        const authContainer = document.getElementById('authButtons');
+        if (!authContainer) return;
+        fetch('/api/auth/check').then(r => r.json()).then(data => {
             if (data.authenticated) {
-                const savedAvatar = localStorage.getItem('userAvatar');
-                
-                if (savedAvatar && savedAvatar !== 'null' && savedAvatar !== 'undefined') {
-                    authContainer.innerHTML = `
-                        <div class="profile-icon" id="profileIcon">
-                            <img src="${savedAvatar}" class="avatar-mini">
-                        </div>
-                    `;
-                    const profileIcon = document.getElementById('profileIcon');
-                    if (profileIcon) {
-                        profileIcon.style.padding = '0';
-                        profileIcon.style.overflow = 'hidden';
-                        profileIcon.addEventListener('click', () => {
-                            window.location.href = '/profile';
-                        });
-                    }
-                } else {
-                    authContainer.innerHTML = `
-                        <div class="profile-icon" id="profileIcon">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
-                    `;
-                    document.getElementById('profileIcon')?.addEventListener('click', () => {
-                        window.location.href = '/profile';
-                    });
-                }
+                const imageUrl = data.user?.imageUrl ? resolveImageUrl(data.user.imageUrl) : null;
+                authContainer.innerHTML = `
+                    <div class="profile-icon" id="profileIcon">
+                        ${imageUrl ? `<img src="${imageUrl}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
+                    </div>`;
+                document.getElementById('profileIcon')?.addEventListener('click', () => window.location.href = '/profile');
             } else {
                 authContainer.innerHTML = `
                     <button class="btn-outline" id="registerBtn">Регистрация</button>
-                    <button class="btn-primary" id="loginBtn">Вход</button>
-                `;
-                document.getElementById('registerBtn')?.addEventListener('click', () => {
-                    window.location.href = '/register';
-                });
-                document.getElementById('loginBtn')?.addEventListener('click', () => {
-                    window.location.href = '/login';
-                });
+                    <button class="btn-primary" id="loginBtn">Вход</button>`;
+                document.getElementById('registerBtn')?.addEventListener('click', () => window.location.href = '/register');
+                document.getElementById('loginBtn')?.addEventListener('click', () => window.location.href = '/login');
             }
-        })
-        .catch(error => {
-            console.error('Ошибка:', error);
-            authContainer.innerHTML = `
-                <button class="btn-outline" id="registerBtn">Регистрация</button>
-                <button class="btn-primary" id="loginBtn">Вход</button>
-            `;
-            document.getElementById('registerBtn')?.addEventListener('click', () => {
-                window.location.href = '/register';
-            });
-            document.getElementById('loginBtn')?.addEventListener('click', () => {
-                window.location.href = '/login';
-            });
-        });
-}
+        }).catch(() => {});
+    }
 
-// ========== ВАЛИДАЦИЯ ДАТ ==========
-function validateDates() {
-    const startDate = document.getElementById('startDate').value;
-    
-    if (startDate) {
-        const today = new Date().toISOString().split('T')[0];
-        if (startDate < today) {
-            showToast('❌ Дата начала не может быть раньше сегодняшнего дня', true);
+    async function loadGameTypes() {
+        const select = document.getElementById('category');
+        if (!select) return;
+        try {
+            const response = await fetch('/api/gametypes/active');
+            if (!response.ok) throw new Error('load failed');
+            gameTypes = await response.json();
+            select.innerHTML = '<option value="">— Выберите игру —</option>';
+            gameTypes.forEach(game => {
+                const option = document.createElement('option');
+                option.value = String(game.id);
+                option.textContent = `${game.name}`;
+                option.dataset.maxPlayers = game.maxPlayers || 1;
+                select.appendChild(option);
+            });
+        } catch (e) {
+            showToast('❌ Не удалось загрузить игры', true);
+        }
+    }
+
+    function validateDates() {
+        const startDate = document.getElementById('startDate')?.value;
+        const registrationDeadline = document.getElementById('registrationDeadline')?.value;
+        if (!startDate) {
+            showToast('❌ Укажите дату начала', true);
             return false;
         }
+        if (registrationDeadline && registrationDeadline > startDate) {
+            showToast('❌ Дедлайн регистрации должен быть не позже даты начала', true);
+            return false;
+        }
+        return true;
     }
-    return true;
-}
 
-// ========== ПОКАЗ/СКРЫТИЕ ПОЛЕЙ ПРИЗОВЫХ ==========
-function initPrizeToggle() {
-    const hasPrizeCheckbox = document.getElementById('hasPrize');
-    const prizeFields = document.getElementById('prizeFields');
-    
-    if (!hasPrizeCheckbox || !prizeFields) return;
-    
-    hasPrizeCheckbox.addEventListener('change', () => {
-        prizeFields.style.display = hasPrizeCheckbox.checked ? 'block' : 'none';
-    });
-}
-
-// ========== ЗАГРУЗКА ИЗОБРАЖЕНИЯ ==========
-let uploadedImage = null;
-
-function initImageUpload() {
-    const uploadArea = document.getElementById('imageUploadArea');
-    const fileInput = document.getElementById('tournamentImage');
-    const preview = document.getElementById('imagePreview');
-    
-    if (!uploadArea || !fileInput || !preview) return;
-    
-    uploadArea.addEventListener('click', () => {
-        fileInput.click();
-    });
-    
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        preview.style.borderColor = 'var(--accent)';
-    });
-    
-    uploadArea.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        preview.style.borderColor = '';
-    });
-    
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        preview.style.borderColor = '';
-        const file = e.dataTransfer.files[0];
-        if (file) handleImageFile(file);
-    });
-    
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) handleImageFile(file);
-    });
-    
-    function handleImageFile(file) {
-        if (!file.type.match('image/jpeg|image/png|image/webp')) {
-            showToast('❌ Поддерживаются JPEG, PNG, WEBP', true);
-            return;
-        }
-        
-        if (file.size > 5 * 1024 * 1024) {
-            showToast('❌ Файл не более 5MB', true);
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            uploadedImage = e.target.result;
-            preview.innerHTML = `<img src="${uploadedImage}" style="width:100%;max-height:200px;object-fit:cover;border-radius:1rem">`;
-            preview.classList.add('has-image');
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-// ========== ОТПРАВКА ФОРМЫ ==========
-function initFormSubmit() {
-    const form = document.getElementById('createTournamentForm');
-    if (!form) return;
-    
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        const tournamentData = {
-            name: document.getElementById('tournamentName').value.trim(),
-            category: document.getElementById('category').value,
-            startDate: document.getElementById('startDate').value,
-            location: document.getElementById('location').value,
-            maxPlayers: document.getElementById('maxPlayers').value,
-            hasPrize: document.getElementById('hasPrize').checked,
-            prizeAmount: document.getElementById('hasPrize').checked ? document.getElementById('prizeAmount').value : null,
-            prizeCurrency: document.getElementById('hasPrize').checked ? document.getElementById('prizeCurrency').value : null,
-            visibility: document.getElementById('visibility').value,
-            description: document.getElementById('description').value,
-            image: uploadedImage
-        };
-        
-        if (!tournamentData.name) {
-            showToast('❌ Введите название турнира', true);
-            return;
-        }
-        
-        if (!tournamentData.category) {
-            showToast('❌ Выберите категорию', true);
-            return;
-        }
-        
-        if (!tournamentData.startDate) {
-            showToast('❌ Укажите дату проведения', true);
-            return;
-        }
-        
-        if (!validateDates()) return;
-        
-        console.log('Данные турнира:', tournamentData);
-        showToast('✅ Турнир успешно создан!');
-        
-        form.reset();
-        uploadedImage = null;
-        
-        const prizeFields = document.getElementById('prizeFields');
-        if (prizeFields) prizeFields.style.display = 'none';
-        
+    function initImageUpload() {
+        const uploadArea = document.getElementById('imageUploadArea');
+        const fileInput = document.getElementById('tournamentImage');
         const preview = document.getElementById('imagePreview');
-        if (preview) {
-            preview.innerHTML = `
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p>Нажмите или перетащите изображение</p>
-                <span class="image-hint">PNG, JPG, WEBP до 5MB</span>
-            `;
-            preview.classList.remove('has-image');
-        }
-        
-        setTimeout(() => {
-            window.location.href = '/';
-        }, 2000);
-    });
-}
-
-// ========== ОТМЕНА ==========
-function initCancel() {
-    const cancelBtn = document.getElementById('cancelBtn');
-    if (!cancelBtn) return;
-    
-    cancelBtn.addEventListener('click', () => {
-        if (confirm('Все введённые данные будут потеряны. Продолжить?')) {
-            window.location.href = '/';
-        }
-    });
-}
-
-// ========== НАВИГАЦИЯ ==========
-function initNavBar() {
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        if (item.getAttribute('href') && item.getAttribute('href') !== '#') return;
-        item.addEventListener('click', () => {
-            showToast('📋 Этот раздел в разработке');
+        if (!uploadArea || !fileInput || !preview) return;
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', e => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            uploadedImageName = file.name;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                preview.innerHTML = `<img src="${ev.target.result}" style="width:100%;max-height:200px;object-fit:cover;border-radius:1rem">`;
+                preview.classList.add('has-image');
+            };
+            reader.readAsDataURL(file);
         });
-    });
-}
-
-// ========== УСТАНОВКА МИНИМАЛЬНОЙ ДАТЫ ==========
-function setMinDate() {
-    const today = new Date().toISOString().split('T')[0];
-    const startDateInput = document.getElementById('startDate');
-    if (startDateInput) {
-        startDateInput.min = today;
     }
-}
 
-function initNumberControls() {
-    const numberInput = document.getElementById('maxPlayers');
-    if (!numberInput) return;
-    
-    const controls = numberInput.nextElementSibling;
-    if (!controls || !controls.classList.contains('number-controls')) return;
-    
-    const upBtn = controls.querySelector('.number-up');
-    const downBtn = controls.querySelector('.number-down');
-    
-    if (upBtn) {
-        upBtn.addEventListener('click', () => {
-            let value = parseInt(numberInput.value) || 0;
-            const max = parseInt(numberInput.getAttribute('max')) || 256;
-            if (value < max) {
-                numberInput.value = value + 1;
+    function setMinDate() {
+        const today = new Date().toISOString().split('T')[0];
+        const startDateInput = document.getElementById('startDate');
+        const registrationInput = document.getElementById('registrationDeadline');
+        if (startDateInput) startDateInput.min = today;
+        if (registrationInput) registrationInput.min = today;
+    }
+
+    function initFormSubmit() {
+        const form = document.getElementById('createTournamentForm');
+        if (!form) return;
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const title = document.getElementById('tournamentName')?.value.trim();
+            const gameTypeId = document.getElementById('category')?.value;
+            const description = document.getElementById('description')?.value.trim();
+            const startDate = document.getElementById('startDate')?.value;
+            const registrationDeadline = document.getElementById('registrationDeadline')?.value;
+            const maxParticipants = parseInt(document.getElementById('maxPlayers')?.value || '0', 10);
+            const minParticipants = parseInt(document.getElementById('minParticipants')?.value || '2', 10);
+            const participantType = document.getElementById('participantType')?.value || 'SOLO';
+            const access = document.getElementById('access')?.value || 'OPEN';
+            if (!title) return showToast('❌ Введите название турнира', true);
+            if (!gameTypeId) return showToast('❌ Выберите игру', true);
+            if (!validateDates()) return;
+            const payload = {
+                title,
+                description: description || 'Описание пока не добавлено',
+                participantType,
+                access,
+                gameTypeId: Number(gameTypeId),
+                status: 'DRAFT',
+                startDate: `${startDate}T12:00:00`,
+                registrationDeadline: registrationDeadline ? `${registrationDeadline}T23:59:00` : null,
+                maxParticipants: Number.isFinite(maxParticipants) && maxParticipants > 1 ? maxParticipants : 16,
+                minParticipants: Number.isFinite(minParticipants) && minParticipants > 1 ? minParticipants : 2,
+                imageUrl: uploadedImageName
+            };
+            try {
+                const response = await fetch('/api/tournaments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || 'Не удалось создать турнир');
+                }
+                showToast('✅ Турнир успешно создан');
+                setTimeout(() => {
+                    const id = result.tournament?.id;
+                    window.location.href = id ? `/tournaments/${id}` : '/';
+                }, 1200);
+            } catch (error) {
+                showToast(`❌ ${error.message}`, true);
             }
         });
     }
-    
-    if (downBtn) {
-        downBtn.addEventListener('click', () => {
-            let value = parseInt(numberInput.value) || 0;
-            const min = parseInt(numberInput.getAttribute('min')) || 2;
-            if (value > min) {
-                numberInput.value = value - 1;
+
+    function initCancel() {
+        document.getElementById('cancelBtn')?.addEventListener('click', () => {
+            if (confirm('Все введённые данные будут потеряны. Продолжить?')) {
+                window.location.href = '/';
             }
         });
     }
-}
 
-// ========== ЗАПУСК ==========
-document.addEventListener('DOMContentLoaded', () => {
+    function initNavBar() {
+        document.querySelectorAll('.nav-item').forEach(item => {
+            if (item.getAttribute('href') && item.getAttribute('href') !== '#') return;
+            item.addEventListener('click', () => showToast('📋 Этот раздел пока в разработке'));
+        });
+    }
+
     updateAuthButtons();
-    initPrizeToggle();
+    loadGameTypes();
+    setMinDate();
     initImageUpload();
     initFormSubmit();
     initCancel();
     initNavBar();
-    setMinDate();
-    initNumberControls();
-});
+})();

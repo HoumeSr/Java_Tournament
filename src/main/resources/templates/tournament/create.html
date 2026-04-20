@@ -47,14 +47,7 @@
                 <div class="form-group">
                     <label for="category">Категория <span class="required">*</span></label>
                     <select id="category" name="category" required>
-                        <option value="">— Выберите категорию —</option>
-                        <option value="chess">♟️ Шахматы</option>
-                        <option value="tennis">🎾 Теннис</option>
-                        <option value="esports">🎮 Киберспорт</option>
-                        <option value="football">⚽ Киберфутбол</option>
-                        <option value="fighting">🥋 Файтинги</option>
-                        <option value="hockey">🏒 Хоккей</option>
-                        <option value="basketball">🏀 Баскетбол</option>
+                        <option value="">— Загрузка игр... —</option>
                     </select>
                 </div>
 
@@ -117,12 +110,28 @@
             
             <div class="form-row">
                 <div class="form-group">
-                    <label for="visibility">Видимость <span class="required">*</span></label>
-                    <select id="visibility" name="visibility" required>
-                        <option value="public">🌍 Публичный — доступен всем</option>
-                        <option value="private">🔒 Закрытый — только по инвайтам</option>
-                        <option value="official">🏆 Официальный — рейтинговый</option>
+                    <label for="participantType">Формат участия <span class="required">*</span></label>
+                    <select id="participantType" name="participantType" required>
+                        <option value="SOLO">👤 Одиночный</option>
+                        <option value="TEAM">👥 Командный</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label for="access">Доступ <span class="required">*</span></label>
+                    <select id="access" name="access" required>
+                        <option value="OPEN">🌍 Открытый</option>
+                        <option value="INVITE">🔒 По приглашениям</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="registrationDeadline">Дедлайн регистрации</label>
+                    <input type="date" id="registrationDeadline" name="registrationDeadline">
+                </div>
+                <div class="form-group">
+                    <label for="minParticipants">Мин. участников</label>
+                    <input type="number" id="minParticipants" name="minParticipants" min="2" max="256" value="2">
                 </div>
             </div>
         </div>
