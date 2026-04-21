@@ -1,5 +1,6 @@
 package com.kosmo.tournament.user.dto;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class UserProfileDTO {
@@ -11,6 +12,7 @@ public class UserProfileDTO {
     private Boolean enabled;
     private String imageUrl;
     private boolean owner;
+    private LocalDateTime createdAt;
     private List<UserGameStatsDTO> games;
 
     public UserProfileDTO() {
@@ -24,6 +26,7 @@ public class UserProfileDTO {
     public Boolean getEnabled() { return enabled; }
     public String getImageUrl() { return imageUrl; }
     public boolean isOwner() { return owner; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
     public List<UserGameStatsDTO> getGames() { return games; }
 
     public void setUserId(Long userId) { this.userId = userId; }
@@ -34,5 +37,6 @@ public class UserProfileDTO {
     public void setEnabled(Boolean enabled) { this.enabled = enabled; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setOwner(boolean owner) { this.owner = owner; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setGames(List<UserGameStatsDTO> games) { this.games = games; }
 }
