@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Управление турниром — Бобры</title>
+    <title th:text="'Управление турниром — ' + ${tournament.title} + ' — Бобры'">Управление турниром — Бобры</title>
     
     <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link th:href="@{/css/tournament.css}" rel="stylesheet">
+    <link th:href="@{/css/tournament-manage.css}" rel="stylesheet">
 </head>
 <body>
 
@@ -18,7 +18,7 @@
         <div class="nav-links">
             <a th:href="@{/}" class="nav-item">Главная</a>
             <a th:href="@{/teams}" class="nav-item">Команды</a>
-            <a data-nav="matches" class="nav-item active-nav">Матчи</a>
+            <a th:href="@{/matches}" class="nav-item">Матчи</a>
             <a th:href="@{/rating}" class="nav-item">Рейтинг</a>
         </div>
     </div>
@@ -26,46 +26,37 @@
 </header>
 
 <main class="container">
-    <div class="manage-header">
-        <h1><i class="fas fa-trophy"></i> Управление турниром</h1>
-        <p th:text="${tournament.name}">Кибер Кубок 2025</p>
-        <a th:href="@{'/tournament/' + ${tournament.id}}" class="btn-back">← Вернуться к просмотру</a>
+    <div class="tournament-header">
+        <div class="header-left">
+            <a th:href="@{/tournaments/{id}(id=${tournament.id})}" class="back-link">
+                <i class="fas fa-arrow-left"></i> Вернуться к турниру
+            </a>
+            <h1><i class="fas fa-trophy"></i> <span th:text="${tournament.title}">Турнир</span></h1>
+            <div class="tournament-meta">
+                <span class="meta-badge"><i class="fas fa-gamepad"></i> <span th:text="${tournament.gameName}">Игра</span></span>
+                <span class="meta-badge"><i class="fas fa-users"></i> <span th:text="${tournament.participantType == 'TEAM' ? 'Командный' : 'Личный'}">Тип</span></span>
+                <span class="meta-badge"><i class="fas fa-user"></i> Организатор: <span th:text="${tournament.organizerUsername}">username</span></span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="status-badge" th:classappend="${tournament.status}">
+                <span th:text="${tournament.status == 'IN_PROGRESS' ? 'В процессе' : tournament.status == 'COMPLETED' ? 'Завершён' : tournament.status == 'REGISTRATION' ? 'Регистрация' : 'Создан'}">Статус</span>
+            </div>
+        </div>
     </div>
 
-    <!-- Турнирная сетка с управлением -->
-    <div class="manage-section">
-        <h2 class="section-title">Редактирование результатов</h2>
-        
-        <div class="playoff-manage">
-            <div th:each="round : ${tournament.rounds}" class="round-manage">
-                <div class="round-title" th:text="${round.name}">1/4 финала</div>
-                <div class="round-matches">
-                    <div th:each="match : ${round.matches}" class="match-manage-card">
-                        <div class="match-teams-info">
-                            <div class="match-team-name">
-                                <span th:text="${match.team1Name}">Команда 1</span>
-                            </div>
-                            <div class="match-vs">VS</div>
-                            <div class="match-team-name">
-                                <span th:text="${match.team2Name}">Команда 2</span>
-                            </div>
-                        </div>
-                        <div class="match-score-inputs">
-                            <div class="score-input-group">
-                                <label>Счёт команды 1</label>
-                                <input type="number" th:id="'score1_' + ${match.id}" class="score-input" min="0" max="99" placeholder="0">
-                            </div>
-                            <div class="score-input-group">
-                                <label>Счёт команды 2</label>
-                                <input type="number" th:id="'score2_' + ${match.id}" class="score-input" min="0" max="99" placeholder="0">
-                            </div>
-                            <button class="btn-save-score" th:data-match-id="${match.id}" th:data-round="${round.roundNumber}" th:data-match-index="${matchStat.index}">
-                                <i class="fas fa-save"></i> Сохранить
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="bracket-controls">
+        <button id="refreshBtn" class="btn-refresh">
+            <i class="fas fa-sync-alt"></i> Обновить сетку
+        </button>
+        <div class="info-message">
+            <i class="fas fa-info-circle"></i> Нажмите на матч, чтобы выбрать победителя
+        </div>
+    </div>
+
+    <div id="bracketContainer" class="bracket-container">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i> Загрузка сетки...
         </div>
     </div>
 </main>
@@ -85,8 +76,594 @@
     </div>
 </footer>
 
+<!-- Модальное окно для выбора победителя -->
+<div id="winnerModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-crown"></i> Выбор победителя матча</h3>
+            <span class="modal-close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="match-info" id="modalMatchInfo">
+                <p><strong>Раунд:</strong> <span id="modalRound">-</span></p>
+                <p><strong>Матч:</strong> <span id="modalMatchId">-</span></p>
+            </div>
+            <div class="participants-selector" id="participantsSelector">
+                <!-- Динамически добавляются участники -->
+            </div>
+            <div class="modal-error" id="modalError" style="display: none;">
+                <i class="fas fa-exclamation-triangle"></i> <span id="modalErrorMessage"></span>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" id="cancelModalBtn">Отмена</button>
+            <button class="btn-submit" id="submitWinnerBtn">Подтвердить победителя</button>
+        </div>
+    </div>
+</div>
+
 <div id="demoToast" class="demo-toast"></div>
 
-<script th:src="@{/js/tournament-manage.js}"></script>
+<script>
+    // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+    const tournamentId = /*[[${tournament.id}]]*/ null;
+    const participantType = /*[[${tournament.participantType}]]*/ 'SOLO';
+    let currentMatches = [];
+    let currentSelectedMatch = null;
+    let isLoading = false;
+
+    // ========== УВЕДОМЛЕНИЯ ==========
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('demoToast');
+        if (!toast) return;
+        
+        toast.textContent = message;
+        toast.style.background = isError ? '#b91c1c' : '#1f2937';
+        toast.style.opacity = '1';
+        toast.style.visibility = 'visible';
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.visibility = 'hidden';
+        }, 3000);
+    }
+
+    // ========== АВТОРИЗАЦИЯ ==========
+    function updateAuthButtons() {
+        const authContainer = document.getElementById('authButtons');
+        if (!authContainer) return;
+        
+        fetch('/api/auth/check')
+            .then(response => response.json())
+            .then(data => {
+                if (data.authenticated) {
+                    const savedAvatar = localStorage.getItem('userAvatar');
+                    
+                    if (savedAvatar) {
+                        authContainer.innerHTML = `
+                            <div class="profile-icon" id="profileIcon">
+                                <img src="${savedAvatar}">
+                            </div>
+                        `;
+                    } else {
+                        authContainer.innerHTML = `
+                            <div class="profile-icon" id="profileIcon">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                        `;
+                    }
+                    document.getElementById('profileIcon')?.addEventListener('click', () => {
+                        window.location.href = '/profile';
+                    });
+                } else {
+                    authContainer.innerHTML = `
+                        <button class="btn-outline" id="registerBtn">Регистрация</button>
+                        <button class="btn-primary" id="loginBtn">Вход</button>
+                    `;
+                    document.getElementById('registerBtn')?.addEventListener('click', () => {
+                        window.location.href = '/register';
+                    });
+                    document.getElementById('loginBtn')?.addEventListener('click', () => {
+                        window.location.href = '/login';
+                    });
+                }
+            });
+    }
+
+    // ========== ЗАГРУЗКА МАТЧЕЙ ==========
+    async function loadMatches() {
+        if (isLoading) return;
+        isLoading = true;
+        
+        const container = document.getElementById('bracketContainer');
+        container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Загрузка сетки...</div>';
+        
+        try {
+            const response = await fetch(`/api/tournaments/${tournamentId}/matches`);
+            if (!response.ok) throw new Error('Ошибка загрузки матчей');
+            
+            const matches = await response.json();
+            currentMatches = matches;
+            renderBracket(matches);
+        } catch (error) {
+            console.error('Error loading matches:', error);
+            container.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Ошибка загрузки сетки турнира</p>
+                    <button onclick="loadMatches()" class="btn-retry">Повторить</button>
+                </div>
+            `;
+            showToast('Не удалось загрузить матчи', true);
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    // ========== ГРУППИРОВКА МАТЧЕЙ ПО РАУНДАМ ==========
+    function groupMatchesByRound(matches) {
+        const grouped = new Map();
+        
+        matches.forEach(match => {
+            const round = match.roundNumber;
+            if (!grouped.has(round)) {
+                grouped.set(round, []);
+            }
+            grouped.get(round).push(match);
+        });
+        
+        // Сортируем раунды по номеру
+        const sortedRounds = Array.from(grouped.keys()).sort((a, b) => a - b);
+        const result = [];
+        
+        // Находим максимальный раунд для определения названий
+        const maxRound = Math.max(...sortedRounds);
+        
+        sortedRounds.forEach(round => {
+            const matchesInRound = grouped.get(round);
+            // Сортируем матчи внутри раунда по id для правильного порядка
+            matchesInRound.sort((a, b) => {
+                // Извлекаем числовые части из id для сортировки
+                const aNum = parseInt(a.id.split('_')[1]) || 0;
+                const bNum = parseInt(b.id.split('_')[1]) || 0;
+                return aNum - bNum;
+            });
+            
+            result.push({
+                number: round,
+                name: getRoundName(round, maxRound),
+                matches: matchesInRound
+            });
+        });
+        
+        return result;
+    }
+
+    // ========== ПОЛУЧЕНИЕ НАЗВАНИЯ РАУНДА ==========
+    function getRoundName(round, maxRound) {
+        if (round === maxRound) return 'Финал';
+        if (maxRound === 4 && round === 3) return '1/2 финала';
+        if (maxRound === 4 && round === 2) return '1/4 финала';
+        if (maxRound === 4 && round === 1) return '1/8 финала';
+        if (maxRound === 3 && round === 2) return '1/2 финала';
+        if (maxRound === 3 && round === 1) return '1/4 финала';
+        if (maxRound === 2 && round === 1) return '1/2 финала';
+        return `${round}-й раунд`;
+    }
+
+    // ========== РЕНДЕР СЕТКИ ==========
+    function renderBracket(matches) {
+        const container = document.getElementById('bracketContainer');
+        if (!container) return;
+        
+        if (!matches || matches.length === 0) {
+            container.innerHTML = `
+                <div class="empty-message">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Матчи ещё не созданы</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const rounds = groupMatchesByRound(matches);
+        
+        const bracketDiv = document.createElement('div');
+        bracketDiv.className = 'bracket';
+        
+        rounds.forEach((round, roundIdx) => {
+            const roundDiv = document.createElement('div');
+            roundDiv.className = 'round';
+            roundDiv.setAttribute('data-round', round.number);
+            
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'round-header';
+            headerDiv.textContent = round.name;
+            roundDiv.appendChild(headerDiv);
+            
+            const matchesContainer = document.createElement('div');
+            matchesContainer.className = 'matches-container';
+            
+            round.matches.forEach((match) => {
+                const matchDiv = createMatchCard(match);
+                matchesContainer.appendChild(matchDiv);
+            });
+            
+            roundDiv.appendChild(matchesContainer);
+            bracketDiv.appendChild(roundDiv);
+        });
+        
+        container.innerHTML = '';
+        container.appendChild(bracketDiv);
+        
+        // Добавляем соединительные линии
+        setTimeout(() => drawConnections(), 50);
+    }
+
+    // ========== СОЗДАНИЕ КАРТОЧКИ МАТЧА ==========
+    function createMatchCard(match) {
+        const matchDiv = document.createElement('div');
+        matchDiv.className = 'match';
+        matchDiv.setAttribute('data-match-id', match.id);
+        matchDiv.setAttribute('data-match-type', match.matchType);
+        
+        if (match.status === 'FINISHED' || match.winnerId) {
+            matchDiv.classList.add('finished');
+        }
+        
+        // Определяем участников
+        const participant1 = {
+            id: match.participant1Id,
+            name: match.participant1Name || 'TBD',
+            isWinner: match.winnerId === match.participant1Id
+        };
+        
+        const participant2 = {
+            id: match.participant2Id,
+            name: match.participant2Name || 'TBD',
+            isWinner: match.winnerId === match.participant2Id
+        };
+        
+        const isFinished = match.status === 'FINISHED' || !!match.winnerId;
+        const isSolo = match.matchType === 'SOLO';
+        
+        matchDiv.innerHTML = `
+            <div class="match-teams">
+                <div class="team ${isFinished && participant1.isWinner ? 'winner' : (isFinished && participant2.isWinner ? 'loser' : '')}">
+                    <div class="team-avatar">
+                        <i class="fas ${isSolo ? 'fa-user' : 'fa-users'}"></i>
+                    </div>
+                    <span class="team-name">${escapeHtml(participant1.name)}</span>
+                    ${isFinished && participant1.isWinner ? '<span class="winner-badge"><i class="fas fa-crown"></i></span>' : ''}
+                </div>
+                <div class="match-divider-line"></div>
+                <div class="team ${isFinished && participant2.isWinner ? 'winner' : (isFinished && participant1.isWinner ? 'loser' : '')}">
+                    <div class="team-avatar">
+                        <i class="fas ${isSolo ? 'fa-user' : 'fa-users'}"></i>
+                    </div>
+                    <span class="team-name">${escapeHtml(participant2.name)}</span>
+                    ${isFinished && participant2.isWinner ? '<span class="winner-badge"><i class="fas fa-crown"></i></span>' : ''}
+                </div>
+            </div>
+            <div class="match-status">
+                <span class="${isFinished ? 'status-finished' : 'status-pending'}">
+                    ${isFinished ? 'Победитель определён' : (match.scheduledAt ? formatDate(match.scheduledAt) : 'Ожидает начала')}
+                </span>
+            </div>
+        `;
+        
+        // Добавляем обработчик клика только для незавершённых матчей
+        if (!isFinished && match.participant1Id && match.participant2Id) {
+            matchDiv.classList.add('clickable');
+            matchDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openWinnerModal(match);
+            });
+        }
+        
+        return matchDiv;
+    }
+
+    // ========== ОТКРЫТИЕ МОДАЛЬНОГО ОКНА ==========
+    function openWinnerModal(match) {
+        currentSelectedMatch = match;
+        
+        const modal = document.getElementById('winnerModal');
+        const modalRound = document.getElementById('modalRound');
+        const modalMatchId = document.getElementById('modalMatchId');
+        const participantsSelector = document.getElementById('participantsSelector');
+        const modalError = document.getElementById('modalError');
+        
+        modalRound.textContent = `Раунд ${match.roundNumber}`;
+        modalMatchId.textContent = `Матч #${match.id}`;
+        
+        // Создаём выбор участников
+        const isSolo = match.matchType === 'SOLO';
+        const participants = [
+            { id: match.participant1Id, name: match.participant1Name, type: 'participant1' },
+            { id: match.participant2Id, name: match.participant2Name, type: 'participant2' }
+        ];
+        
+        participantsSelector.innerHTML = `
+            <div class="selector-title">Выберите победителя матча:</div>
+            <div class="selector-options">
+                ${participants.map(p => `
+                    <div class="selector-option" data-winner-id="${p.id}" data-winner-type="${p.type}">
+                        <div class="option-avatar">
+                            <i class="fas ${isSolo ? 'fa-user' : 'fa-users'}"></i>
+                        </div>
+                        <div class="option-info">
+                            <div class="option-name">${escapeHtml(p.name)}</div>
+                            <div class="option-label">${p.type === 'participant1' ? 'Участник 1' : 'Участник 2'}</div>
+                        </div>
+                        <div class="option-check">
+                            <i class="far fa-circle"></i>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        // Добавляем обработчики выбора
+        document.querySelectorAll('.selector-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.selector-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                    opt.querySelector('.option-check i').className = 'far fa-circle';
+                });
+                option.classList.add('selected');
+                option.querySelector('.option-check i').className = 'fas fa-check-circle';
+            });
+        });
+        
+        modalError.style.display = 'none';
+        modal.style.display = 'flex';
+    }
+
+    // ========== ОТПРАВКА РЕЗУЛЬТАТА ==========
+    async function submitWinner() {
+        const selectedOption = document.querySelector('.selector-option.selected');
+        if (!selectedOption) {
+            showModalError('Пожалуйста, выберите победителя');
+            return;
+        }
+        
+        const winnerId = selectedOption.dataset.winnerId;
+        const winnerType = selectedOption.dataset.winnerType;
+        
+        if (!currentSelectedMatch) return;
+        
+        const isSolo = currentSelectedMatch.matchType === 'SOLO';
+        
+        let body;
+        if (isSolo) {
+            body = {
+                winnerUserId: parseInt(winnerId),
+                status: 'FINISHED'
+            };
+        } else {
+            body = {
+                winnerTeamId: parseInt(winnerId),
+                status: 'FINISHED'
+            };
+        }
+        
+        const submitBtn = document.getElementById('submitWinnerBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+        submitBtn.disabled = true;
+        
+        try {
+            const url = isSolo 
+                ? `/api/tournaments/${tournamentId}/matches/${currentSelectedMatch.id}/result/solo`
+                : `/api/tournaments/${tournamentId}/matches/${currentSelectedMatch.id}/result/team`;
+            
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Ошибка при сохранении результата');
+            }
+            
+            showToast('Победитель успешно определён!');
+            closeModal();
+            await loadMatches(); // Перезагружаем сетку
+        } catch (error) {
+            console.error('Error submitting winner:', error);
+            showModalError(error.message);
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+
+    // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+    function showModalError(message) {
+        const modalError = document.getElementById('modalError');
+        const modalErrorMessage = document.getElementById('modalErrorMessage');
+        modalErrorMessage.textContent = message;
+        modalError.style.display = 'flex';
+        
+        setTimeout(() => {
+            modalError.style.display = 'none';
+        }, 3000);
+    }
+    
+    function closeModal() {
+        const modal = document.getElementById('winnerModal');
+        modal.style.display = 'none';
+        currentSelectedMatch = null;
+    }
+    
+    function formatDate(dateString) {
+        if (!dateString) return 'Дата не указана';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ru-RU', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '—';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // ========== РИСОВАНИЕ ЛИНИЙ ==========
+    function drawConnections() {
+        const container = document.getElementById('bracketContainer');
+        const rounds = document.querySelectorAll('.round');
+        if (rounds.length < 2) return;
+        
+        // Удаляем старый SVG
+        const oldSvg = container.querySelector('svg');
+        if (oldSvg) oldSvg.remove();
+        
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.style.position = 'absolute';
+        svg.style.top = '0';
+        svg.style.left = '0';
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+        svg.style.pointerEvents = 'none';
+        svg.style.zIndex = '10';
+        
+        const containerRect = container.getBoundingClientRect();
+        
+        for (let i = 0; i < rounds.length - 1; i++) {
+            const currentRound = rounds[i];
+            const nextRound = rounds[i + 1];
+            
+            const currentMatches = currentRound.querySelectorAll('.match');
+            const nextMatches = nextRound.querySelectorAll('.match');
+            
+            if (currentMatches.length === 0 || nextMatches.length === 0) continue;
+            
+            const nextMatchesCount = nextMatches.length;
+            const matchesPerNext = currentMatches.length / nextMatchesCount;
+            
+            for (let j = 0; j < nextMatchesCount; j++) {
+                const startIdx = j * matchesPerNext;
+                const endIdx = startIdx + matchesPerNext - 1;
+                
+                const firstMatch = currentMatches[startIdx];
+                const lastMatch = currentMatches[endIdx];
+                const targetMatch = nextMatches[j];
+                
+                if (!firstMatch || !lastMatch || !targetMatch) continue;
+                
+                const firstRect = firstMatch.getBoundingClientRect();
+                const lastRect = lastMatch.getBoundingClientRect();
+                const targetRect = targetMatch.getBoundingClientRect();
+                
+                const startX = firstRect.right - containerRect.left;
+                const startY = firstRect.top + firstRect.height / 2 - containerRect.top;
+                const endX = lastRect.right - containerRect.left;
+                const endY = lastRect.top + lastRect.height / 2 - containerRect.top;
+                const targetX = targetRect.left - containerRect.left;
+                const targetY = targetRect.top + targetRect.height / 2 - containerRect.top;
+                
+                const connectorX = targetX - 20;
+                
+                // Линия от первого матча
+                const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line1.setAttribute('x1', startX);
+                line1.setAttribute('y1', startY);
+                line1.setAttribute('x2', connectorX);
+                line1.setAttribute('y2', startY);
+                line1.setAttribute('stroke', 'var(--accent)');
+                line1.setAttribute('stroke-width', '2');
+                line1.setAttribute('opacity', '0.5');
+                svg.appendChild(line1);
+                
+                // Линия от последнего матча
+                const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line2.setAttribute('x1', endX);
+                line2.setAttribute('y1', endY);
+                line2.setAttribute('x2', connectorX);
+                line2.setAttribute('y2', endY);
+                line2.setAttribute('stroke', 'var(--accent)');
+                line2.setAttribute('stroke-width', '2');
+                line2.setAttribute('opacity', '0.5');
+                svg.appendChild(line2);
+                
+                // Вертикальная линия
+                const verticalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                verticalLine.setAttribute('x1', connectorX);
+                verticalLine.setAttribute('y1', startY);
+                verticalLine.setAttribute('x2', connectorX);
+                verticalLine.setAttribute('y2', endY);
+                verticalLine.setAttribute('stroke', 'var(--accent)');
+                verticalLine.setAttribute('stroke-width', '2');
+                verticalLine.setAttribute('opacity', '0.5');
+                svg.appendChild(verticalLine);
+                
+                // Линия к следующему матчу
+                const line3 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line3.setAttribute('x1', connectorX);
+                line3.setAttribute('y1', (startY + endY) / 2);
+                line3.setAttribute('x2', targetX);
+                line3.setAttribute('y2', (startY + endY) / 2);
+                line3.setAttribute('stroke', 'var(--accent)');
+                line3.setAttribute('stroke-width', '2');
+                line3.setAttribute('opacity', '0.5');
+                svg.appendChild(line3);
+            }
+        }
+        
+        container.style.position = 'relative';
+        container.appendChild(svg);
+    }
+
+    // ========== ОБРАБОТЧИКИ СОБЫТИЙ ==========
+    function initEventListeners() {
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => loadMatches());
+        }
+        
+        const modal = document.getElementById('winnerModal');
+        const closeBtn = document.querySelector('.modal-close');
+        const cancelBtn = document.getElementById('cancelModalBtn');
+        const submitBtn = document.getElementById('submitWinnerBtn');
+        
+        closeBtn?.addEventListener('click', closeModal);
+        cancelBtn?.addEventListener('click', closeModal);
+        submitBtn?.addEventListener('click', submitWinner);
+        
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        
+        // Перерисовка линий при изменении размера окна
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                drawConnections();
+            }, 200);
+        });
+    }
+
+    // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    document.addEventListener('DOMContentLoaded', () => {
+        updateAuthButtons();
+        initEventListeners();
+        loadMatches();
+    });
+</script>
 </body>
 </html>
