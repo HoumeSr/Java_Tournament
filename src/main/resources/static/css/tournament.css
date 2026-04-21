@@ -694,3 +694,552 @@ body {
 .status-pending {
     color: var(--text-secondary);
 }
+
+/* ========== КИБЕР-КАРТОЧКА ТУРНИРА (МОЛОДЁЖНЫЙ СТИЛЬ) ========== */
+.tournament-info {
+    background: linear-gradient(135deg, rgba(20, 25, 40, 0.95) 0%, rgba(10, 12, 20, 0.98) 100%);
+    border-radius: 2rem;
+    border: 1px solid rgba(124, 58, 237, 0.4);
+    margin-bottom: 2.5rem;
+    margin-top: 1rem;
+    overflow: hidden;
+    backdrop-filter: blur(16px);
+    position: relative;
+    transition: all 0.3s ease;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Неоновая обводка при ховере */
+.tournament-info:hover {
+    border-color: #7c3aed;
+    box-shadow: 0 0 25px rgba(124, 58, 237, 0.3), 0 10px 30px rgba(0, 0, 0, 0.5);
+    transform: translateY(-3px);
+}
+
+/* Анимированная линия сверху */
+.tournament-info::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #7c3aed, #c084fc, #7c3aed, transparent);
+    animation: scanLine 3s ease-in-out infinite;
+}
+
+@keyframes scanLine {
+    0% { left: -100%; }
+    50% { left: 100%; }
+    100% { left: 100%; }
+}
+
+.tournament-header-info {
+    display: flex;
+    gap: 2rem;
+    padding: 2rem;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 1;
+    justify-content: center;
+}
+
+/* Изображение турнира с неоном */
+.tournament-image {
+    flex-shrink: 0;
+    width: 220px;
+    height: 220px;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    background: linear-gradient(135deg, #7c3aed, #c084fc);
+    position: relative;
+    transition: all 0.3s;
+}
+
+.tournament-image::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), transparent);
+    pointer-events: none;
+}
+
+.tournament-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s;
+}
+
+.tournament-image:hover img {
+    transform: scale(1.05);
+}
+
+/* Заголовок с градиентом и дропом */
+.tournament-details {
+    flex: 1;
+    min-width: 280px;
+}
+
+.tournament-details h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #c084fc, #60a5fa, #a78bfa);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    letter-spacing: -0.02em;
+    text-shadow: 0 0 30px rgba(124, 58, 237, 0.3);
+}
+
+.tournament-details h1 i {
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    color: #7c3aed;
+    filter: drop-shadow(0 0 8px #7c3aed);
+}
+
+/* Описание */
+.tournament-description {
+    color: #a1a9c0;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+    font-size: 0.95rem;
+    padding-left: 0.25rem;
+    border-left: 3px solid #7c3aed;
+}
+
+/* Сетка мета-информации */
+.tournament-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Каждая метка — как стикер */
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.8rem 1rem;
+    background: rgba(124, 58, 237, 0.08);
+    border-radius: 1rem;
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    transition: all 0.25s ease;
+    backdrop-filter: blur(4px);
+}
+
+.meta-item:hover {
+    background: rgba(124, 58, 237, 0.15);
+    border-color: #7c3aed;
+    transform: translateX(5px);
+    box-shadow: 0 0 15px rgba(124, 58, 237, 0.2);
+}
+
+/* Иконки с неоном */
+.meta-item i {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #7c3aed, #c084fc);
+    border-radius: 0.8rem;
+    font-size: 1rem;
+    color: white;
+    box-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
+}
+
+.meta-item span {
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.meta-item strong {
+    color: white;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff, #c084fc);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    margin-left: 0.25rem;
+}
+
+/* Код игры как чип */
+.game-code {
+    background: linear-gradient(135deg, #7c3aed20, #c084fc20);
+    padding: 0.25rem 0.6rem;
+    border-radius: 2rem;
+    margin-left: 0.5rem;
+    font-size: 0.7rem;
+    font-family: monospace;
+    font-weight: 600;
+    color: #c084fc;
+    border: 1px solid rgba(124, 58, 237, 0.4);
+}
+
+/* Статус-бейдж с иконкой */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(4px);
+}
+
+.status-badge::before {
+    content: '●';
+    font-size: 0.6rem;
+}
+
+.status-draft {
+    background: rgba(100, 116, 139, 0.2);
+    color: #94a3b8;
+    border: 1px solid #475569;
+}
+
+.status-active {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+}
+
+.status-finished {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+}
+
+/* Кнопки управления — геймерский стиль */
+.tournament-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(96, 165, 250, 0.1));
+    border: 1px solid rgba(124, 58, 237, 0.5);
+    padding: 0.7rem 1.4rem;
+    border-radius: 2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: white;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    backdrop-filter: blur(4px);
+}
+
+.btn-secondary:hover {
+    background: #7c3aed;
+    border-color: #c084fc;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(124, 58, 237, 0.4);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    padding: 0.7rem 1.4rem;
+    border-radius: 2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #ef4444;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    backdrop-filter: blur(4px);
+}
+
+.btn-danger:hover {
+    background: #ef4444;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(239, 68, 68, 0.4);
+}
+
+/* ========== ОСНОВНОЙ КОНТЕЙНЕР ========== */
+.container {
+    max-width: 100%;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    overflow-x: auto;
+}
+
+/* ========== СЕКЦИЯ СЕТКИ ========== */
+.bracket-section {
+    margin-top: 2rem;
+}
+
+.section-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-dim);
+    text-align: center;
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.section-header h2 i {
+    color: var(--accent);
+}
+
+.section-header p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* ========== ТУРНИРНАЯ СЕТКА ========== */
+.bracket-container {
+    position: relative;
+    overflow-x: auto;
+    padding: 2rem 0.5rem;
+    min-height: 500px;
+    display: flex;
+    justify-content: center;
+}
+
+.bracket {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    min-width: fit-content;
+    padding: 1rem 0.5rem;
+}
+
+.round {
+    display: flex;
+    flex-direction: column;
+    min-width: 260px;
+}
+
+.round-header {
+    text-align: center;
+    padding: 0.5rem 1rem;
+    background: var(--bg-secondary);
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 2rem;
+    white-space: nowrap;
+}
+
+.matches-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    height: 100%;
+    gap: 1.5rem;
+}
+
+/* Адаптив */
+@media (max-width: 700px) {
+    .tournament-header-info {
+        padding: 1.5rem;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .tournament-details h1 {
+        font-size: 1.5rem;
+        justify-content: center;
+    }
+    
+    .tournament-description {
+        text-align: center;
+        border-left: none;
+        border-top: 2px solid #7c3aed;
+        padding-top: 0.75rem;
+    }
+    
+    .meta-item {
+        justify-content: center;
+    }
+    
+    .tournament-actions {
+        justify-content: center;
+    }
+    
+    .bracket {
+        gap: 1rem;
+    }
+    
+    .round {
+        min-width: 220px;
+    }
+    
+    .match {
+        width: 220px;
+    }
+}
+
+@media (min-width: 1400px) {
+    .bracket {
+        gap: 3rem;
+    }
+    
+    .round {
+        min-width: 300px;
+    }
+}
+
+/* ========== ПАНЕЛЬ УПРАВЛЕНИЯ ОРГАНИЗАТОРА ========== */
+.management-panel {
+    margin-top: 1.5rem;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(0, 0, 0, 0.3));
+    border-radius: 1rem;
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.management-panel:hover {
+    border-color: #7c3aed;
+    box-shadow: 0 0 15px rgba(124, 58, 237, 0.2);
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 1.2rem;
+    background: rgba(124, 58, 237, 0.15);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.panel-header i:first-child {
+    color: #fbbf24;
+    font-size: 1rem;
+}
+
+.panel-header span {
+    flex: 1;
+    color: #c084fc;
+}
+
+.panel-toggle {
+    transition: transform 0.3s;
+}
+
+.panel-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+    padding: 1rem 1.2rem;
+}
+
+.mgmt-btn {
+    padding: 0.7rem 1.2rem;
+    border-radius: 2rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: none;
+    width: 100%;
+}
+
+.edit-btn {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid #3b82f6;
+}
+
+.edit-btn:hover {
+    background: #3b82f6;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.participants-btn {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid #10b981;
+}
+
+.participants-btn:hover {
+    background: #10b981;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.matches-btn {
+    background: rgba(124, 58, 237, 0.2);
+    color: #a78bfa;
+    border: 1px solid #8b5cf6;
+}
+
+.matches-btn:hover {
+    background: #8b5cf6;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.start-btn {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid #f59e0b;
+}
+
+.start-btn:hover {
+    background: #f59e0b;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.delete-btn {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid #ef4444;
+}
+
+.delete-btn:hover {
+    background: #ef4444;
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Скрыть кнопки из старого места */
+.tournament-actions {
+    display: none;
+}

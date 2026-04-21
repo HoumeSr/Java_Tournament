@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Турнирная сетка — Бобры</title>
+    <title th:text="${pageTitle} + ' — Бобры'">Турнир — Бобры</title>
     
     <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
@@ -26,26 +26,110 @@
 </header>
 
 <main class="container">
-    <div class="tournament-header">
-        <h1><i class="fas fa-trophy"></i> Турнирная сетка</h1>
-        <p>Олимпийская система (плей-офф)</p>
+    <!-- Сообщение об ошибке -->
+    <div th:if="${error}" class="error-container">
+        <div class="error-card">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h1>Ошибка</h1>
+            <p th:text="${error}"></p>
+            <a th:href="@{/}" class="btn-primary">Вернуться на главную</a>
+        </div>
     </div>
 
-    <div class="bracket-controls">
-        <label for="teamsCount">Количество команд:</label>
-        <select id="teamsCount" class="teams-select">
-            <option value="2">2 команды</option>
-            <option value="4" selected>4 команды</option>
-            <option value="8">8 команд</option>
-            <option value="16">16 команд</option>
-        </select>
-        <button id="generateBtn" class="btn-generate">
-            <i class="fas fa-chart-line"></i> Построить сетку
-        </button>
+    <!-- Проверка: существует ли турнир -->
+    <div th:if="${tournament == null and error == null}" class="error-container">
+        <div class="error-card">
+            <i class="fas fa-search"></i>
+            <h1>Турнир не найден</h1>
+            <p>Запрашиваемый турнир не существует или был удалён.</p>
+            <a th:href="@{/}" class="btn-primary">Вернуться на главную</a>
+        </div>
     </div>
 
-    <div id="bracketContainer" class="bracket-container">
-        <!-- Сетка с линиями будет сгенерирована здесь -->
+    <!-- Информация о турнире из TournamentFullDTO -->
+    <div th:if="${tournament != null}">
+        <div class="tournament-info">
+            <div class="tournament-header-info">
+                <div class="tournament-image" th:if="${tournament.imageUrl}">
+                    <img th:src="${tournament.imageUrl}" alt="Tournament image">
+                </div>
+                <div class="tournament-details">
+                    <h1>
+                        <i class="fas fa-trophy"></i> 
+                        <span th:text="${tournament.title}">Турнир</span>
+                    </h1>
+                    <p class="tournament-description" th:text="${tournament.description}">Описание</p>
+                    
+                    <div class="tournament-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-gamepad"></i>
+                            <span th:text="${tournament.gameName}">Игра</span>
+                            <small th:text="${tournament.gameCode}" class="game-code"></small>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-user"></i>
+                            <span>Организатор: <strong th:text="${tournament.organizerUsername}">Username</strong></span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-users"></i>
+                            <span>Максимум участников: <strong th:text="${tournament.maxParticipants}">0</strong></span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Дата начала: <strong th:text="${#temporals.format(tournament.startDate, 'dd.MM.yyyy HH:mm')}">Дата начала</strong></span>
+                        </div>
+                        <div class="meta-item" th:if="${tournament.registrationDeadline}">
+                            <i class="fas fa-clock"></i>
+                            <span>Регистрация до: <strong th:text="${#temporals.format(tournament.registrationDeadline, 'dd.MM.yyyy HH:mm')}">Дедлайн</strong></span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-tag"></i>
+                            <span class="status-badge" th:classappend="'status-' + ${tournament.status?.toLowerCase()}" th:text="${tournament.status}">Статус</span>
+                        </div>
+                    </div>
+                    
+                    
+                </div>
+                <!-- Кнопки управления (только для организатора) -->
+                <div class="management-panel" th:if="${isOwner}">
+                    <div class="panel-header">
+                        <i class="fas fa-crown"></i>
+                        <span>Панель организатора</span>
+                        <i class="fas fa-chevron-down panel-toggle"></i>
+                    </div>
+                    <div class="panel-buttons">
+                        <a th:href="@{/tournaments/{id}/manage(id=${tournament.id})}" class="mgmt-btn edit-btn">
+                            <i class="fas fa-pen"></i> Редактировать
+                        </a>
+                        <a th:href="@{/tournaments/{id}/participants(id=${tournament.id})}" class="mgmt-btn participants-btn">
+                            <i class="fas fa-users"></i> Участники
+                        </a>
+                        <a th:href="@{/tournaments/{id}/matches(id=${tournament.id})}" class="mgmt-btn matches-btn">
+                            <i class="fas fa-calendar-alt"></i> Матчи
+                        </a>
+                        <button class="mgmt-btn start-btn" th:if="${tournament.status == 'DRAFT'}" id="startTournamentBtn">
+                            <i class="fas fa-play"></i> Старт
+                        </button>
+                        <button class="mgmt-btn delete-btn" th:if="${tournament.status == 'DRAFT'}" id="deleteTournamentBtn">
+                            <i class="fas fa-trash"></i> Удалить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bracket-section">
+            <div class="section-header">
+                <h2><i class="fas fa-chart-line"></i> Турнирная сетка</h2>
+                <p>Система плей-офф · <span id="teamsCountDisplay" th:text="${tournament.maxParticipants}"></span> участников</p>
+            </div>
+            
+            <div id="bracketContainer" class="bracket-container">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Загрузка сетки...
+                </div>
+            </div>
+        </div>
     </div>
 </main>
 
@@ -66,6 +150,17 @@
 
 <div id="demoToast" class="demo-toast"></div>
 
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    window.tournamentData = {
+        id: /*[[${tournament != null ? tournament.id : null}]]*/ null,
+        title: /*[[${tournament != null ? tournament.title : ''}]]*/ '',
+        maxParticipants: /*[[${tournament != null ? tournament.maxParticipants : 4}]]*/ 4,
+        status: /*[[${tournament != null ? tournament.status : 'NOT_FOUND'}]]*/ 'NOT_FOUND',
+        isOwner: /*[[${isOwner != null ? isOwner : false}]]*/ false
+    };
+    /*]]>*/
+</script>
 <script th:src="@{/js/tournament-bracket.js}"></script>
 </body>
 </html>

@@ -39,6 +39,7 @@ public class UserService {
         dfh.setImageUrl(requestedUser.getImageUrl());
         dfh.setOwner(owner);
         dfh.setGames(getUserGamesStats(requestedUser.getId()));
+        dfh.setCreatedAt(requestedUser.getCreatedAt());
 
         return dfh;
     }
