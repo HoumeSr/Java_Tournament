@@ -104,10 +104,6 @@ body {
     border: 1px solid rgba(124, 58, 237, 0.3);
 }
 
-.profile-icon:not(#profileIcon) {
-    display: none;
-}
-
 .profile-icon i {
     font-size: 1.2rem;
     color: var(--text-primary);
@@ -643,11 +639,10 @@ body {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     backdrop-filter: blur(8px);
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, visibility 0.2s;
     white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
+    opacity: 0;           /* ← добавляем */
+    visibility: hidden;   /* ← добавляем */
 }
 
 @media (max-width: 600px) {
@@ -668,11 +663,14 @@ body {
     color: var(--accent);
     cursor: pointer;
     transition: all 0.2s;
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: center;  /* ← центрируем содержимое */
     gap: 0.5rem;
-    margin-top: 1rem;
+    margin: 1rem auto 0 auto;  /* ← центрируем сам блок */
     font-size: 0.85rem;
+    width: fit-content;  /* ← ширина по содержимому */
+    min-width: 160px;    /* ← минимальная ширина */
 }
 
 .btn-edit-sidebar:hover {

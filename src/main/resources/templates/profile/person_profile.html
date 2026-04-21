@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
@@ -34,7 +34,7 @@
                     <div class="avatar-large" id="avatarPreview">
                         <i class="fas fa-user-circle"></i>
                     </div>
-                    <button class="avatar-edit-btn" id="changeAvatarBtn" title="Сменить фото" style="display: none;">
+                    <button class="avatar-edit-btn" id="changeAvatarBtn" title="Сменить фото">
                         <i class="fas fa-camera"></i>
                     </button>
                 </div>
@@ -63,9 +63,9 @@
                 </div>
             </div>
             
-            <!-- Список игр пользователя (UserGameStatsDFH) -->
+            <!-- Список игр пользователя -->
             <div class="games-card" id="gamesCard" style="display: none;">
-                <h3>🎮 Игры</h3>
+                <h3>🎮 Любимые игры</h3>
                 <div class="games-list" id="gamesList"></div>
             </div>
         </div>
@@ -92,28 +92,16 @@
                 </div>
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-calendar-alt"></i> Дата регистрации</div>
-                    <div class="info-value" id="createdAt">--</div>
-                </div>
-                <div class="info-row full-width">
-                    <div class="info-label"><i class="fas fa-info-circle"></i> Дополнительная информация</div>
-                    <div class="info-value bio-text" id="displayBio">Пока ничего не добавлено</div>
-                </div>
-                <div class="info-row" id="roleRow" style="display: none;">
-                    <div class="info-label"><i class="fas fa-shield-alt"></i> Роль</div>
-                    <div class="info-value" id="displayRole">--</div>
+                    <div class="info-value" id="displayCreatedAt">--</div>
                 </div>
             </div>
 
-            <!-- Режим редактирования (скрыт по умолчанию) -->
+            <!-- Режим редактирования -->
             <div class="edit-card" id="editMode" style="display: none;">
                 <form id="profileForm">
                     <div class="edit-row">
                         <label><i class="fas fa-user"></i> Имя пользователя</label>
                         <input type="text" id="editUsername" class="edit-input" required>
-                    </div>
-                    <div class="edit-row">
-                        <label><i class="fas fa-envelope"></i> Email</label>
-                        <input type="email" id="editEmail" class="edit-input" required>
                     </div>
                     <div class="edit-row">
                         <label><i class="fas fa-globe"></i> Страна</label>
@@ -134,10 +122,6 @@
                             <option value="Бразилия">🇧🇷 Бразилия</option>
                             <option value="Другая">🌍 Другая</option>
                         </select>
-                    </div>
-                    <div class="edit-row">
-                        <label><i class="fas fa-info-circle"></i> Дополнительная информация</label>
-                        <textarea id="editBio" class="edit-textarea" rows="4" placeholder="Например: КМС по шахматам, играю в CS2, организатор турниров..."></textarea>
                     </div>
                     <div class="edit-actions">
                         <button type="submit" class="btn-save">
@@ -222,10 +206,6 @@
         </div>
     </div>
 </div>
-
-<script th:inline="javascript">
-    window.currentUserId = [[${session.userId}]];
-</script>
 
 </body>
 </html>
