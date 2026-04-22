@@ -3,6 +3,7 @@ package com.kosmo.tournament.team.entity;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import com.kosmo.tournament.gametype.entity.GameType;
 import com.kosmo.tournament.user.entity.User;
 
 import jakarta.persistence.Column;
@@ -34,6 +35,10 @@ public class Team {
     @JoinColumn(name = "\"captainId\"")
     private User captain;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "\"idGameType\"", nullable = false)
+    private GameType gameType;
+
     @Column(name = "\"imageUrl\"")
     private String imageUrl;
 
@@ -51,13 +56,15 @@ public class Team {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public User getCaptain() { return captain; }
     public String getImageUrl() { return imageUrl; }
+    public GameType getGameType() { return gameType; }
 
     public void setId(Long id) { this.id = id; }
     public void setName(String name) { this.name = name; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setCaptain(User captain) { this.captain = captain; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-
+    public void setGameType(GameType gameType) { this.gameType = gameType; }
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

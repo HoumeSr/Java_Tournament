@@ -33,9 +33,11 @@ CREATE TABLE IF NOT EXISTS "Team" (
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
     "captainId" INTEGER,
+    "idGameType" INTEGER NOT NULL DEFAULT 1,
     "imageUrl" TEXT DEFAULT 'DEFAULT_TEAM_IMAGE.jpg',
     PRIMARY KEY("id"),
-    CONSTRAINT "fk_team_captain" FOREIGN KEY ("captainId") REFERENCES "User"("id") ON UPDATE CASCADE ON DELETE CASCADE
+    CONSTRAINT "fk_team_captain" FOREIGN KEY ("captainId") REFERENCES "User"("id") ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT "fk_team_game_type" FOREIGN KEY ("idGameType") REFERENCES "GameTypes"("id") ON UPDATE CASCADE ON DELETE NO ACTION
 );
 
 -- 4. Турниры
@@ -170,7 +172,7 @@ CREATE TABLE IF NOT EXISTS "Notification" (
     "teamId" INTEGER,
     "teamName" TEXT,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
-    "type" TEXT DEFAULT 'TEAM INVITE',
+    "type" TEXT DEFAULT 'TEAM_INVITE',
     "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
     PRIMARY KEY("id"),
     CONSTRAINT "fk_notification_user" FOREIGN KEY ("userId") REFERENCES "User"("id") ON UPDATE CASCADE ON DELETE CASCADE,

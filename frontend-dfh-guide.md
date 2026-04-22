@@ -1,490 +1,299 @@
-# Справочник по DFH для фронтенда
-
-## Что такое DFH
-
-**DFH = Data For HTTP**.
-
-Это объект, который бэкенд:
-
-* либо **отдаёт** фронтенду в ответе API,
-* либо **принимает** от фронтенда в теле запроса.
-
-Проще:
-
-* **Entity** — объект базы данных
-* **DFH** — объект для обмена по HTTP
-
-Фронтенд работает только с `DFH`, а не с JPA entity.
-
----
-
-## Как работать с DFH
-
-### 1. Получение данных
-
-Когда фронт делает `GET`, он получает `DFH`.
-
-Примеры:
-
-* `GET /api/users/{id}` → `UserDFH`
-* `GET /api/tournaments` → `List<TournamentShortDFH>`
-* `GET /api/teams/{id}` → `TeamFullDFH`
-
-### 2. Отправка данных
-
-Когда фронт делает `POST` или `PUT`, он обычно отправляет `Create...DFH` или `Update...DFH`.
-
-Примеры:
-
-* `POST /api/tournaments` ← `CreateTournamentDFH`
-* `POST /api/teams` ← `CreateTeamDFH`
-* `PUT /api/gametypes/{id}` ← `UpdateGameTypeDFH`
-
-### 3. Основное правило
-
-* `ShortDFH` — короткий объект для списков
-* `FullDFH` — полный объект для страницы одного объекта
-* `Create...DFH` — тело запроса на создание
-* `Update...DFH` — тело запроса на изменение
-
----
-
-## USER
-
-### `UserDFH`
-
-Полный объект пользователя для страницы профиля.
-
-**Поля:**
-
-* `userId` — id пользователя
-* `username` — логин/ник
-* `email` — email; обычно отдаётся только владельцу профиля
-* `role` — роль пользователя (`PLAYER`, `ORGANIZER`, `ADMIN`)
-* `country` — страна
-* `enabled` — активен ли пользователь
-* `imageUrl` — ссылка на аватар
-* `owner` — владелец ли текущий пользователь этого профиля
-* `games` — список игр пользователя
-
-**Где использовать:**
-
-* страница профиля
-* личный кабинет
-* публичный профиль
-
-### `UserGameStatsDFH`
-
-Одна игра в профиле пользователя.
-
-**Поля:**
-
-* `gameName` — название игры
-* `matchCount` — количество матчей
-* `winPercent` — процент побед
-
-**Где использовать:**
-
-* блок статистики по играм в профиле пользователя
-
----
-
-## TOURNAMENT
-
-### `TournamentShortDFH`
-
-Короткий объект турнира для списков.
-
-**Поля:**
-
-* `id` — id турнира
-* `title` — название турнира
-* `status` — статус турнира
-* `participantType` — тип участия (`SOLO`, `TEAM`)
-* `gameName` — название игры
-* `organizerUsername` — username организатора
-* `imageUrl` — картинка турнира
-
-**Где использовать:**
-
-* список турниров
-* мои турниры
-* карточки турниров
-
-### `TournamentFullDFH`
-
-Полный объект турнира для страницы одного турнира.
-
-**Поля:**
-
-* `id`
-* `title`
-* `description`
-* `participantType`
-* `access`
-* `status`
-* `gameName`
-* `gameCode`
-* `organizerUsername`
-* `startDate`
-* `registrationDeadline`
-* `maxParticipants`
-* `createdAt`
-* `imageUrl`
-* `owner`
-
-**Где использовать:**
-
-* страница турнира
-* страница управления турниром
-
-### `CreateTournamentDFH`
-
-Тело запроса на создание турнира.
-
-**Поля:**
-
-* `title`
-* `description`
-* `participantType`
-* `access`
-* `gameTypeId`
-* `status`
-* `startDate`
-* `registrationDeadline`
-* `maxParticipants`
-* `imageUrl`
-
-**Где использовать:**
-
-* форма создания турнира
-
----
-
-## TEAM
-
-### `TeamShortDFH`
-
-Короткий объект команды для списков.
-
-**Поля:**
-
-* `id`
-* `name`
-* `captainUsername`
-* `imageUrl`
-
-**Где использовать:**
-
-* список команд
-* мои команды
-
-### `TeamMemberDFH`
-
-Один участник команды.
-
-**Поля:**
-
-* `userId`
-* `username`
-* `role`
-* `country`
-* `imageUrl`
-* `joinedAt`
-
-**Где использовать:**
-
-* состав команды
-* таблица участников
-
-### `TeamFullDFH`
-
-Полный объект команды.
-
-**Поля:**
-
-* `id`
-* `name`
-* `captainUsername`
-* `captainId`
-* `imageUrl`
-* `createdAt`
-* `owner`
-* `members`
-
-**Где использовать:**
-
-* страница команды
-* страница управления командой
-
-### `CreateTeamDFH`
-
-Тело запроса на создание команды.
-
-**Поля:**
-
-* `name`
-* `imageUrl`
-
-**Где использовать:**
-
-* форма создания команды
-
-### `AddTeamMemberDFH`
-
-Тело запроса на прямое добавление участника в команду.
-
-**Поля:**
-
-* `userId`
-
-**Где использовать:**
-
-* только если поддерживается прямое добавление участника без приглашения
-
-### `InviteTeamMemberDFH`
-
-Тело запроса на приглашение пользователя в команду.
-
-**Поля:**
-
-* `userId`
-
-**Где использовать:**
-
-* кнопка/форма “пригласить в команду”
-
----
-
-## MATCH
-
-### `MatchDFH`
-
-Универсальный объект матча для фронта. Используется и для `SOLO`, и для `TEAM` матчей.
-
-**Поля:**
-
-* `id`
-* `matchType` — `SOLO` или `TEAM`
-* `tournamentId`
-* `tournamentTitle`
-* `roundNumber`
-* `status`
-* `scheduledAt`
-* `participant1Id`
-* `participant1Name`
-* `participant2Id`
-* `participant2Name`
-* `winnerId`
-* `winnerName`
-* `owner`
-
-**Где использовать:**
-
-* список матчей турнира
-* мои матчи
-* карточка матча
-* страница матча
-
-### `UpdateSoloMatchResultDFH`
-
-Тело запроса на обновление результата solo-матча.
-
-**Поля:**
-
-* `winnerUserId`
-* `status`
-
-**Где использовать:**
-
-* форма внесения результата solo-матча
-
-### `UpdateTeamMatchResultDFH`
-
-Тело запроса на обновление результата командного матча.
-
-**Поля:**
-
-* `winnerTeamId`
-* `status`
-
-**Где использовать:**
-
-* форма внесения результата team-матча
-
----
-
-## GAMETYPE
-
-### `GameTypeDFH`
-
-Полный объект игры.
-
-**Поля:**
-
-* `id`
-* `name`
-* `code`
-* `description`
-* `isActive`
-* `imageUrl`
-* `maxPlayers`
-
-**Где использовать:**
-
-* список игр
-* выбор игры в форме турнира
-* карточки игр
-
-### `CreateGameTypeDFH`
-
-Тело запроса на создание игры.
-
-**Поля:**
-
-* `name`
-* `code`
-* `description`
-* `isActive`
-* `imageUrl`
-* `maxPlayers`
-
-**Где использовать:**
-
-* форма создания игры
-
-### `UpdateGameTypeDFH`
-
-Тело запроса на обновление игры.
-
-**Поля:**
-
-* `name`
-* `description`
-* `isActive`
-* `imageUrl`
-* `maxPlayers`
-
-**Где использовать:**
-
-* форма редактирования игры
-
----
-
-## NOTIFICATION
-
-### `NotificationDFH`
-
-Объект уведомления пользователя.
-
-**Поля:**
-
-* `id`
-* `message`
-* `teamId`
-* `teamName`
-* `type`
-* `status`
-* `createdAt`
-
-**Где использовать:**
-
-* список уведомлений
-* приглашения в команду
-
----
-
-## Как фронту понимать поле `owner`
-
-Если `owner = true`, значит текущий пользователь владеет объектом.
-
-Примеры:
-
-* свой профиль
-* своя команда
-* свой турнир
-* свой доступ к управлению матчами
-
-### Что можно делать, если `owner = true`
-
-* показывать кнопки редактирования
-* показывать кнопки управления
-* показывать формы создания/изменения данных
-
-Если `owner = false`, объект доступен только для просмотра.
-
----
-
-## Как фронту работать со списками
-
-### Список объектов
-
-Если API возвращает массив, значит это обычно список `ShortDFH` или список вложенных объектов.
-
-Примеры:
-
-* `List<TournamentShortDFH>`
-* `List<TeamShortDFH>`
-* `List<NotificationDFH>`
-* `UserDFH.games` → `List<UserGameStatsDFH>`
-* `TeamFullDFH.members` → `List<TeamMemberDFH>`
-
----
-
-## Рекомендуемый подход на фронте
-
-### Для списков
-
-Использовать `ShortDFH`.
-
-### Для страниц деталей
-
-Использовать `FullDFH`.
-
-### Для форм
-
-Отправлять `Create...DFH` или `Update...DFH`.
-
-### Для прав доступа в интерфейсе
-
-Опираться на `owner` и, если нужно, на `role`.
-
----
-
-## Короткая шпаргалка
-
-### User
-
-* `UserDFH` — профиль пользователя
-* `UserGameStatsDFH` — статистика по одной игре
-
-### Tournament
-
-* `TournamentShortDFH` — карточка турнира
-* `TournamentFullDFH` — полный турнир
-* `CreateTournamentDFH` — создание турнира
-
-### Team
-
-* `TeamShortDFH` — карточка команды
-* `TeamFullDFH` — полная команда
-* `TeamMemberDFH` — участник команды
-* `CreateTeamDFH` — создание команды
-* `InviteTeamMemberDFH` — приглашение в команду
-* `AddTeamMemberDFH` — прямое добавление участника
-
-### Match
-
-* `MatchDFH` — универсальный матч
-* `UpdateSoloMatchResultDFH` — обновление solo-матча
-* `UpdateTeamMatchResultDFH` — обновление team-матча
-
-### GameType
-
-* `GameTypeDFH` — игра
-* `CreateGameTypeDFH` — создание игры
-* `UpdateGameTypeDFH` — обновление игры
-
-### Notification
-
-* `NotificationDFH` — уведомление
+# DTO guide for frontend
+
+## Общая идея
+
+DTO — это объекты, которыми фронт и бэк обмениваются по HTTP. Entity в ответах фронту не используются.
+
+Правило простое:
+- `GET` обычно возвращает DTO
+- `POST` и `PUT` обычно принимают `Create...DTO`, `Update...DTO` или специализированный DTO
+
+## Auth / session
+
+### `AuthorizationUserDTO`
+Используется для авторизации.
+
+Поля:
+- `login` — можно передавать **username или email**
+- `password`
+
+Фактические endpoints в проекте сейчас:
+- `POST /signin` — форма логина
+- `POST /api/auth/login` — ajax логин
+- `GET /api/auth/check` — проверка текущей сессии
+- `POST /api/auth/logout` — logout
+
+### Ответ `/api/auth/check`
+Возвращает JSON вида:
+```json
+{
+  "authenticated": true,
+  "user": {
+    "id": 1,
+    "username": "john_doe",
+    "role": "PLAYER",
+    "imageUrl": "john.jpg"
+  }
+}
+```
+
+## User DTO
+
+### `ShortUserDTO`
+Короткое представление пользователя.
+
+Поля:
+- `id`
+- `username`
+- `role`
+- `country`
+- `imageUrl`
+
+### `CreateUserDTO`
+Создание пользователя через API.
+
+Поля:
+- `username`
+- `email`
+- `password`
+- `country`
+- `imageUrl`
+
+### `UpdateUserDTO`
+Обновление профиля.
+
+Поля:
+- `username`
+- `email`
+- `country`
+- `imageUrl`
+
+### `ChangePasswordDTO`
+Смена пароля текущего пользователя.
+
+Поля:
+- `currentPassword`
+- `newPassword`
+
+### `UserGameStatsDTO`
+Статистика пользователя по одной игре.
+
+Поля:
+- `gameName`
+- `matchCount`
+- `winPercent`
+
+### `UserProfileDTO`
+Полный DTO профиля.
+
+Поля:
+- `userId`
+- `username`
+- `email` — отдается владельцу профиля
+- `role`
+- `country`
+- `enabled`
+- `imageUrl`
+- `createdAt`
+- `owner`
+- `games` — список `UserGameStatsDTO`
+
+### User endpoints
+- `GET /api/users/{id}` → `UserProfileDTO`
+- `POST /api/users` ← `CreateUserDTO`
+- `PUT /api/users/{id}` ← `UpdateUserDTO`
+- `PUT /api/users/update` ← `UpdateUserDTO` для текущего пользователя
+- `POST /api/users/avatar` ← `UpdateUserDTO` (`imageUrl`)
+- `DELETE /api/users/avatar`
+- `POST /api/users/change-password` ← `ChangePasswordDTO`
+
+## Tournament DTO
+
+### `TournamentShortDTO`
+Для карточек и списков.
+
+Поля:
+- `id`
+- `title`
+- `status`
+- `participantType`
+- `gameName`
+- `organizerUsername`
+- `imageUrl`
+
+### `TournamentFullDTO`
+Для страницы турнира.
+
+Поля:
+- `id`
+- `title`
+- `description`
+- `participantType`
+- `access`
+- `status`
+- `gameName`
+- `gameCode`
+- `organizerUsername`
+- `startDate`
+- `registrationDeadline`
+- `minParticipants`
+- `maxParticipants`
+- `createdAt`
+- `imageUrl`
+- `owner`
+
+### `CreateTournamentDTO`
+Поля:
+- `title`
+- `description`
+- `participantType`
+- `access`
+- `gameTypeId`
+- `status`
+- `startDate`
+- `registrationDeadline`
+- `minParticipants`
+- `maxParticipants`
+- `imageUrl`
+
+### `UpdateTournamentDTO`
+Та же структура, что и у `CreateTournamentDTO`, но все поля опциональны.
+
+### Tournament endpoints
+- `GET /api/tournaments`
+- `GET /api/tournaments/{id}`
+- `GET /api/tournaments/my`
+- `GET /api/tournaments/status/{status}`
+- `GET /api/tournaments/game/{gameTypeId}`
+- `GET /api/tournaments/search?title=...`
+- `POST /api/tournaments`
+- `PUT /api/tournaments/{id}`
+
+## Team DTO
+
+### `TeamShortDTO`
+Поля:
+- `id`
+- `name`
+- `captainUsername`
+- `imageUrl`
+
+### `TeamMemberDTO`
+Поля:
+- `userId`
+- `username`
+- `role`
+- `country`
+- `imageUrl`
+- `joinedAt`
+
+### `TeamFullDTO`
+Поля:
+- `id`
+- `name`
+- `captainUsername`
+- `captainId`
+- `imageUrl`
+- `createdAt`
+- `owner`
+- `currentMembersCount`
+- `maxMembersCount`
+- `members`
+
+### `CreateTeamDTO`
+Поля:
+- `name`
+- `gameTypeId`
+- `imageUrl`
+
+### `AddTeamMemberDTO`
+Поля:
+- `userId`
+
+### `InviteTeamMemberDTO`
+Поля:
+- `userId`
+
+### Team endpoints
+- `GET /api/teams/my`
+- `GET /api/teams/{id}`
+- `GET /api/teams/{id}/members`
+- `POST /api/teams`
+- `POST /api/teams/{id}/members`
+- `POST /api/teams/{id}/invite`
+- `POST /api/teams/invite/{notificationId}/accept`
+- `POST /api/teams/invite/{notificationId}/decline`
+
+## Match DTO
+
+### `MatchDTO`
+Универсальный DTO для solo/team матчей.
+
+Поля:
+- `id`
+- `matchType`
+- `tournamentId`
+- `tournamentTitle`
+- `roundNumber`
+- `status`
+- `scheduledAt`
+- `participant1Id`
+- `participant1Name`
+- `participant2Id`
+- `participant2Name`
+- `winnerId`
+- `winnerName`
+- `owner`
+
+### `UpdateSoloMatchResultDTO`
+Поля:
+- `winnerUserId`
+- `status`
+
+### `UpdateTeamMatchResultDTO`
+Поля:
+- `winnerTeamId`
+- `status`
+
+## GameType DTO
+
+### `GameTypeDTO`
+Поля:
+- `id`
+- `name`
+- `code`
+- `description`
+- `isActive`
+- `imageUrl`
+- `maxPlayers`
+
+### `CreateGameTypeDTO`
+Поля:
+- `name`
+- `code`
+- `description`
+- `isActive`
+- `imageUrl`
+- `maxPlayers`
+
+### `UpdateGameTypeDTO`
+Та же структура, поля опциональны.
+
+## Notification DTO
+
+### `NotificationDTO`
+Поля:
+- `id`
+- `message`
+- `teamId`
+- `teamName`
+- `type`
+- `status`
+- `createdAt`
+
+## Что важно для фронта
+
+- Если нужен список — обычно используется `Short...DTO`
+- Если нужна страница сущности — обычно `...FullDTO` или `UserProfileDTO`
+- Если в ответе есть `owner`, именно по нему лучше решать, показывать ли кнопки редактирования
+- Для логина можно в одно поле передавать и email, и username

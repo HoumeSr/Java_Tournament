@@ -120,9 +120,13 @@ function renderProfile(userDTO) {
     const winsCount = document.getElementById('winsCount');
     const rating = document.getElementById('rating');
     
-    if (tournamentsCount) tournamentsCount.textContent = userDTO.totalTournaments || 0;
-    if (winsCount) winsCount.textContent = userDTO.totalWins || 0;
-    if (rating) rating.textContent = userDTO.rating || 1200;
+    const totalMatches = Array.isArray(userDTO.games) ? userDTO.games.reduce((sum, game) => sum + (game.matchCount || 0), 0) : 0;
+    const avgWinPercent = Array.isArray(userDTO.games) && userDTO.games.length > 0
+        ? Math.round(userDTO.games.reduce((sum, game) => sum + (game.winPercent || 0), 0) / userDTO.games.length)
+        : 0;
+    if (tournamentsCount) tournamentsCount.textContent = totalMatches;
+    if (winsCount) winsCount.textContent = avgWinPercent + '%';
+    if (rating) rating.textContent = 1200;
     
     // Список игр пользователя (если есть)
     if (userDTO.games && userDTO.games.length > 0) {
@@ -154,7 +158,6 @@ function renderProfile(userDTO) {
     const displayUsername = document.getElementById('displayUsername');
     const displayEmail = document.getElementById('displayEmail');
     const displayCountry = document.getElementById('displayCountry');
-    const displayBio = document.getElementById('displayBio');
     
     if (userId) userId.textContent = userDTO.userId || '--';
     if (displayUsername) displayUsername.textContent = userDTO.username || '--';
@@ -165,7 +168,6 @@ function renderProfile(userDTO) {
     }
     
     if (displayCountry) displayCountry.textContent = userDTO.country || 'Не указана';
-    if (displayBio) displayBio.textContent = userDTO.bio || 'Пока ничего не добавлено';
     
     // Аватар
     if (userDTO.imageUrl && userDTO.imageUrl.trim() !== '' && userDTO.imageUrl !== 'null') {
@@ -285,8 +287,9 @@ function initAvatarChange() {
                     body: JSON.stringify({ imageUrl: avatarBase64 })
                 });
                 
+                const data = await response.json();
                 if (response.ok) {
-                    setAvatar(avatarBase64);
+                    setAvatar((data.imageUrl || data.user?.imageUrl || avatarBase64));
                     showToast('✅ Аватар обновлён!');
                 } else {
                     showToast('❌ Ошибка загрузки аватара', true);
@@ -307,6 +310,7 @@ function initAvatarChange() {
                         method: 'DELETE'
                     });
                     
+                    const data = await response.json();
                     if (response.ok) {
                         resetAvatar();
                         showToast('🔄 Аватар сброшен');
@@ -392,17 +396,17 @@ function initProfile() {
                     body: JSON.stringify(updateData)
                 });
                 
+                const data = await response.json();
                 if (response.ok) {
-                    const updatedUser = await response.json();
+                    const updatedUser = data.user || data;
                     currentUser = updatedUser;
                     renderProfile(updatedUser);
-                    
+
                     viewMode.style.display = 'block';
                     editMode.style.display = 'none';
                     showToast('✅ Профиль успешно обновлён');
                 } else {
-                    const error = await response.json();
-                    showToast('❌ ' + (error.message || 'Ошибка обновления'), true);
+                    showToast('❌ ' + (data.message || 'Ошибка обновления'), true);
                 }
             } catch (error) {
                 console.error('Ошибка:', error);

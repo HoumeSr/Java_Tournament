@@ -12,6 +12,8 @@ public class TeamFullDTO {
     private String imageUrl;
     private LocalDateTime createdAt;
     private boolean owner;
+    private Integer currentMembersCount;
+    private Integer maxMembersCount;
     private List<TeamMemberDTO> members;
 
     public TeamFullDTO() {
@@ -24,6 +26,8 @@ public class TeamFullDTO {
     public String getImageUrl() { return imageUrl; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public boolean isOwner() { return owner; }
+    public Integer getCurrentMembersCount() { return currentMembersCount; }
+    public Integer getMaxMembersCount() { return maxMembersCount; }
     public List<TeamMemberDTO> getMembers() { return members; }
 
     public void setId(Long id) { this.id = id; }
@@ -33,5 +37,7 @@ public class TeamFullDTO {
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setOwner(boolean owner) { this.owner = owner; }
+    public void setCurrentMembersCount(Integer currentMembersCount) { this.currentMembersCount = currentMembersCount; }
+    public void setMaxMembersCount(Integer maxMembersCount) { this.maxMembersCount = maxMembersCount; }
     public void setMembers(List<TeamMemberDTO> members) { this.members = members; }
 }

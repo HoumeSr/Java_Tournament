@@ -15,11 +15,27 @@ public class UserGameStatsDTO {
         this.winPercent = winPercent;
     }
 
-    public String getGameName() { return gameName; }
-    public Integer getMatchCount() { return matchCount; }
-    public Integer getWinPercent() { return winPercent; }
+    public String getGameName() {
+        return gameName;
+    }
 
-    public void setGameName(String gameName) { this.gameName = gameName; }
-    public void setMatchCount(Integer matchCount) { this.matchCount = matchCount; }
-    public void setWinPercent(Integer winPercent) { this.winPercent = winPercent; }
+    public Integer getMatchCount() {
+        return matchCount;
+    }
+
+    public Integer getWinPercent() {
+        return winPercent;
+    }
+
+    public void setGameName(String gameName) {
+        this.gameName = gameName;
+    }
+
+    public void setMatchCount(Integer matchCount) {
+        this.matchCount = matchCount;
+    }
+
+    public void setWinPercent(Integer winPercent) {
+        this.winPercent = winPercent;
+    }
 }
