@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kosmo.tournament.gametype.entity.GameType;
+import com.kosmo.tournament.gametype.repository.GameTypeRepository;
 import com.kosmo.tournament.notification.entity.Notification;
 import com.kosmo.tournament.notification.service.NotificationService;
 import com.kosmo.tournament.team.dto.AddTeamMemberDTO;
@@ -26,15 +28,18 @@ public class TeamService {
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final GameTypeRepository gameTypeRepository;
 
     public TeamService(TeamRepository teamRepository,
                        TeamMemberRepository teamMemberRepository,
                        UserRepository userRepository,
-                       NotificationService notificationService) {
+                       NotificationService notificationService,
+                       GameTypeRepository gameTypeRepository) {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.gameTypeRepository = gameTypeRepository;
     }
 
     public List<TeamShortDTO> getMyTeams(String username) {
@@ -61,22 +66,30 @@ public class TeamService {
     }
 
     @Transactional
-    public TeamFullDTO createTeam(CreateTeamDTO dfh, String username) {
-        if (dfh.getName() == null || dfh.getName().isBlank()) {
+    public TeamFullDTO createTeam(CreateTeamDTO dto, String username) {
+        if (dto.getName() == null || dto.getName().isBlank()) {
             throw new RuntimeException("Team name is required");
         }
 
-        if (teamRepository.existsByName(dfh.getName())) {
+        if (dto.getGameTypeId() == null) {
+            throw new RuntimeException("Game type is required");
+        }
+
+        if (teamRepository.existsByName(dto.getName())) {
             throw new RuntimeException("Team with this name already exists");
         }
 
         User captain = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        GameType gameType = gameTypeRepository.findById(dto.getGameTypeId())
+                .orElseThrow(() -> new RuntimeException("Game type not found"));
+
         Team team = new Team();
-        team.setName(dfh.getName());
+        team.setName(dto.getName());
         team.setCaptain(captain);
-        team.setImageUrl(dfh.getImageUrl());
+        team.setGameType(gameType);
+        team.setImageUrl(dto.getImageUrl());
 
         Team savedTeam = teamRepository.save(team);
 
@@ -91,7 +104,7 @@ public class TeamService {
     }
 
     @Transactional
-    public TeamFullDTO addMember(Long teamId, AddTeamMemberDTO dfh, String currentUsername) {
+    public TeamFullDTO addMember(Long teamId, AddTeamMemberDTO dto, String currentUsername) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found"));
 
@@ -102,12 +115,14 @@ public class TeamService {
             throw new RuntimeException("Only captain can add members");
         }
 
-        User newMember = userRepository.findById(dfh.getUserId())
+        User newMember = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new RuntimeException("User to add not found"));
 
         if (teamMemberRepository.existsByTeamIdAndPlayerId(teamId, newMember.getId())) {
             throw new RuntimeException("User already in team");
         }
+
+        validateTeamCapacity(team);
 
         TeamMember teamMember = new TeamMember();
         teamMember.setTeam(team);
@@ -145,6 +160,8 @@ public class TeamService {
             throw new RuntimeException("User already in team");
         }
 
+        validateTeamCapacity(team);
+
         notificationService.createTeamInvite(invitedUser, team);
     }
 
@@ -173,6 +190,8 @@ public class TeamService {
         }
 
         if (!teamMemberRepository.existsByTeamIdAndPlayerId(team.getId(), currentUser.getId())) {
+            validateTeamCapacity(team);
+
             TeamMember teamMember = new TeamMember();
             teamMember.setTeam(team);
             teamMember.setPlayer(currentUser);
@@ -208,36 +227,55 @@ public class TeamService {
         notificationService.markDeclined(notification);
     }
 
+    private void validateTeamCapacity(Team team) {
+        long currentCount = teamMemberRepository.countByTeamId(team.getId());
+
+        GameType gameType = team.getGameType();
+        Integer maxPlayers = gameType != null ? gameType.getMaxPlayers() : null;
+        int maxCount = maxPlayers != null ? maxPlayers : 1;
+
+        if (currentCount >= maxCount) {
+            throw new RuntimeException("Team is already full");
+        }
+    }
+
     private TeamShortDTO toShortDTO(Team team) {
-        TeamShortDTO dfh = new TeamShortDTO();
-        dfh.setId(team.getId());
-        dfh.setName(team.getName());
-        dfh.setCaptainUsername(team.getCaptain() != null ? team.getCaptain().getUsername() : null);
-        dfh.setImageUrl(team.getImageUrl());
-        return dfh;
+        TeamShortDTO dto = new TeamShortDTO();
+        dto.setId(team.getId());
+        dto.setName(team.getName());
+        dto.setCaptainUsername(team.getCaptain() != null ? team.getCaptain().getUsername() : null);
+        dto.setImageUrl(team.getImageUrl());
+        return dto;
     }
 
     private TeamMemberDTO toMemberDTO(TeamMember member) {
-        TeamMemberDTO dfh = new TeamMemberDTO();
-        dfh.setUserId(member.getPlayer().getId());
-        dfh.setUsername(member.getPlayer().getUsername());
-        dfh.setRole(member.getRole());
-        dfh.setCountry(member.getPlayer().getCountry());
-        dfh.setImageUrl(member.getPlayer().getImageUrl());
-        dfh.setJoinedAt(member.getJoinedAt());
-        return dfh;
+        TeamMemberDTO dto = new TeamMemberDTO();
+        dto.setUserId(member.getPlayer().getId());
+        dto.setUsername(member.getPlayer().getUsername());
+        dto.setRole(member.getRole());
+        dto.setCountry(member.getPlayer().getCountry());
+        dto.setImageUrl(member.getPlayer().getImageUrl());
+        dto.setJoinedAt(member.getJoinedAt());
+        return dto;
     }
 
     private TeamFullDTO toFullDTO(Team team, boolean owner) {
-        TeamFullDTO dfh = new TeamFullDTO();
-        dfh.setId(team.getId());
-        dfh.setName(team.getName());
-        dfh.setCaptainId(team.getCaptain() != null ? team.getCaptain().getId() : null);
-        dfh.setCaptainUsername(team.getCaptain() != null ? team.getCaptain().getUsername() : null);
-        dfh.setImageUrl(team.getImageUrl());
-        dfh.setCreatedAt(team.getCreatedAt());
-        dfh.setOwner(owner);
-        dfh.setMembers(getTeamMembers(team.getId()));
-        return dfh;
+        TeamFullDTO dto = new TeamFullDTO();
+        dto.setId(team.getId());
+        dto.setName(team.getName());
+        dto.setCaptainId(team.getCaptain() != null ? team.getCaptain().getId() : null);
+        dto.setCaptainUsername(team.getCaptain() != null ? team.getCaptain().getUsername() : null);
+        dto.setImageUrl(team.getImageUrl());
+        dto.setCreatedAt(team.getCreatedAt());
+        dto.setOwner(owner);
+
+        dto.setCurrentMembersCount((int) teamMemberRepository.countByTeamId(team.getId()));
+
+        GameType gameType = team.getGameType();
+        Integer maxPlayers = gameType != null ? gameType.getMaxPlayers() : null;
+        dto.setMaxMembersCount(maxPlayers != null ? maxPlayers : 1);
+
+        dto.setMembers(getTeamMembers(team.getId()));
+        return dto;
     }
 }

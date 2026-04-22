@@ -18,12 +18,11 @@ public class ProfileController {
 
     @GetMapping("/profile")
     public String myProfile(Model model, HttpSession session) {
-        Long userId = (Long) session.getAttribute("userId");
-
-        if (userId == null) {
+        if (session == null || session.getAttribute("userId") == null) {
             return "redirect:/login";
         }
 
+        Long userId = (Long) session.getAttribute("userId");
         User user = userRepository.findById(userId).orElse(null);
 
         if (user == null) {
@@ -32,49 +31,31 @@ public class ProfileController {
 
         model.addAttribute("pageTitle", "Мой профиль");
         model.addAttribute("user", user);
-
-        String roleDisplay = getRoleDisplay(user.getRole());
-        model.addAttribute("roleDisplay", roleDisplay);
-
+        model.addAttribute("roleDisplay", getRoleDisplay(user.getRole()));
         return "profile/person_profile";
     }
 
     @GetMapping("/my/tournaments")
-    public String myTournaments(Model model, HttpSession session) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) {
-            return "redirect:/login";
-        }
-        model.addAttribute("pageTitle", "Мои турниры");
-        return "profile/my-tournaments";
+    public String myTournaments(HttpSession session) {
+        return (session != null && session.getAttribute("userId") != null) ? "redirect:/tournaments" : "redirect:/login";
     }
 
     @GetMapping("/my/matches")
-    public String myMatches(Model model, HttpSession session) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) {
-            return "redirect:/login";
-        }
-        model.addAttribute("pageTitle", "Мои матчи");
-        return "profile/my-matches";
+    public String myMatches(HttpSession session) {
+        return (session != null && session.getAttribute("userId") != null) ? "redirect:/profile" : "redirect:/login";
     }
 
     @GetMapping("/notifications")
-    public String notifications(Model model, HttpSession session) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) {
-            return "redirect:/login";
-        }
-        model.addAttribute("pageTitle", "Мои уведомления");
-        return "profile/notifications";
+    public String notifications(HttpSession session) {
+        return (session != null && session.getAttribute("userId") != null) ? "redirect:/profile" : "redirect:/login";
     }
 
     private String getRoleDisplay(String role) {
-        switch (role) {
-            case "ADMIN": return "Администратор";
-            case "ORGANIZER": return "Организатор";
-            case "PLAYER": return "Игрок";
-            default: return "Пользователь";
-        }
+        return switch (role) {
+            case "ADMIN" -> "Администратор";
+            case "ORGANIZER" -> "Организатор";
+            case "PLAYER" -> "Игрок";
+            default -> "Пользователь";
+        };
     }
 }
