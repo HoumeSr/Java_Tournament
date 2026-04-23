@@ -14,4 +14,11 @@ public class TeamController {
         model.addAttribute("pageTitle", "Создание команды");
         return "team/create";
     }
+
+    @GetMapping
+    public String listPage(Model model) {
+        model.addAttribute("pageTitle", "Команды");
+        return "team/list";
+    }
 }
+

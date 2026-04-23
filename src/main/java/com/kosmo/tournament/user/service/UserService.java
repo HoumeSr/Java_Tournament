@@ -268,6 +268,10 @@ public class UserService {
     }
 
     private boolean isValidEmail(String email) {
-        return email.matches("^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$");
+        if (email == null || email.isBlank()) return false;
+    
+        String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$";
+        
+        return email.matches(emailRegex);
     }
 }
