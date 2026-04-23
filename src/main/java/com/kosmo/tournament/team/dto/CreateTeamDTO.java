@@ -4,6 +4,7 @@ public class CreateTeamDTO {
 
     private String name;
     private Long gameTypeId;
+    private String accessType;
     private String imageUrl;
 
     public CreateTeamDTO() {
@@ -17,6 +18,10 @@ public class CreateTeamDTO {
         return gameTypeId;
     }
 
+    public String getAccessType() {
+        return accessType;
+    }
+
     public String getImageUrl() {
         return imageUrl;
     }
@@ -27,6 +32,10 @@ public class CreateTeamDTO {
 
     public void setGameTypeId(Long gameTypeId) {
         this.gameTypeId = gameTypeId;
+    }
+
+    public void setAccessType(String accessType) {
+        this.accessType = accessType;
     }
 
     public void setImageUrl(String imageUrl) {

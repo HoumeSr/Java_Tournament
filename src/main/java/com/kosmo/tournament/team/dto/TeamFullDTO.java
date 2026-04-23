@@ -9,6 +9,9 @@ public class TeamFullDTO {
     private String name;
     private String captainUsername;
     private Long captainId;
+    private Long gameTypeId;
+    private String gameTypeName;
+    private String accessType;
     private String imageUrl;
     private LocalDateTime createdAt;
     private boolean owner;
@@ -23,6 +26,9 @@ public class TeamFullDTO {
     public String getName() { return name; }
     public String getCaptainUsername() { return captainUsername; }
     public Long getCaptainId() { return captainId; }
+    public Long getGameTypeId() { return gameTypeId; }
+    public String getGameTypeName() { return gameTypeName; }
+    public String getAccessType() { return accessType; }
     public String getImageUrl() { return imageUrl; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public boolean isOwner() { return owner; }
@@ -34,6 +40,9 @@ public class TeamFullDTO {
     public void setName(String name) { this.name = name; }
     public void setCaptainUsername(String captainUsername) { this.captainUsername = captainUsername; }
     public void setCaptainId(Long captainId) { this.captainId = captainId; }
+    public void setGameTypeId(Long gameTypeId) { this.gameTypeId = gameTypeId; }
+    public void setGameTypeName(String gameTypeName) { this.gameTypeName = gameTypeName; }
+    public void setAccessType(String accessType) { this.accessType = accessType; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setOwner(boolean owner) { this.owner = owner; }
