@@ -9,4 +9,6 @@ import com.kosmo.tournament.team.entity.Team;
 public interface TeamRepository extends JpaRepository<Team, Long> {
     boolean existsByName(String name);
     List<Team> findByCaptainId(Long captainId);
+    List<Team> findAllByOrderByCreatedAtDesc();
+    List<Team> findByAccessTypeOrderByCreatedAtDesc(String accessType);
 }

@@ -28,8 +28,21 @@ public class TeamApiController {
         this.teamService = teamService;
     }
 
+    @GetMapping
+    public List<TeamShortDTO> getAllTeams() {
+        return teamService.getAllTeams();
+    }
+
+    @GetMapping("/open")
+    public List<TeamShortDTO> getOpenTeams() {
+        return teamService.getOpenTeams();
+    }
+
     @GetMapping("/my")
     public List<TeamShortDTO> getMyTeams(Authentication authentication) {
+        if (authentication == null) {
+            return List.of();
+        }
         return teamService.getMyTeams(authentication.getName());
     }
 
@@ -45,22 +58,23 @@ public class TeamApiController {
     }
 
     @PostMapping
-    public TeamFullDTO createTeam(@RequestBody CreateTeamDTO dfh,
+    public TeamFullDTO createTeam(@RequestBody CreateTeamDTO dto,
                                   Authentication authentication) {
-        return teamService.createTeam(dfh, authentication.getName());
+        return teamService.createTeam(dto, authentication.getName());
     }
 
     @PostMapping("/{id}/members")
     public TeamFullDTO addMember(@PathVariable Long id,
-                                 @RequestBody AddTeamMemberDTO dfh,
+                                 @RequestBody AddTeamMemberDTO dto,
                                  Authentication authentication) {
-        return teamService.addMember(id, dfh, authentication.getName());
+        return teamService.addMember(id, dto, authentication.getName());
     }
+
     @PostMapping("/{id}/invite")
     public void inviteUser(@PathVariable Long id,
-                        @RequestBody InviteTeamMemberDTO dfh,
-                        Authentication authentication) {
-        teamService.inviteUserToTeam(id, dfh.getUserId(), authentication.getName());
+                           @RequestBody InviteTeamMemberDTO dto,
+                           Authentication authentication) {
+        teamService.inviteUserToTeam(id, dto.getUserId(), authentication.getName());
     }
 
     @PostMapping("/invite/{notificationId}/accept")
@@ -71,7 +85,7 @@ public class TeamApiController {
 
     @PostMapping("/invite/{notificationId}/decline")
     public void declineInvite(@PathVariable Long notificationId,
-                            Authentication authentication) {
+                              Authentication authentication) {
         teamService.declineInvite(notificationId, authentication.getName());
     }
 }

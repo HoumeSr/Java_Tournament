@@ -42,6 +42,20 @@ public class TeamService {
         this.gameTypeRepository = gameTypeRepository;
     }
 
+    public List<TeamShortDTO> getAllTeams() {
+        return teamRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::toShortDTO)
+                .toList();
+    }
+
+    public List<TeamShortDTO> getOpenTeams() {
+        return teamRepository.findByAccessTypeOrderByCreatedAtDesc("OPEN")
+                .stream()
+                .map(this::toShortDTO)
+                .toList();
+    }
+
     public List<TeamShortDTO> getMyTeams(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -89,6 +103,11 @@ public class TeamService {
         team.setName(dto.getName());
         team.setCaptain(captain);
         team.setGameType(gameType);
+        team.setAccessType(
+                dto.getAccessType() != null && !dto.getAccessType().isBlank()
+                        ? dto.getAccessType().trim().toUpperCase()
+                        : "OPEN"
+        );
         team.setImageUrl(dto.getImageUrl());
 
         Team savedTeam = teamRepository.save(team);
@@ -244,7 +263,15 @@ public class TeamService {
         dto.setId(team.getId());
         dto.setName(team.getName());
         dto.setCaptainUsername(team.getCaptain() != null ? team.getCaptain().getUsername() : null);
+        dto.setGameTypeName(team.getGameType() != null ? team.getGameType().getName() : null);
+        dto.setAccessType(team.getAccessType());
         dto.setImageUrl(team.getImageUrl());
+        dto.setCurrentMembersCount((int) teamMemberRepository.countByTeamId(team.getId()));
+
+        GameType gameType = team.getGameType();
+        Integer maxPlayers = gameType != null ? gameType.getMaxPlayers() : null;
+        dto.setMaxMembersCount(maxPlayers != null ? maxPlayers : 1);
+
         return dto;
     }
 
@@ -265,6 +292,9 @@ public class TeamService {
         dto.setName(team.getName());
         dto.setCaptainId(team.getCaptain() != null ? team.getCaptain().getId() : null);
         dto.setCaptainUsername(team.getCaptain() != null ? team.getCaptain().getUsername() : null);
+        dto.setGameTypeId(team.getGameType() != null ? team.getGameType().getId() : null);
+        dto.setGameTypeName(team.getGameType() != null ? team.getGameType().getName() : null);
+        dto.setAccessType(team.getAccessType());
         dto.setImageUrl(team.getImageUrl());
         dto.setCreatedAt(team.getCreatedAt());
         dto.setOwner(owner);
