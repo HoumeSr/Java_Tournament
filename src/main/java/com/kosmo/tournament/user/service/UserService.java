@@ -274,4 +274,16 @@ public class UserService {
         
         return email.matches(emailRegex);
     }
+
+    public List<ShortUserDTO> searchUsers(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return List.of();
+        }
+        
+        return userRepository.searchByUsernameOrEmail(query.trim())
+                .stream()
+                .map(this::toShortUserDTO)
+                .limit(10)
+                .toList();
+    }
 }

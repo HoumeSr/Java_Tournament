@@ -1,5 +1,6 @@
 package com.kosmo.tournament.user.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -12,10 +13,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kosmo.tournament.user.dto.ChangePasswordDTO;
 import com.kosmo.tournament.user.dto.CreateUserDTO;
+import com.kosmo.tournament.user.dto.ShortUserDTO;
 import com.kosmo.tournament.user.dto.UpdateUserDTO;
 import com.kosmo.tournament.user.dto.UserProfileDTO;
 import com.kosmo.tournament.user.service.UserService;
@@ -34,6 +37,11 @@ public class UserApiController {
     public UserProfileDTO getUser(@PathVariable Long id, Authentication authentication) {
         String currentUsername = authentication != null ? authentication.getName() : null;
         return userService.getUserProfile(id, currentUsername);
+    }
+
+    @GetMapping("/search")
+    public List<ShortUserDTO> searchUsers(@RequestParam String q) {
+        return userService.searchUsers(q);
     }
 
     @PostMapping
