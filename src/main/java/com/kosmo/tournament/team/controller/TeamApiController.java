@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.kosmo.tournament.team.dto.AddTeamMemberDTO;
 import com.kosmo.tournament.team.dto.CreateTeamDTO;
-import com.kosmo.tournament.team.dto.InviteTeamMemberDTO;
 import com.kosmo.tournament.team.dto.TeamFullDTO;
 import com.kosmo.tournament.team.dto.TeamMemberDTO;
 import com.kosmo.tournament.team.dto.TeamShortDTO;
@@ -68,13 +67,6 @@ public class TeamApiController {
                                  @RequestBody AddTeamMemberDTO dto,
                                  Authentication authentication) {
         return teamService.addMember(id, dto, authentication.getName());
-    }
-
-    @PostMapping("/{id}/invite")
-    public void inviteUser(@PathVariable Long id,
-                           @RequestBody InviteTeamMemberDTO dto,
-                           Authentication authentication) {
-        teamService.inviteUserToTeam(id, dto.getUserId(), authentication.getName());
     }
 
     @PostMapping("/invite/{notificationId}/accept")

@@ -1,0 +1,387 @@
+/* ========== ТЕМНЫЙ СТИЛЬ ДЛЯ УВЕДОМЛЕНИЙ ========== */
+
+.notification-wrapper {
+    position: relative;
+    margin-right: 12px;
+}
+
+.notification-bell {
+    position: relative;
+    cursor: pointer;
+    font-size: 22px;
+    color: #9ca3af;
+    transition: all 0.3s ease;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+}
+
+.notification-bell:hover {
+    color: #60a5fa;
+    background: rgba(96, 165, 250, 0.15);
+    transform: scale(1.05);
+}
+
+.notification-bell:active {
+    transform: scale(0.95);
+}
+
+.notification-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border-radius: 50%;
+    min-width: 18px;
+    height: 18px;
+    font-size: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 0 0 2px #1f2937;
+    animation: notificationPulse 2s infinite;
+}
+
+@keyframes notificationPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 2px #1f2937;
+    }
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 0 2px #1f2937, 0 0 0 4px rgba(239, 68, 68, 0.4);
+    }
+}
+
+/* Панель уведомлений */
+.notifications-panel {
+    position: fixed;
+    width: 420px;
+    max-height: 520px;
+    background: #1f2937;
+    border-radius: 16px;
+    box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    z-index: 10000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideDownDark 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(0px);
+}
+
+@keyframes slideDownDark {
+    from {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Заголовок панели */
+.notifications-panel .notifications-header {
+    padding: 18px 20px;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.notifications-panel .notifications-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #f1f5f9;
+    letter-spacing: -0.2px;
+}
+
+.notifications-panel .notifications-header h3 i {
+    margin-right: 10px;
+    color: #60a5fa;
+}
+
+/* Список уведомлений */
+.notifications-panel .notifications-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 440px;
+}
+
+.notifications-panel .notifications-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.notifications-panel .notifications-list::-webkit-scrollbar-track {
+    background: #374151;
+    border-radius: 3px;
+}
+
+.notifications-panel .notifications-list::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 3px;
+}
+
+.notifications-panel .notifications-list::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+/* Элемент уведомления */
+.notifications-panel .notification-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background: #1f2937;
+}
+
+.notifications-panel .notification-item:hover {
+    background: #374151;
+    transform: translateX(2px);
+}
+
+/* Иконка уведомления */
+.notifications-panel .notification-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 14px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+
+.notifications-panel .notification-icon i {
+    font-size: 20px;
+    color: white;
+}
+
+/* Контент уведомления */
+.notifications-panel .notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notifications-panel .notification-message {
+    font-size: 14px;
+    color: #e5e7eb;
+    margin-bottom: 6px;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+.notifications-panel .notification-message strong {
+    color: #60a5fa;
+    font-weight: 600;
+}
+
+.notifications-panel .notification-time {
+    font-size: 11px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.notifications-panel .notification-time i {
+    font-size: 10px;
+}
+
+/* Кнопки действий */
+.notifications-panel .notification-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: 12px;
+    flex-shrink: 0;
+}
+
+.notifications-panel .notification-actions button {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+}
+
+.notifications-panel .btn-accept {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.notifications-panel .btn-accept:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.notifications-panel .btn-accept:active {
+    transform: translateY(0);
+}
+
+.notifications-panel .btn-decline {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.notifications-panel .btn-decline:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+.notifications-panel .btn-decline:active {
+    transform: translateY(0);
+}
+
+/* Пустое состояние */
+.notifications-panel .empty-notifications {
+    padding: 60px 24px;
+    text-align: center;
+    background: #1f2937;
+}
+
+.notifications-panel .empty-notifications i {
+    font-size: 56px;
+    margin-bottom: 16px;
+    display: block;
+    opacity: 0.4;
+    color: #9ca3af;
+}
+
+.notifications-panel .empty-notifications p {
+    margin: 0;
+    font-size: 14px;
+    color: #9ca3af;
+}
+
+.notifications-panel .empty-notifications p:first-of-type {
+    font-weight: 500;
+    color: #d1d5db;
+    margin-bottom: 8px;
+}
+
+.notifications-panel .empty-notifications p:last-of-type {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+/* Стрелка-указатель (треугольник) */
+.notifications-panel::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: 20px;
+    width: 16px;
+    height: 16px;
+    background: #1f2937;
+    transform: rotate(45deg);
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Адаптив для мобильных устройств */
+@media (max-width: 640px) {
+    .notifications-panel {
+        width: calc(100vw - 32px);
+        right: 16px !important;
+        left: 16px !important;
+        top: 60px !important;
+        max-height: 460px;
+    }
+    
+    .notifications-panel .notification-actions {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .notifications-panel .notification-actions button {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+    
+    .notifications-panel .notification-item {
+        padding: 12px;
+    }
+    
+    .notifications-panel .notification-icon {
+        width: 38px;
+        height: 38px;
+    }
+    
+    .notifications-panel .notification-icon i {
+        font-size: 16px;
+    }
+    
+    .notifications-panel::before {
+        right: 16px;
+    }
+}
+
+/* Анимация появления новых уведомлений */
+@keyframes newNotificationGlow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(96, 165, 250, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(96, 165, 250, 0);
+    }
+}
+
+.notification-bell.new-notification {
+    animation: newNotificationGlow 0.8s ease-out;
+}
+
+/* Аватар в темной теме */
+.avatar-mini {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #374151;
+    transition: border-color 0.2s;
+}
+
+.avatar-mini:hover {
+    border-color: #60a5fa;
+}
+
+.profile-icon {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-icon i {
+    font-size: 32px;
+    color: #9ca3af;
+    transition: color 0.2s;
+}
+
+.profile-icon i:hover {
+    color: #60a5fa;
+}
+
+.auth-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}

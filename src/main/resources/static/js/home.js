@@ -2,9 +2,8 @@ $(document).ready(function() {
     let currentCategory = 'all';
     let tournaments = [];
     let categories = [{ id: 'all', label: 'Все', icon: '🌍' }];
-    let notifications = [];
-    let notificationsPanelOpen = false;
 
+    // Вспомогательные функции
     function showToast(message, isError = false) {
         const $toast = $('#demoToast');
         if (!$toast.length) return;
@@ -52,176 +51,7 @@ $(document).ready(function() {
         return '/images/' + imageUrl;
     }
 
-    // ========== УВЕДОМЛЕНИЯ ==========
-    function loadNotifications() {
-        $.get('/api/notifications/my')
-            .done(function(data) {
-                notifications = data || [];
-                updateNotificationBell();
-            })
-            .fail(function() {
-                console.error('Failed to load notifications');
-                notifications = [];
-                updateNotificationBell();
-            });
-    }
-
-    function updateNotificationBell() {
-        const $bell = $('.notification-bell');
-        const unreadCount = notifications.filter(n => n.type === 'TEAM_INVITE' && n.status === 'PENDING').length;
-        
-        // Удаляем старый бейдж
-        $bell.find('.notification-badge').remove();
-        
-        // Добавляем новый, если есть уведомления
-        if (unreadCount > 0) {
-            $bell.append(`<span class="notification-badge">${unreadCount > 99 ? '99+' : unreadCount}</span>`);
-        }
-    }
-
-    function formatDate(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = now - date;
-        
-        if (diff < 60000) return 'только что';
-        if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
-        if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
-        return date.toLocaleDateString('ru-RU');
-    }
-
-    function acceptInvite(notificationId, teamId) {
-        $.post(`/api/teams/invite/${notificationId}/accept`)
-            .done(function() {
-                showToast('✅ Вы вступили в команду!');
-                loadNotifications();
-                $('.notifications-panel').remove();
-                notificationsPanelOpen = false;
-                // Обновляем страницу через секунду
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            })
-            .fail(function(err) {
-                showToast('❌ Не удалось принять приглашение', true);
-                console.error(err);
-            });
-    }
-    
-    function declineInvite(notificationId) {
-        $.post(`/api/teams/invite/${notificationId}/decline`)
-            .done(function() {
-                showToast('📩 Приглашение отклонено');
-                loadNotifications();
-                // Обновляем панель без перезагрузки
-                $('.notifications-panel').remove();
-                notificationsPanelOpen = false;
-                // Если нужно сразу показать обновлённую панель
-                setTimeout(() => {
-                    toggleNotifications();
-                }, 100);
-            })
-            .fail(function(err) {
-                showToast('❌ Не удалось отклонить приглашение', true);
-                console.error(err);
-            });
-    }
-
-    function renderNotificationsPanel() {
-        const $existingPanel = $('.notifications-panel');
-        if ($existingPanel.length) $existingPanel.remove();
-        
-        // Получаем только приглашения (TEAM_INVITE) со статусом PENDING
-        const pendingInvites = notifications.filter(n => n.type === 'TEAM_INVITE' && n.status === 'PENDING');
-        
-        const $panel = $(`
-            <div class="notifications-panel">
-                <div class="notifications-header">
-                    <h3><i class="fas fa-bell"></i> Приглашения в команды</h3>
-                </div>
-                <div class="notifications-list"></div>
-            </div>
-        `);
-        
-        const $list = $panel.find('.notifications-list');
-        
-        if (pendingInvites.length === 0) {
-            $list.html(`
-                <div class="empty-notifications">
-                    <i class="fas fa-bell-slash"></i>
-                    <p>Нет новых приглашений</p>
-                </div>
-            `);
-        } else {
-            pendingInvites.forEach(notification => {
-                const $item = $(`
-                    <div class="notification-item" data-id="${notification.id}">
-                        <div class="notification-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="notification-content">
-                            <div class="notification-message">
-                                Приглашение в команду <strong>${escapeHtml(notification.teamName || 'команду')}</strong>
-                            </div>
-                            <div class="notification-time">
-                                ${formatDate(notification.createdAt)}
-                            </div>
-                        </div>
-                        <div class="notification-actions">
-                            <button class="btn-accept">Принять</button>
-                            <button class="btn-decline">Отклонить</button>
-                        </div>
-                    </div>
-                `);
-                
-                $item.find('.btn-accept').on('click', (e) => {
-                    e.stopPropagation();
-                    acceptInvite(notification.id, notification.teamId);
-                });
-                
-                $item.find('.btn-decline').on('click', (e) => {
-                    e.stopPropagation();
-                    declineInvite(notification.id);
-                });
-                
-                $list.append($item);
-            });
-        }
-        
-        $('body').append($panel);
-        
-        // Позиционирование относительно колокольчика
-        const $bell = $('.notification-bell');
-        const offset = $bell.offset();
-        $panel.css({
-            top: offset.top + $bell.outerHeight() + 5,
-            right: $(window).width() - (offset.left + $bell.outerWidth())
-        });
-        
-        // Закрытие при клике вне
-        setTimeout(() => {
-            $(document).on('click.notification', function(e) {
-                if (!$(e.target).closest('.notifications-panel').length && !$(e.target).closest('.notification-bell').length) {
-                    $('.notifications-panel').remove();
-                    $(document).off('click.notification');
-                    notificationsPanelOpen = false;
-                }
-            });
-        }, 100);
-    }
-    
-    function toggleNotifications() {
-        if (notificationsPanelOpen) {
-            $('.notifications-panel').remove();
-            notificationsPanelOpen = false;
-        } else {
-            renderNotificationsPanel();
-            notificationsPanelOpen = true;
-        }
-    }
-
-    // ========== ОСНОВНЫЕ ФУНКЦИИ ==========
+    // Загрузка данных
     function loadCategories() {
         $.get('/api/gametypes')
             .done(function(gameTypes) {
@@ -266,6 +96,7 @@ $(document).ready(function() {
             });
     }
 
+    // Рендер UI
     function renderCategories() {
         const $container = $('#categoriesContainer');
         if (!$container.length) return;
@@ -302,8 +133,19 @@ $(document).ready(function() {
     function updateTournamentCount() {
         const $count = $('#tournamentCount');
         if ($count.length) {
-            $count.text(`${getFilteredTournaments().length} событий`);
+            const filtered = getFilteredTournaments();
+            $count.text(`${filtered.length} ${getNoun(filtered.length, 'событие', 'события', 'событий')}`);
         }
+    }
+
+    function getNoun(number, one, two, five) {
+        let n = Math.abs(number);
+        n %= 100;
+        if (n >= 5 && n <= 20) return five;
+        n %= 10;
+        if (n === 1) return one;
+        if (n >= 2 && n <= 4) return two;
+        return five;
     }
 
     function renderTournaments() {
@@ -311,10 +153,12 @@ $(document).ready(function() {
         const $grid = $('#tournamentsGrid');
         if (!$grid.length) return;
         updateTournamentCount();
+        
         if (filtered.length === 0) {
             $grid.html('<div class="no-results">😔 В этой категории пока нет турниров. Загляни позже!</div>');
             return;
         }
+        
         $grid.empty();
         filtered.forEach(t => {
             const $card = $('<div>').addClass('tournament-card').on('click', function() {
@@ -352,11 +196,13 @@ $(document).ready(function() {
         });
     }
 
+    // Авторизация
     function updateAuthButtons() {
         $.get('/api/auth/check')
             .done(function(data) {
                 const $auth = $('#authButtons');
                 if (!$auth.length) return;
+                
                 if (data.authenticated) {
                     const imageUrl = data.user?.imageUrl ? resolveImageUrl(data.user.imageUrl) : null;
                     $auth.html(`
@@ -370,16 +216,13 @@ $(document).ready(function() {
                         </div>
                     `);
                     
-                    // Обработчик клика по колокольчику
-                    $('#notificationBell').on('click', function(e) {
-                        e.stopPropagation();
-                        toggleNotifications();
-                    });
-                    
                     $('#profileIcon').on('click', () => window.location.href = '/profile');
                     
-                    // Загружаем уведомления для авторизованного пользователя
-                    loadNotifications();
+                    // Инициализируем модуль уведомлений
+                    if (window.NotificationsModule) {
+                        window.NotificationsModule.init();
+                        window.NotificationsModule.loadNotifications();
+                    }
                 } else {
                     $auth.html(`
                         <button class="btn-outline" id="registerBtn">Регистрация</button>
@@ -387,6 +230,11 @@ $(document).ready(function() {
                     `);
                     $('#registerBtn').on('click', () => window.location.href = '/register');
                     $('#loginBtn').on('click', () => window.location.href = '/login');
+                    
+                    // Очищаем уведомления для неавторизованных
+                    if (window.NotificationsModule) {
+                        window.NotificationsModule.destroy();
+                    }
                 }
             })
             .fail(function() {
@@ -417,9 +265,17 @@ $(document).ready(function() {
         });
     }
 
+    // Старт
     loadCategories();
     loadTournaments();
     updateAuthButtons();
     updateCreateTournamentButton();
     initNavBar();
+
+    // Очистка при выгрузке
+    $(window).on('beforeunload', function() {
+        if (window.NotificationsModule) {
+            window.NotificationsModule.destroy();
+        }
+    });
 });

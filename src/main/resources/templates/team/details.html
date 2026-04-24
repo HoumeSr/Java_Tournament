@@ -8,7 +8,11 @@
     <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
     <link th:href="@{/css/team-details.css}" rel="stylesheet">
+    <link th:href="@{/css/team-notifications.css}" rel="stylesheet">
+    <link th:href="@{/css/team-modal.css}" rel="stylesheet">
+    <link th:href="@{/css/notifications.css}" rel="stylesheet">
 </head>
 <body>
 
@@ -26,7 +30,6 @@
 </header>
 
 <main class="container">
-    <!-- Сообщение об ошибке -->
     <div th:if="${error}" class="error-container">
         <div class="error-card">
             <i class="fas fa-exclamation-triangle"></i>
@@ -37,7 +40,6 @@
     </div>
 
     <div th:unless="${error}" th:if="${team != null}">
-        <!-- Карточка информации о команде -->
         <div class="team-info-card">
             <div class="team-avatar">
                 <img th:if="${team.imageUrl}" th:src="${team.imageUrl}" alt="Team logo">
@@ -62,7 +64,6 @@
             </div>
         </div>
 
-        <!-- Участники команды -->
         <div class="members-section">
             <div class="members-header">
                 <h2><i class="fas fa-user-friends"></i> Участники команды</h2>
@@ -70,7 +71,6 @@
             </div>
             
             <div class="members-grid">
-                <!-- Существующие участники -->
                 <div th:each="member : ${team.members}" class="member-card">
                     <div class="member-avatar">
                         <img th:if="${member.imageUrl}" th:src="${member.imageUrl}" alt="avatar">
@@ -89,7 +89,6 @@
                     </button>
                 </div>
                 
-                <!-- Пустые ячейки для капитана (добавление участников) -->
                 <div th:if="${isCaptain}" class="member-card add-member-card" id="addMemberCard">
                     <div class="member-avatar add-avatar">
                         <i class="fas fa-plus"></i>
@@ -114,14 +113,12 @@
             </div>
         </div>
 
-        <!-- Кнопка входа в команду (для не участников) -->
         <div class="join-section" th:if="${not isMember and not isCaptain and isAuthenticated}">
             <button class="btn-join" id="joinTeamBtn">
                 <i class="fas fa-sign-in-alt"></i> Вступить в команду
             </button>
         </div>
         
-        <!-- Кнопка выхода из команды (для участников, не капитанов) -->
         <div class="leave-section" th:if="${isMember and not isCaptain}">
             <button class="btn-leave" id="leaveTeamBtn">
                 <i class="fas fa-sign-out-alt"></i> Покинуть команду
@@ -148,12 +145,12 @@
 <!-- Модальное окно приглашения -->
 <div id="inviteModal" class="modal" style="display: none;">
     <div class="modal-overlay"></div>
-    <div class="modal-container modal-small">
+    <div class="modal-container">
         <div class="modal-header">
-            <h2>
+            <div class="modal-header-icon">
                 <i class="fas fa-user-plus"></i>
-                Пригласить игрока
-            </h2>
+            </div>
+            <h2>Пригласить игрока</h2>
             <button class="modal-close" id="closeInviteModalBtn">
                 <i class="fas fa-times"></i>
             </button>
@@ -161,19 +158,23 @@
         
         <div class="modal-body">
             <div class="form-group">
-                <label for="usernameOrEmail">
-                    Поиск игрока <span class="required">*</span>
+                <label>
+                    <i class="fas fa-search"></i>
+                    Поиск игрока
+                    <span class="required">*</span>
                 </label>
                 <input type="text" 
                        id="usernameOrEmail" 
-                       placeholder="Введите имя пользователя или email"
+                       placeholder="Введите имя пользователя"
                        autocomplete="off">
-                <span class="input-hint">Введите минимум 2 символа для поиска</span>
+                <span class="input-hint">
+                    <i class="fas fa-info-circle"></i>
+                    Введите минимум 2 символа для поиска
+                </span>
             </div>
             
             <div id="searchResults" class="search-results" style="display: none;"></div>
             
-            <!-- Выбранный пользователь -->
             <div id="selectedUserContainer" style="display: none;">
                 <div class="selected-user-header">
                     <i class="fas fa-user-check"></i>
@@ -187,7 +188,7 @@
             <button type="button" class="btn-cancel" id="cancelInviteBtn">
                 <i class="fas fa-times"></i> Отмена
             </button>
-            <button type="button" class="btn-submit-modal" id="sendInviteBtn" disabled>
+            <button type="button" class="btn-submit" id="sendInviteBtn" disabled>
                 <i class="fas fa-paper-plane"></i> Отправить приглашение
             </button>
         </div>
@@ -208,6 +209,11 @@
     };
     /*]]>*/
 </script>
-<script th:src="@{/js/team-details.js}"></script>
+
+<script th:src="@{/js/team-common.js}"></script>
+<script th:src="@{/js/team-notifications.js}"></script>
+<script th:src="@{/js/team-modal.js}"></script>
+<script th:src="@{/js/team-actions.js}"></script>
+<script th:src="@{/js/notifications.js}"></script>
 </body>
 </html>
