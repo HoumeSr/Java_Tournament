@@ -42,8 +42,13 @@ public class UserApiController {
     }
 
     @GetMapping("/search")
-    public List<ShortUserDTO> searchUsers(@RequestParam String query) {
-        return userService.searchUsers(query);
+    public List<ShortUserDTO> searchUsers(@RequestParam(name = "q", required = false) String q,
+                                          @RequestParam(name = "query", required = false) String query) {
+        String value = (q != null && !q.isBlank()) ? q : query;
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+        return userService.searchUsers(value);
     }
 
     @PostMapping

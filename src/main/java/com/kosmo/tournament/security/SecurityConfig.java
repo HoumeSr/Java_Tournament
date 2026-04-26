@@ -45,13 +45,23 @@ public class SecurityConfig {
                                 "/tournaments",
                                 "/tournaments/*",
                                 "/teams",
-                                "/teams/*"
+                                "/teams/*",
+                                "/profile/*"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/tournaments").authenticated()
+
                         .requestMatchers("/api/tournaments/my").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/tournaments").authenticated()
+
+                        .requestMatchers("/api/teams/my").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/teams").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/teams/open").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/teams/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/teams/*/members").permitAll()
                         .requestMatchers("/api/teams/**", "/api/notifications/**", "/api/matches/my").authenticated()
+
                         .requestMatchers(HttpMethod.POST, "/api/matches/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/matches/**").authenticated()
+
                         .requestMatchers("/profile", "/my/**", "/notifications").authenticated()
                         .anyRequest().permitAll()
                 )
