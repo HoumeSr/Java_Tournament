@@ -51,7 +51,7 @@ public class TeamService {
 
     /**
      * Пока у Team нет отдельного поля access/visibility,
-     * считаем открытыми все команды.
+     * считаем все команды открытыми.
      */
     public List<TeamShortDTO> getOpenTeams() {
         return getAllTeams();
@@ -123,6 +123,11 @@ public class TeamService {
         return toFullDTO(savedTeam, true, true);
     }
 
+    /**
+     * Совместимость с текущим фронтом:
+     * - капитан может добавить любого участника
+     * - обычный пользователь может добавить только самого себя (join)
+     */
     @Transactional
     public TeamFullDTO addMember(Long teamId, AddTeamMemberDTO dto, String currentUsername) {
         Team team = teamRepository.findById(teamId)
@@ -131,14 +136,19 @@ public class TeamService {
         User currentUser = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("Current user not found"));
 
-        if (team.getCaptain() == null || !team.getCaptain().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Only captain can add members");
-        }
-
-        User newMember = userRepository.findById(dto.getUserId())
+        User targetUser = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new RuntimeException("User to add not found"));
 
-        if (teamMemberRepository.existsByTeamIdAndPlayerId(teamId, newMember.getId())) {
+        boolean isCaptain = team.getCaptain() != null
+                && team.getCaptain().getId().equals(currentUser.getId());
+
+        boolean selfJoin = currentUser.getId().equals(targetUser.getId());
+
+        if (!isCaptain && !selfJoin) {
+            throw new RuntimeException("Only captain can add other users");
+        }
+
+        if (teamMemberRepository.existsByTeamIdAndPlayerId(teamId, targetUser.getId())) {
             throw new RuntimeException("User already in team");
         }
 
@@ -146,12 +156,12 @@ public class TeamService {
 
         TeamMember teamMember = new TeamMember();
         teamMember.setTeam(team);
-        teamMember.setPlayer(newMember);
+        teamMember.setPlayer(targetUser);
         teamMember.setRole("MEMBER");
 
         teamMemberRepository.save(teamMember);
 
-        return toFullDTO(team, true, true);
+        return toFullDTO(team, isCaptain, true);
     }
 
     @Transactional
