@@ -562,3 +562,242 @@ body {
         justify-content: center;
     }
 }
+
+/* ========== КОЛОКОЛЬЧИК УВЕДОМЛЕНИЙ ========== */
+.notification-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.notification-bell {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(96, 165, 250, 0.1));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid rgba(124, 58, 237, 0.3);
+}
+
+.notification-bell:hover {
+    background: rgba(124, 58, 237, 0.25);
+    transform: scale(1.05);
+}
+
+.notification-bell i {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--danger);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 600;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+}
+
+/* ========== ПЛАШКА УВЕДОМЛЕНИЙ ========== */
+.notifications-panel {
+    position: absolute;
+    top: 55px;
+    right: 0;
+    width: 350px;
+    max-width: calc(100vw - 20px);
+    background: var(--bg-card);
+    border-radius: 1rem;
+    border: 1px solid var(--border-dim);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.notifications-panel.show {
+    display: block;
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.notifications-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-dim);
+    background: var(--bg-secondary);
+}
+
+.notifications-header h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.notifications-header h3 i {
+    color: var(--accent);
+}
+
+.mark-all-read {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.mark-all-read:hover {
+    color: var(--accent);
+}
+
+.notifications-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-dim);
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.notification-item:hover {
+    background: rgba(124, 58, 237, 0.05);
+}
+
+.notification-item.unread {
+    background: rgba(124, 58, 237, 0.1);
+}
+
+.notification-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(16, 185, 129, 0.15);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.notification-icon i {
+    font-size: 1rem;
+    color: var(--success);
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-message {
+    font-size: 0.85rem;
+    margin-bottom: 0.25rem;
+}
+
+.notification-message strong {
+    color: var(--accent);
+}
+
+.notification-time {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+}
+
+.notification-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.btn-accept {
+    background: rgba(16, 185, 129, 0.15);
+    border: none;
+    padding: 0.25rem 0.6rem;
+    border-radius: 1rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--success);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-accept:hover {
+    background: var(--success);
+    color: white;
+}
+
+.btn-decline {
+    background: rgba(239, 68, 68, 0.15);
+    border: none;
+    padding: 0.25rem 0.6rem;
+    border-radius: 1rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--danger);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-decline:hover {
+    background: var(--danger);
+    color: white;
+}
+
+.empty-notifications {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+}
+
+.empty-notifications i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+.empty-notifications p {
+    font-size: 0.85rem;
+}
+
+/* Адаптив */
+@media (max-width: 768px) {
+    .notifications-panel {
+        position: fixed;
+        top: 70px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+    }
+}

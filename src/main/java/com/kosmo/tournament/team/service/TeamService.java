@@ -49,6 +49,14 @@ public class TeamService {
                 .toList();
     }
 
+    /**
+     * Пока у Team нет отдельного поля access/visibility,
+     * считаем открытыми все команды.
+     */
+    public List<TeamShortDTO> getOpenTeams() {
+        return getAllTeams();
+    }
+
     public List<TeamShortDTO> getMyTeams(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -68,7 +76,9 @@ public class TeamService {
         boolean owner = currentUsername != null
                 && team.getCaptain() != null
                 && currentUsername.equals(team.getCaptain().getUsername());
-        boolean member = currentUsername != null && teamMemberRepository.findByTeamId(teamId)
+
+        boolean member = currentUsername != null
+                && teamMemberRepository.findByTeamId(teamId)
                 .stream()
                 .anyMatch(tm -> currentUsername.equals(tm.getPlayer().getUsername()));
 
@@ -164,6 +174,7 @@ public class TeamService {
                 .orElseThrow(() -> new RuntimeException("User is not in team"));
 
         teamMemberRepository.delete(member);
+
         return toFullDTO(team, true, true);
     }
 
@@ -178,13 +189,16 @@ public class TeamService {
         TeamMember member = teamMemberRepository.findByTeamIdAndPlayerId(teamId, currentUser.getId())
                 .orElseThrow(() -> new RuntimeException("You are not a member of this team"));
 
-        boolean isCaptain = team.getCaptain() != null && team.getCaptain().getId().equals(currentUser.getId());
+        boolean isCaptain = team.getCaptain() != null
+                && team.getCaptain().getId().equals(currentUser.getId());
+
         long membersCount = teamMemberRepository.countByTeamId(teamId);
 
         if (isCaptain) {
             if (membersCount > 1) {
                 throw new RuntimeException("Captain cannot leave the team until all members are removed");
             }
+
             teamMemberRepository.delete(member);
             teamRepository.delete(team);
             return;
@@ -260,7 +274,9 @@ public class TeamService {
 
         notificationService.markAccepted(notification);
 
-        boolean owner = team.getCaptain() != null && team.getCaptain().getId().equals(currentUser.getId());
+        boolean owner = team.getCaptain() != null
+                && team.getCaptain().getId().equals(currentUser.getId());
+
         return toFullDTO(team, owner, true);
     }
 
@@ -306,8 +322,10 @@ public class TeamService {
         dto.setGameTypeName(team.getGameType() != null ? team.getGameType().getName() : null);
         dto.setImageUrl(team.getImageUrl());
         dto.setCurrentMembersCount((int) teamMemberRepository.countByTeamId(team.getId()));
+
         Integer maxPlayers = team.getGameType() != null ? team.getGameType().getMaxPlayers() : null;
         dto.setMaxMembersCount(maxPlayers != null ? maxPlayers : 1);
+
         return dto;
     }
 

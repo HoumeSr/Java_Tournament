@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Мои команды — Бобры</title>
+    
+    <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link th:href="@{/css/teams.css}" rel="stylesheet">
+</head>
+<body>
+
+<header class="navbar">
+    <div class="logo-area">
+        <div class="site-title">⚡ Бобры</div>
+        <div class="nav-links">
+            <a th:href="@{/}" class="nav-item">Главная</a>
+            <a th:href="@{/teams}" class="nav-item active-nav">Команды</a>
+            <a data-nav="matches" class="nav-item">Матчи</a>
+            <a th:href="@{/rating}" class="nav-item">Рейтинг</a>
+        </div>
+    </div>
+    <div class="auth-buttons" id="authButtons"></div>
+</header>
+
+<main class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-users"></i> Мои команды</h1>
+    </div>
+    
+    <div id="teamsContainer" class="teams-container">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Загрузка команд...</p>
+        </div>
+    </div>
+</main>
+
+<footer class="modern-footer">
+    <div class="footer-content">
+        <div class="footer-info">
+            <div class="footer-logo">⚡ Бобры</div>
+            <p class="footer-tagline">Турнирная платформа нового поколения</p>
+            <p class="footer-copyright">© 2026 Бобры. Создано с ❤️ командой Космо-Бобры. Все права защищены.</p>
+        </div>
+        <div class="footer-social">
+            <a href="https://vk.com/ilnurmuhametzanov" class="social-icon vk" target="_blank"><i class="fab fa-vk"></i></a>
+            <a href="https://discord.gg/zur_chelovek" class="social-icon discord" target="_blank"><i class="fab fa-discord"></i></a>
+            <a href="https://github.com/HoumeSr" class="social-icon gh" target="_blank"><i class="fab fa-github"></i></a>
+        </div>
+    </div>
+</footer>
+
+<button id="createTeamFab" class="create-team-fab">
+    <i class="fas fa-plus"></i>
+    <span class="fab-text">Создать команду</span>
+</button>
+
+<div id="createTeamModal" class="modal" style="display: none;">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+        <div class="modal-header">
+            <h2>
+                <i class="fas fa-users"></i>
+                Создание команды
+            </h2>
+            <button class="modal-close" id="closeModalBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="modalCreateTeamForm" class="modal-form">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="modalTeamName">
+                        Название команды <span class="required">*</span>
+                    </label>
+                    <input type="text" 
+                           id="modalTeamName" 
+                           name="name" 
+                           placeholder="Например: Космо-Бобры" 
+                           maxlength="50"
+                           required>
+                    <span class="input-hint">От 3 до 50 символов</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="modalGameType">
+                        Категория / Игра <span class="required">*</span>
+                    </label>
+                    <select id="modalGameType" name="gameTypeId" required>
+                        <option value="">— Загрузка игр... —</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Логотип команды</label>
+                    <div class="modal-image-upload" id="modalImageUploadArea">
+                        <input type="file" 
+                               id="modalTeamImage" 
+                               accept="image/jpeg,image/png,image/webp" 
+                               style="display: none;">
+                        <div class="image-upload-placeholder" id="modalImagePreview">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Нажмите для загрузки</p>
+                            <span>PNG, JPG, WEBP до 5MB</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" id="cancelModalBtn">
+                    <i class="fas fa-times"></i> Отмена
+                </button>
+                <button type="submit" class="btn-submit-modal">
+                    <i class="fas fa-check"></i> Создать команду
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="demoToast" class="demo-toast"></div>
+
+<script th:src="@{/js/teams.js}"></script>
+</body>
+</html>

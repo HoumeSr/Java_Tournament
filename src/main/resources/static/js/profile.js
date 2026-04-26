@@ -1,18 +1,6 @@
 // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
 let currentUser = null;
 let currentUserId = null;
-let viewedUserId = null;
-
-function detectViewedUserId() {
-    const parts = window.location.pathname.split('/').filter(Boolean);
-    if (parts.length === 2 && parts[0] === 'profile') {
-        const parsed = parseInt(parts[1], 10);
-        if (!Number.isNaN(parsed)) {
-            return parsed;
-        }
-    }
-    return null;
-}
 
 // ========== УВЕДОМЛЕНИЯ ==========
 function showToast(message, isError = false) {
@@ -23,12 +11,12 @@ function showToast(message, isError = false) {
         toast.className = 'demo-toast';
         document.body.appendChild(toast);
     }
-
+    
     toast.textContent = message;
     toast.style.background = isError ? '#b91c1c' : '#1f2937';
     toast.style.opacity = '1';
     toast.style.visibility = 'visible';
-
+    
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.visibility = 'hidden';
@@ -52,53 +40,52 @@ async function getCurrentUserId() {
 
 // ========== ЗАГРУЗКА ПРОФИЛЯ ИЗ DTO ==========
 async function loadUserProfile() {
-    viewedUserId = detectViewedUserId();
     if (!currentUserId) {
         currentUserId = await getCurrentUserId();
     }
-
-    const targetUserId = viewedUserId || currentUserId;
-
-    if (!targetUserId) {
-        showToast('❌ Пользователь не найден', true);
+    
+    if (!currentUserId) {
+        showToast('❌ Пользователь не авторизован', true);
         setTimeout(() => {
             window.location.href = '/login';
         }, 1500);
         return;
     }
-
+    
     try {
-        const response = await fetch(`/api/users/${targetUserId}`);
-
+        const response = await fetch(`/api/users/${currentUserId}`);
+        
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
-
+        
         const userDTO = await response.json();
         console.log('📥 Загружен UserProfileDTO:', userDTO);
-
+        
         currentUser = userDTO;
         renderProfile(userDTO);
-
+        
+        // Показываем кнопки редактирования только если owner = true
         if (userDTO.owner) {
             const editProfileBtn = document.getElementById('editProfileBtn');
             const changeAvatarBtn = document.getElementById('changeAvatarBtn');
             const emailRow = document.getElementById('emailRow');
             const passwordCard = document.getElementById('passwordCard');
             const logoutCard = document.getElementById('logoutCard');
-
+            
             if (editProfileBtn) editProfileBtn.style.display = 'flex';
             if (changeAvatarBtn) changeAvatarBtn.style.display = 'flex';
             if (emailRow) emailRow.style.display = 'flex';
             if (passwordCard) passwordCard.style.display = 'flex';
             if (logoutCard) logoutCard.style.display = 'block';
         }
-
+        
     } catch (error) {
         console.error('❌ Ошибка загрузки профиля:', error);
         showToast('❌ Не удалось загрузить профиль', true);
     }
 }
+
 // ========== ОТОБРАЖЕНИЕ ПРОФИЛЯ ИЗ DTO ==========
 function renderProfile(userDTO) {
     // Левая колонка - имя и дата
@@ -133,9 +120,13 @@ function renderProfile(userDTO) {
     const winsCount = document.getElementById('winsCount');
     const rating = document.getElementById('rating');
     
-    if (tournamentsCount) tournamentsCount.textContent = userDTO.totalTournaments || 0;
-    if (winsCount) winsCount.textContent = userDTO.totalWins || 0;
-    if (rating) rating.textContent = userDTO.rating || 1200;
+    const totalMatches = Array.isArray(userDTO.games) ? userDTO.games.reduce((sum, game) => sum + (game.matchCount || 0), 0) : 0;
+    const avgWinPercent = Array.isArray(userDTO.games) && userDTO.games.length > 0
+        ? Math.round(userDTO.games.reduce((sum, game) => sum + (game.winPercent || 0), 0) / userDTO.games.length)
+        : 0;
+    if (tournamentsCount) tournamentsCount.textContent = totalMatches;
+    if (winsCount) winsCount.textContent = avgWinPercent + '%';
+    if (rating) rating.textContent = 1200;
     
     // Список игр пользователя (если есть)
     if (userDTO.games && userDTO.games.length > 0) {
@@ -296,8 +287,9 @@ function initAvatarChange() {
                     body: JSON.stringify({ imageUrl: avatarBase64 })
                 });
                 
+                const data = await response.json();
                 if (response.ok) {
-                    setAvatar(avatarBase64);
+                    setAvatar((data.imageUrl || data.user?.imageUrl || avatarBase64));
                     showToast('✅ Аватар обновлён!');
                 } else {
                     showToast('❌ Ошибка загрузки аватара', true);
@@ -318,6 +310,7 @@ function initAvatarChange() {
                         method: 'DELETE'
                     });
                     
+                    const data = await response.json();
                     if (response.ok) {
                         resetAvatar();
                         showToast('🔄 Аватар сброшен');
@@ -403,17 +396,17 @@ function initProfile() {
                     body: JSON.stringify(updateData)
                 });
                 
+                const data = await response.json();
                 if (response.ok) {
-                    const updatedUser = await response.json();
+                    const updatedUser = data.user || data;
                     currentUser = updatedUser;
                     renderProfile(updatedUser);
-                    
+
                     viewMode.style.display = 'block';
                     editMode.style.display = 'none';
                     showToast('✅ Профиль успешно обновлён');
                 } else {
-                    const error = await response.json();
-                    showToast('❌ ' + (error.message || 'Ошибка обновления'), true);
+                    showToast('❌ ' + (data.message || 'Ошибка обновления'), true);
                 }
             } catch (error) {
                 console.error('Ошибка:', error);

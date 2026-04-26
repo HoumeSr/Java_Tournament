@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Команда — Бобры</title>
+    <title th:text="${pageTitle} + ' — Бобры'">Команда — Бобры</title>
     
     <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
@@ -21,8 +21,8 @@
         <div class="site-title">⚡ Бобры</div>
         <div class="nav-links">
             <a th:href="@{/}" class="nav-item">Главная</a>
-            <a th:href="@{/teams}" class="nav-item active-nav">Команды</a>
-            <a data-nav="matches" class="nav-item">Матчи</a>
+            <a th:href="@{/teams}" class="nav-item">Команды</a>
+            <a th:href="@{/tournaments}" class="nav-item">Турниры</a>
             <a th:href="@{/rating}" class="nav-item">Рейтинг</a>
         </div>
     </div>
@@ -50,19 +50,19 @@
                 <div class="team-meta">
                     <div class="meta-item">
                         <i class="fas fa-crown"></i>
+                        <span>Капитан: <strong th:text="${team.captainUsername}">Captain</strong></span>
                     </div>
-                </div>
-                <div class="member-info">
-                    <div class="member-name">
-                        <a th:href="@{'/profile/' + ${team.captainId}}" th:text="${team.captain}">BobrMaster</a>
+                    <div class="meta-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Создана: <strong th:text="${#temporals.format(team.createdAt, 'dd.MM.yyyy')}">01.01.2024</strong></span>
                     </div>
-                    <div class="member-role">Капитан</div>
-                    <div class="member-stats">
-                        <span class="stat"><i class="fas fa-trophy"></i> <span th:text="${team.captainWins}">24</span> побед</span>
-                        <span class="stat"><i class="fas fa-calendar-alt"></i> <span th:text="${team.captainTournaments}">47</span> турниров</span>
+                    <div class="meta-item">
+                        <i class="fas fa-users"></i>
+                        <span>Участники: <strong th:text="${team.currentMembersCount} + ' / ' + ${team.maxMembersCount}">0/0</strong></span>
                     </div>
                 </div>
             </div>
+        </div>
 
         <div class="members-section">
             <div class="members-header">
@@ -80,6 +80,13 @@
                         <span class="member-name" th:text="${member.username}">Username</span>
                         <span class="member-role" th:classappend="'role-' + ${#strings.toLowerCase(member.role)}" th:text="${member.role}">MEMBER</span>
                     </div>
+                    <div class="member-joined">
+                        <i class="fas fa-clock"></i>
+                        <span th:text="${#temporals.format(member.joinedAt, 'dd.MM.yyyy')}">01.01.2024</span>
+                    </div>
+                    <button th:if="${isCaptain and member.userId != team.captainId}" class="btn-kick" th:data-user-id="${member.userId}">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
                 
                 <div th:if="${isCaptain}" class="member-card add-member-card" id="addMemberCard">
@@ -90,11 +97,13 @@
                         <span class="member-name">Добавить участника</span>
                         <span class="member-role">Пригласить в команду</span>
                     </div>
-                    <div class="member-role">Игрок</div>
-                    <div class="member-stats">
-                        <span class="stat"><i class="fas fa-trophy"></i> <span th:text="${member.wins}">12</span> побед</span>
-                        <span class="stat"><i class="fas fa-calendar-alt"></i> <span th:text="${member.tournaments}">28</span> турниров</span>
+                    <div class="member-joined">
+                        <i class="fas fa-envelope"></i>
+                        <span>По ссылке</span>
                     </div>
+                    <button class="btn-add" id="addMemberBtn">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
                 </div>
             </div>
             
@@ -118,13 +127,12 @@
     </div>
 </main>
 
-<!-- ПОДВАЛ -->
 <footer class="modern-footer">
     <div class="footer-content">
         <div class="footer-info">
             <div class="footer-logo">⚡ Бобры</div>
             <p class="footer-tagline">Турнирная платформа нового поколения</p>
-            <p class="footer-copyright">© 2026 Бобры. Создано с ❤️ командой <span class="team-name">Космо-Бобры</span>. Все права защищены.</p>
+            <p class="footer-copyright">© 2026 Бобры. Создано с ❤️ командой Космо-Бобры. Все права защищены.</p>
         </div>
         <div class="footer-social">
             <a href="https://vk.com/ilnurmuhametzanov" class="social-icon vk" target="_blank"><i class="fab fa-vk"></i></a>

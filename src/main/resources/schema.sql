@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS "Team" (
     "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
     "captainId" INTEGER,
     "idGameType" INTEGER NOT NULL DEFAULT 1,
+    "accessType" TEXT NOT NULL DEFAULT 'OPEN',
     "imageUrl" TEXT DEFAULT 'DEFAULT_TEAM_IMAGE.jpg',
     PRIMARY KEY("id"),
     CONSTRAINT "fk_team_captain" FOREIGN KEY ("captainId") REFERENCES "User"("id") ON UPDATE CASCADE ON DELETE CASCADE,
