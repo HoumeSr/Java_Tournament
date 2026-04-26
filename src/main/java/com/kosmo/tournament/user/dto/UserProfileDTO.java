@@ -28,6 +28,7 @@ public class UserProfileDTO {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public boolean isOwner() { return owner; }
     public List<UserGameStatsDTO> getGames() { return games; }
+    public List<UserGameStatsDTO> getGameStats() { return games; }
 
     public void setUserId(Long userId) { this.userId = userId; }
     public void setUsername(String username) { this.username = username; }
@@ -39,4 +40,5 @@ public class UserProfileDTO {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setOwner(boolean owner) { this.owner = owner; }
     public void setGames(List<UserGameStatsDTO> games) { this.games = games; }
+    public void setGameStats(List<UserGameStatsDTO> games) { this.games = games; }
 }

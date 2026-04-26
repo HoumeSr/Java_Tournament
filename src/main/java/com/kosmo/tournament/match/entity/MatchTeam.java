@@ -31,12 +31,12 @@ public class MatchTeam {
     @Column(name = "\"roundNumber\"")
     private Integer roundNumber;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "\"team1Id\"", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "\"team1Id\"")
     private Team team1;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "\"team2Id\"", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "\"team2Id\"")
     private Team team2;
 
     @ManyToOne(fetch = FetchType.LAZY)

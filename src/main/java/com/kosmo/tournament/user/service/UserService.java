@@ -36,10 +36,19 @@ public class UserService {
         User requestedUser = userRepository.findById(requestedUserId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        boolean owner = currentUsername != null
-                && currentUsername.equals(requestedUser.getUsername());
-
+        boolean owner = currentUsername != null && currentUsername.equals(requestedUser.getUsername());
         return buildUserProfileDTO(requestedUser, owner);
+    }
+
+    public List<ShortUserDTO> searchUsers(String query) {
+        if (query == null || query.trim().isBlank()) {
+            return List.of();
+        }
+
+        return userRepository.findTop20ByUsernameContainingIgnoreCaseOrderByUsernameAsc(query.trim())
+                .stream()
+                .map(this::toShortUserDTO)
+                .toList();
     }
 
     @Transactional
@@ -56,12 +65,13 @@ public class UserService {
         if (dto.getPassword().length() < 6) {
             throw new RuntimeException("Password must be at least 6 characters");
         }
+        if (dto.getCountry() == null || dto.getCountry().trim().isBlank()) {
+            throw new RuntimeException("Country is required");
+        }
 
         String username = dto.getUsername().trim();
         String email = dto.getEmail().trim();
-        String country = dto.getCountry() != null && !dto.getCountry().trim().isBlank()
-                ? dto.getCountry().trim()
-                : "Не указана";
+        String country = dto.getCountry().trim();
 
         if (!isValidEmail(email)) {
             throw new RuntimeException("Invalid email format");
@@ -81,11 +91,9 @@ public class UserService {
         user.setCountry(country);
         user.setEnabled(true);
         user.setCreatedAt(LocalDateTime.now());
-        user.setImageUrl(
-                dto.getImageUrl() != null && !dto.getImageUrl().trim().isBlank()
-                        ? dto.getImageUrl().trim()
-                        : "DEFAULT_USER_IMAGE.jpg"
-        );
+        user.setImageUrl(dto.getImageUrl() != null && !dto.getImageUrl().trim().isBlank()
+                ? dto.getImageUrl().trim()
+                : "DEFAULT_USER_IMAGE.jpg");
 
         User saved = userRepository.save(user);
         return buildUserProfileDTO(saved, true);
@@ -96,102 +104,10 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        validateOwner(user, currentUsername);
-        applyUserUpdate(user, dto);
-
-        User saved = userRepository.save(user);
-        return buildUserProfileDTO(saved, true);
-    }
-
-    @Transactional
-    public UserProfileDTO updateCurrentUser(UpdateUserDTO dto, String currentUsername) {
-        User user = getCurrentUser(currentUsername);
-        applyUserUpdate(user, dto);
-        User saved = userRepository.save(user);
-        return buildUserProfileDTO(saved, true);
-    }
-
-    @Transactional
-    public UserProfileDTO updateCurrentUserAvatar(String imageUrl, String currentUsername) {
-        User user = getCurrentUser(currentUsername);
-        user.setImageUrl(imageUrl != null && !imageUrl.trim().isBlank() ? imageUrl.trim() : "DEFAULT_USER_IMAGE.jpg");
-        User saved = userRepository.save(user);
-        return buildUserProfileDTO(saved, true);
-    }
-
-    @Transactional
-    public UserProfileDTO resetCurrentUserAvatar(String currentUsername) {
-        User user = getCurrentUser(currentUsername);
-        user.setImageUrl("DEFAULT_USER_IMAGE.jpg");
-        User saved = userRepository.save(user);
-        return buildUserProfileDTO(saved, true);
-    }
-
-    @Transactional
-    public void changePassword(ChangePasswordDTO dto, String currentUsername) {
-        User user = getCurrentUser(currentUsername);
-
-        if (dto.getCurrentPassword() == null || dto.getCurrentPassword().isBlank()) {
-            throw new RuntimeException("Current password is required");
-        }
-        if (dto.getNewPassword() == null || dto.getNewPassword().isBlank()) {
-            throw new RuntimeException("New password is required");
-        }
-        if (dto.getNewPassword().length() < 6) {
-            throw new RuntimeException("New password must be at least 6 characters");
-        }
-        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("Current password is incorrect");
-        }
-        if (passwordEncoder.matches(dto.getNewPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("New password must be different from current password");
+        if (currentUsername == null || !currentUsername.equals(user.getUsername())) {
+            throw new RuntimeException("You can update only your own profile");
         }
 
-        user.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
-        userRepository.save(user);
-    }
-
-    public List<UserGameStatsDTO> getUserGamesStats(Long userId) {
-        String sql = """
-            SELECT
-                gt."name" AS game_name,
-                COUNT(ms."id") AS match_count,
-                COALESCE(
-                    ROUND(
-                        100.0 * SUM(
-                            CASE
-                                WHEN ms."winnerPlayerId" = ? THEN 1
-                                ELSE 0
-                            END
-                        ) / NULLIF(COUNT(ms."id"), 0)
-                    ),
-                    0
-                ) AS win_percent
-            FROM "UserGames" ug
-            JOIN "GameTypes" gt
-                ON gt."id" = ug."gameId"
-            LEFT JOIN "Tournament" t
-                ON t."gameType" = gt."id"
-            LEFT JOIN "MatchSolo" ms
-                ON ms."tournamentId" = t."id"
-               AND (ms."player1Id" = ? OR ms."player2Id" = ?)
-            WHERE ug."userId" = ?
-            GROUP BY gt."id", gt."name"
-            ORDER BY gt."name"
-        """;
-
-        return jdbcTemplate.query(
-                sql,
-                (rs, rowNum) -> new UserGameStatsDTO(
-                        rs.getString("game_name"),
-                        rs.getInt("match_count"),
-                        rs.getInt("win_percent")
-                ),
-                userId, userId, userId, userId
-        );
-    }
-
-    private void applyUserUpdate(User user, UpdateUserDTO dto) {
         if (dto.getUsername() != null) {
             String newUsername = dto.getUsername().trim();
             if (newUsername.isBlank()) {
@@ -219,27 +135,70 @@ public class UserService {
 
         if (dto.getCountry() != null) {
             String newCountry = dto.getCountry().trim();
-            user.setCountry(newCountry.isBlank() ? "Не указана" : newCountry);
+            if (newCountry.isBlank()) {
+                throw new RuntimeException("Country cannot be empty");
+            }
+            user.setCountry(newCountry);
         }
 
         if (dto.getImageUrl() != null) {
             String newImageUrl = dto.getImageUrl().trim();
-            user.setImageUrl(newImageUrl.isBlank() ? "DEFAULT_USER_IMAGE.jpg" : newImageUrl);
+            user.setImageUrl(newImageUrl.isBlank() ? null : newImageUrl);
         }
+
+        User saved = userRepository.save(user);
+        return buildUserProfileDTO(saved, true);
     }
 
-    private User getCurrentUser(String currentUsername) {
-        if (currentUsername == null || currentUsername.isBlank()) {
-            throw new RuntimeException("Authentication required");
-        }
-        return userRepository.findByUsername(currentUsername)
+    @Transactional
+    public UserProfileDTO updateCurrentUser(UpdateUserDTO dto, String currentUsername) {
+        User user = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        return updateUser(user.getId(), dto, currentUsername);
     }
 
-    private void validateOwner(User user, String currentUsername) {
-        if (currentUsername == null || !currentUsername.equals(user.getUsername())) {
-            throw new RuntimeException("You can update only your own profile");
+    @Transactional
+    public void updateAvatar(String currentUsername, String imageUrl) {
+        User user = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (imageUrl == null || imageUrl.isBlank()) {
+            throw new RuntimeException("Image url is required");
         }
+
+        user.setImageUrl(imageUrl.trim());
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void resetAvatar(String currentUsername) {
+        User user = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setImageUrl("DEFAULT_USER_IMAGE.jpg");
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void changePassword(String currentUsername, ChangePasswordDTO dto) {
+        User user = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (dto.getCurrentPassword() == null || dto.getCurrentPassword().isBlank()) {
+            throw new RuntimeException("Current password is required");
+        }
+        if (dto.getNewPassword() == null || dto.getNewPassword().isBlank()) {
+            throw new RuntimeException("New password is required");
+        }
+        if (dto.getNewPassword().length() < 6) {
+            throw new RuntimeException("New password must be at least 6 characters");
+        }
+        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
+        userRepository.save(user);
     }
 
     private UserProfileDTO buildUserProfileDTO(User user, boolean owner) {
@@ -257,7 +216,51 @@ public class UserService {
         return dto;
     }
 
-    public ShortUserDTO toShortUserDTO(User user) {
+    public List<UserGameStatsDTO> getUserGamesStats(Long userId) {
+        String sql = """
+            SELECT
+                gt."id" AS game_type_id,
+                gt."name" AS game_name,
+                COUNT(ms."id") AS total_matches,
+                COALESCE(SUM(CASE WHEN ms."winnerPlayerId" = ? THEN 1 ELSE 0 END), 0) AS total_wins
+            FROM "UserGames" ug
+            JOIN "GameTypes" gt
+                ON gt."id" = ug."gameId"
+            LEFT JOIN "Tournament" t
+                ON t."gameType" = gt."id"
+            LEFT JOIN "MatchSolo" ms
+                ON ms."tournamentId" = t."id"
+               AND ms."status" = 'FINISHED'
+               AND (ms."player1Id" = ? OR ms."player2Id" = ?)
+            WHERE ug."userId" = ?
+            GROUP BY gt."id", gt."name"
+            ORDER BY gt."name"
+        """;
+
+        return jdbcTemplate.query(
+                sql,
+                (rs, rowNum) -> {
+                    int totalMatches = rs.getInt("total_matches");
+                    int totalWins = rs.getInt("total_wins");
+                    int winRate = totalMatches == 0 ? 0 : (int) Math.round((totalWins * 100.0) / totalMatches);
+
+                    return new UserGameStatsDTO(
+                            rs.getLong("game_type_id"),
+                            rs.getString("game_name"),
+                            totalMatches,
+                            totalWins,
+                            winRate
+                    );
+                },
+                userId, userId, userId, userId
+        );
+    }
+
+    private boolean isValidEmail(String email) {
+        return email.matches("^[^\\s@]+@([^\\s@.,]+\\.)+[^\\s@.,]{2,}$");
+    }
+
+    private ShortUserDTO toShortUserDTO(User user) {
         ShortUserDTO dto = new ShortUserDTO();
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());
@@ -265,25 +268,5 @@ public class UserService {
         dto.setCountry(user.getCountry());
         dto.setImageUrl(user.getImageUrl());
         return dto;
-    }
-
-    private boolean isValidEmail(String email) {
-        if (email == null || email.isBlank()) return false;
-    
-        String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$";
-        
-        return email.matches(emailRegex);
-    }
-
-    public List<ShortUserDTO> searchUsers(String query) {
-        if (query == null || query.trim().isEmpty()) {
-            return List.of();
-        }
-        
-        return userRepository.searchByUsernameOrEmail(query.trim())
-                .stream()
-                .map(this::toShortUserDTO)
-                .limit(10)
-                .toList();
     }
 }

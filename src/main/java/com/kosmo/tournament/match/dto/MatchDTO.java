@@ -5,12 +5,13 @@ import java.time.LocalDateTime;
 public class MatchDTO {
 
     private Long id;
-    private String matchType; // SOLO / TEAM
+    private String matchType;
     private Long tournamentId;
     private String tournamentTitle;
     private Integer roundNumber;
     private String status;
     private LocalDateTime scheduledAt;
+    private Long nextMatchId;
 
     private Long participant1Id;
     private String participant1Name;
@@ -33,6 +34,7 @@ public class MatchDTO {
     public Integer getRoundNumber() { return roundNumber; }
     public String getStatus() { return status; }
     public LocalDateTime getScheduledAt() { return scheduledAt; }
+    public Long getNextMatchId() { return nextMatchId; }
     public Long getParticipant1Id() { return participant1Id; }
     public String getParticipant1Name() { return participant1Name; }
     public Long getParticipant2Id() { return participant2Id; }
@@ -48,6 +50,7 @@ public class MatchDTO {
     public void setRoundNumber(Integer roundNumber) { this.roundNumber = roundNumber; }
     public void setStatus(String status) { this.status = status; }
     public void setScheduledAt(LocalDateTime scheduledAt) { this.scheduledAt = scheduledAt; }
+    public void setNextMatchId(Long nextMatchId) { this.nextMatchId = nextMatchId; }
     public void setParticipant1Id(Long participant1Id) { this.participant1Id = participant1Id; }
     public void setParticipant1Name(String participant1Name) { this.participant1Name = participant1Name; }
     public void setParticipant2Id(Long participant2Id) { this.participant2Id = participant2Id; }

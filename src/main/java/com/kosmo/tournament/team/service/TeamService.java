@@ -49,13 +49,6 @@ public class TeamService {
                 .toList();
     }
 
-    public List<TeamShortDTO> getOpenTeams() {
-        return teamRepository.findByAccessTypeOrderByCreatedAtDesc("OPEN")
-                .stream()
-                .map(this::toShortDTO)
-                .toList();
-    }
-
     public List<TeamShortDTO> getMyTeams(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -75,8 +68,11 @@ public class TeamService {
         boolean owner = currentUsername != null
                 && team.getCaptain() != null
                 && currentUsername.equals(team.getCaptain().getUsername());
+        boolean member = currentUsername != null && teamMemberRepository.findByTeamId(teamId)
+                .stream()
+                .anyMatch(tm -> currentUsername.equals(tm.getPlayer().getUsername()));
 
-        return toFullDTO(team, owner);
+        return toFullDTO(team, owner, member);
     }
 
     @Transactional
@@ -103,11 +99,6 @@ public class TeamService {
         team.setName(dto.getName());
         team.setCaptain(captain);
         team.setGameType(gameType);
-        team.setAccessType(
-                dto.getAccessType() != null && !dto.getAccessType().isBlank()
-                        ? dto.getAccessType().trim().toUpperCase()
-                        : "OPEN"
-        );
         team.setImageUrl(dto.getImageUrl());
 
         Team savedTeam = teamRepository.save(team);
@@ -119,7 +110,7 @@ public class TeamService {
 
         teamMemberRepository.save(captainMember);
 
-        return toFullDTO(savedTeam, true);
+        return toFullDTO(savedTeam, true, true);
     }
 
     @Transactional
@@ -150,7 +141,56 @@ public class TeamService {
 
         teamMemberRepository.save(teamMember);
 
-        return toFullDTO(team, true);
+        return toFullDTO(team, true, true);
+    }
+
+    @Transactional
+    public TeamFullDTO removeMember(Long teamId, Long userIdToRemove, String currentUsername) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found"));
+
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("Current user not found"));
+
+        if (team.getCaptain() == null || !team.getCaptain().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Only captain can remove members");
+        }
+
+        if (team.getCaptain() != null && team.getCaptain().getId().equals(userIdToRemove)) {
+            throw new RuntimeException("Captain cannot be removed from team");
+        }
+
+        TeamMember member = teamMemberRepository.findByTeamIdAndPlayerId(teamId, userIdToRemove)
+                .orElseThrow(() -> new RuntimeException("User is not in team"));
+
+        teamMemberRepository.delete(member);
+        return toFullDTO(team, true, true);
+    }
+
+    @Transactional
+    public void leaveTeam(Long teamId, String currentUsername) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found"));
+
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        TeamMember member = teamMemberRepository.findByTeamIdAndPlayerId(teamId, currentUser.getId())
+                .orElseThrow(() -> new RuntimeException("You are not a member of this team"));
+
+        boolean isCaptain = team.getCaptain() != null && team.getCaptain().getId().equals(currentUser.getId());
+        long membersCount = teamMemberRepository.countByTeamId(teamId);
+
+        if (isCaptain) {
+            if (membersCount > 1) {
+                throw new RuntimeException("Captain cannot leave the team until all members are removed");
+            }
+            teamMemberRepository.delete(member);
+            teamRepository.delete(team);
+            return;
+        }
+
+        teamMemberRepository.delete(member);
     }
 
     public List<TeamMemberDTO> getTeamMembers(Long teamId) {
@@ -221,7 +261,7 @@ public class TeamService {
         notificationService.markAccepted(notification);
 
         boolean owner = team.getCaptain() != null && team.getCaptain().getId().equals(currentUser.getId());
-        return toFullDTO(team, owner);
+        return toFullDTO(team, owner, true);
     }
 
     @Transactional
@@ -264,14 +304,10 @@ public class TeamService {
         dto.setName(team.getName());
         dto.setCaptainUsername(team.getCaptain() != null ? team.getCaptain().getUsername() : null);
         dto.setGameTypeName(team.getGameType() != null ? team.getGameType().getName() : null);
-        dto.setAccessType(team.getAccessType());
         dto.setImageUrl(team.getImageUrl());
         dto.setCurrentMembersCount((int) teamMemberRepository.countByTeamId(team.getId()));
-
-        GameType gameType = team.getGameType();
-        Integer maxPlayers = gameType != null ? gameType.getMaxPlayers() : null;
+        Integer maxPlayers = team.getGameType() != null ? team.getGameType().getMaxPlayers() : null;
         dto.setMaxMembersCount(maxPlayers != null ? maxPlayers : 1);
-
         return dto;
     }
 
@@ -286,7 +322,7 @@ public class TeamService {
         return dto;
     }
 
-    private TeamFullDTO toFullDTO(Team team, boolean owner) {
+    private TeamFullDTO toFullDTO(Team team, boolean owner, boolean member) {
         TeamFullDTO dto = new TeamFullDTO();
         dto.setId(team.getId());
         dto.setName(team.getName());
@@ -294,11 +330,10 @@ public class TeamService {
         dto.setCaptainUsername(team.getCaptain() != null ? team.getCaptain().getUsername() : null);
         dto.setGameTypeId(team.getGameType() != null ? team.getGameType().getId() : null);
         dto.setGameTypeName(team.getGameType() != null ? team.getGameType().getName() : null);
-        dto.setAccessType(team.getAccessType());
         dto.setImageUrl(team.getImageUrl());
         dto.setCreatedAt(team.getCreatedAt());
         dto.setOwner(owner);
-
+        dto.setMember(member);
         dto.setCurrentMembersCount((int) teamMemberRepository.countByTeamId(team.getId()));
 
         GameType gameType = team.getGameType();

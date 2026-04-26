@@ -39,9 +39,6 @@ public class Team {
     @JoinColumn(name = "\"idGameType\"", nullable = false)
     private GameType gameType;
 
-    @Column(name = "\"accessType\"", nullable = false)
-    private String accessType;
-
     @Column(name = "\"imageUrl\"")
     private String imageUrl;
 
@@ -52,25 +49,22 @@ public class Team {
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (imageUrl == null) imageUrl = "DEFAULT_TEAM_IMAGE.jpg";
-        if (accessType == null) accessType = "OPEN";
     }
 
     public Long getId() { return id; }
     public String getName() { return name; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public User getCaptain() { return captain; }
-    public GameType getGameType() { return gameType; }
-    public String getAccessType() { return accessType; }
     public String getImageUrl() { return imageUrl; }
+    public GameType getGameType() { return gameType; }
 
     public void setId(Long id) { this.id = id; }
     public void setName(String name) { this.name = name; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setCaptain(User captain) { this.captain = captain; }
-    public void setGameType(GameType gameType) { this.gameType = gameType; }
-    public void setAccessType(String accessType) { this.accessType = accessType; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-
+    public void setGameType(GameType gameType) { this.gameType = gameType; }
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

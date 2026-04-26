@@ -38,6 +38,9 @@ public class TournamentSoloParticipant {
     @Column(name = "\"seed\"", nullable = false)
     private Integer seed;
 
+    @Column(name = "\"parallel\"", nullable = false)
+    private Integer parallel;
+
     @Column(name = "\"joinedAt\"", nullable = false)
     private LocalDateTime joinedAt;
 
@@ -50,6 +53,7 @@ public class TournamentSoloParticipant {
     @PrePersist
     public void prePersist() {
         if (joinedAt == null) joinedAt = LocalDateTime.now();
+        if (parallel == null) parallel = 0;
     }
 
     public Long getId() { return id; }
@@ -57,6 +61,7 @@ public class TournamentSoloParticipant {
     public User getPlayer() { return player; }
     public String getStatus() { return status; }
     public Integer getSeed() { return seed; }
+    public Integer getParallel() { return parallel; }
     public LocalDateTime getJoinedAt() { return joinedAt; }
     public Integer getFinalPlace() { return finalPlace; }
 
@@ -65,6 +70,7 @@ public class TournamentSoloParticipant {
     public void setPlayer(User player) { this.player = player; }
     public void setStatus(String status) { this.status = status; }
     public void setSeed(Integer seed) { this.seed = seed; }
+    public void setParallel(Integer parallel) { this.parallel = parallel; }
     public void setJoinedAt(LocalDateTime joinedAt) { this.joinedAt = joinedAt; }
     public void setFinalPlace(Integer finalPlace) { this.finalPlace = finalPlace; }
 

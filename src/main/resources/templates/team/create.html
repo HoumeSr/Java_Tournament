@@ -17,8 +17,8 @@
         <div class="site-title">⚡ Бобры</div>
         <div class="nav-links">
             <a th:href="@{/}" class="nav-item">Главная</a>
-            <a th:href="@{/teams}" class="nav-item">Команды</a>
-            <a th:href="@{/tournaments}" class="nav-item">Турниры</a>
+            <a data-nav="teams" class="nav-item active-nav">Команды</a>
+            <a data-nav="matches" class="nav-item">Матчи</a>
             <a th:href="@{/rating}" class="nav-item">Рейтинг</a>
         </div>
     </div>
@@ -45,32 +45,35 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="gameType">Игра <span class="required">*</span></label>
-                    <select id="gameType" name="gameType" required>
-                        <option value="">— Загрузка игр... —</option>
-                    </select>
+                    <label for="captain">Капитан <span class="required">*</span></label>
+                    <input type="text" id="captain" name="captain" placeholder="Ваш никнейм" required>
+                    <span class="input-hint">Введите ваш username</span>
                 </div>
 
                 <div class="form-group">
-                    <label for="captain">Капитан</label>
-                    <input type="text" id="captain" readonly disabled>
-                    <span class="input-hint">Вы будете капитаном команды</span>
+                    <label for="telegram">Telegram для связи</label>
+                    <input type="text" id="telegram" name="telegram" placeholder="@username">
                 </div>
             </div>
         </div>
 
-        <!-- Изображение команды -->
+   <input type="hidden" value="3" id="teamSizeHidden">
+
+        <!-- Состав команды -->
         <div class="form-section">
-            <h2 class="section-title"><i class="fas fa-image"></i> Изображение команды</h2>
+            <h2 class="section-title"><i class="fas fa-user-friends"></i> Состав команды</h2>
             
-            <div class="image-upload-area" id="imageUploadArea">
-                <div class="image-preview" id="imagePreview">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    <p>Нажмите или перетащите изображение</p>
-                    <span class="image-hint">PNG, JPG, WEBP до 5MB</span>
+            <!-- Первый игрок (капитан) - readonly -->
+            <div class="member-row">
+                <div class="member-number">1</div>
+                <div class="member-input">
+                    <input type="text" id="member1" placeholder="Капитан" readonly disabled>
                 </div>
-                <input type="file" id="teamImage" accept="image/jpeg,image/png,image/webp" style="display: none;">
             </div>
+            
+            <!-- Остальные игроки -->
+            <div id="membersContainer"></div>
+        </div>
         </div>
 
         <!-- Дополнительная информация -->

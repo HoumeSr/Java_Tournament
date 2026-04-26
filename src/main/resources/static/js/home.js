@@ -30,6 +30,16 @@ $(document).ready(function() {
         })[status] || status || 'Неизвестно';
     }
 
+    function getStatusClass(status) {
+        return ({
+            REGISTRATION_OPEN: 'open',
+            IN_PROGRESS: 'in-progress',
+            FINISHED: 'finished',
+            DRAFT: 'draft',
+            CANCELLED: 'cancelled'
+        })[status] || '';
+    }
+
     function getParticipantTypeLabel(type) {
         return type === 'TEAM' ? '👥 Командный' : '👤 Одиночный';
     }
@@ -206,11 +216,6 @@ $(document).ready(function() {
                 if (data.authenticated) {
                     const imageUrl = data.user?.imageUrl ? resolveImageUrl(data.user.imageUrl) : null;
                     $auth.html(`
-                        <div class="notification-wrapper">
-                            <div class="notification-bell" id="notificationBell">
-                                <i class="fas fa-bell"></i>
-                            </div>
-                        </div>
                         <div class="profile-icon" id="profileIcon">
                             ${imageUrl ? `<img src="${imageUrl}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
                         </div>
@@ -259,7 +264,8 @@ $(document).ready(function() {
             if ($item.attr('href') && $item.attr('href') !== '#') return;
             $item.on('click', function() {
                 const page = $(this).text().trim().toLowerCase();
-                if (page === 'матчи') showToast('⚡ Раздел матчей пока не завершён');
+                if (page === 'команды') showToast('📋 Раздел команд пока не завершён');
+                else if (page === 'матчи') showToast('⚡ Раздел матчей пока не завершён');
                 else if (page === 'рейтинг') window.location.href = '/rating';
             });
         });

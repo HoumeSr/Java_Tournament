@@ -9,6 +9,9 @@ import com.kosmo.tournament.tournament.entity.TournamentTeamParticipant;
 
 public interface TournamentTeamParticipantRepository extends JpaRepository<TournamentTeamParticipant, Long> {
     List<TournamentTeamParticipant> findByTournamentId(Long tournamentId);
+    List<TournamentTeamParticipant> findByTournamentIdOrderBySeedAsc(Long tournamentId);
     List<TournamentTeamParticipant> findByTeamId(Long teamId);
     Optional<TournamentTeamParticipant> findByTournamentIdAndTeamId(Long tournamentId, Long teamId);
+    boolean existsByTournamentIdAndTeamId(Long tournamentId, Long teamId);
+    long countByTournamentId(Long tournamentId);
 }

@@ -31,12 +31,12 @@ public class MatchSolo {
     @Column(name = "\"roundNumber\"")
     private Integer roundNumber;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "\"player1Id\"", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "\"player1Id\"")
     private User player1;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "\"player2Id\"", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "\"player2Id\"")
     private User player2;
 
     @ManyToOne(fetch = FetchType.LAZY)

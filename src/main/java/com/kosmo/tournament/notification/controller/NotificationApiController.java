@@ -1,6 +1,5 @@
 package com.kosmo.tournament.notification.controller;
 
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kosmo.tournament.notification.dto.CreateNotificationDTO;
-import com.kosmo.tournament.notification.dto.NotificationDTO;
 import com.kosmo.tournament.notification.dto.UpdateNotificationDTO;
 import com.kosmo.tournament.notification.service.NotificationService;
 
@@ -33,12 +31,8 @@ public class NotificationApiController {
     public ResponseEntity<?> getMyNotifications(Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of(
-                            "success", false,
-                            "message", "Необходимо авторизоваться"
-                    ));
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
         }
-
         return ResponseEntity.ok(notificationService.getMyNotifications(authentication.getName()));
     }
 
@@ -46,12 +40,8 @@ public class NotificationApiController {
     public ResponseEntity<?> getMyPendingNotifications(Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of(
-                            "success", false,
-                            "message", "Необходимо авторизоваться"
-                    ));
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
         }
-
         return ResponseEntity.ok(notificationService.getMyPendingNotifications(authentication.getName()));
     }
 
@@ -59,40 +49,25 @@ public class NotificationApiController {
     public ResponseEntity<?> getNotificationById(@PathVariable Long id, Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of(
-                            "success", false,
-                            "message", "Необходимо авторизоваться"
-                    ));
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
         }
-
         try {
-            NotificationDTO dto = notificationService.getNotificationDTOById(id, authentication.getName());
-            return ResponseEntity.ok(dto);
+            return ResponseEntity.ok(notificationService.getNotificationDTOById(id, authentication.getName()));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of(
-                            "success", false,
-                            "message", e.getMessage()
-                    ));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
 
     @PostMapping
     public ResponseEntity<?> createNotification(@RequestBody CreateNotificationDTO dto) {
         try {
-            NotificationDTO created = notificationService.createNotification(dto);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(Map.of(
-                            "success", true,
-                            "message", "Уведомление создано",
-                            "notification", created
-                    ));
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "success", true,
+                    "message", "Уведомление создано",
+                    "notification", notificationService.createNotification(dto)
+            ));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of(
-                            "success", false,
-                            "message", e.getMessage()
-                    ));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
 
@@ -102,27 +77,17 @@ public class NotificationApiController {
                                                 Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of(
-                            "success", false,
-                            "message", "Необходимо авторизоваться"
-                    ));
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
         }
 
         try {
-            NotificationDTO updated = notificationService.updateNotificationStatus(id, dto, authentication.getName());
-            return ResponseEntity.ok(
-                    Map.of(
-                            "success", true,
-                            "message", "Уведомление обновлено",
-                            "notification", updated
-                    )
-            );
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Уведомление обновлено",
+                    "notification", notificationService.updateNotificationStatus(id, dto, authentication.getName())
+            ));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of(
-                            "success", false,
-                            "message", e.getMessage()
-                    ));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
 }

@@ -86,23 +86,15 @@ public class NotificationService {
             notification.setTeamName(dto.getTeamName());
         }
 
-        notification.setMessage(
-                dto.getMessage() != null && !dto.getMessage().isBlank()
-                        ? dto.getMessage()
-                        : "Новое уведомление"
-        );
-
-        notification.setType(
-                dto.getType() != null && !dto.getType().isBlank()
-                        ? dto.getType()
-                        : "TEAM_INVITE"
-        );
-
-        notification.setStatus(
-                dto.getStatus() != null && !dto.getStatus().isBlank()
-                        ? dto.getStatus()
-                        : "PENDING"
-        );
+        notification.setMessage(dto.getMessage() != null && !dto.getMessage().isBlank()
+                ? dto.getMessage()
+                : "Новое уведомление");
+        notification.setType(dto.getType() != null && !dto.getType().isBlank()
+                ? dto.getType()
+                : "TEAM_INVITE");
+        notification.setStatus(dto.getStatus() != null && !dto.getStatus().isBlank()
+                ? dto.getStatus()
+                : "PENDING");
 
         Notification saved = notificationRepository.save(notification);
         return toDTO(saved);
@@ -145,16 +137,12 @@ public class NotificationService {
         if (!notification.getUser().getId().equals(currentUser.getId())) {
             throw new RuntimeException("This notification does not belong to current user");
         }
-
         if (dto.getStatus() == null || dto.getStatus().isBlank()) {
             throw new RuntimeException("Status is required");
         }
 
         String newStatus = dto.getStatus().trim().toUpperCase();
-
-        if (!newStatus.equals("PENDING")
-                && !newStatus.equals("ACCEPTED")
-                && !newStatus.equals("DECLINED")) {
+        if (!newStatus.equals("PENDING") && !newStatus.equals("ACCEPTED") && !newStatus.equals("DECLINED")) {
             throw new RuntimeException("Unsupported notification status");
         }
 
