@@ -38,10 +38,10 @@
                     ${imageUrl ? `<img src="${imageUrl}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
                 </div>`;
             document.getElementById('profileIcon')?.addEventListener('click', () => window.location.href = '/profile');
-            
-            // Заполняем поле капитана username авторизованного пользователя
-            const captainInput = document.getElementById('captain');
-            if (captainInput) captainInput.value = data.user?.username || '';
+            const captain = document.getElementById('captain');
+            const member1 = document.getElementById('member1');
+            if (captain) captain.value = data.user?.username || '';
+            if (member1) member1.value = data.user?.username || '';
         } else {
             authContainer.innerHTML = `
                 <button class="btn-outline" id="registerBtn">Регистрация</button>
@@ -51,187 +51,52 @@
         }
     }
 
-    // Загрузка игр для выбора
-    async function loadGameTypes() {
-        const select = document.getElementById('gameType');
-        if (!select) return;
-        
-        try {
-            const response = await fetch('/api/game-types');
-            if (!response.ok) throw new Error('Ошибка загрузки игр');
-            
-            const games = await response.json();
-            
-            if (games && games.length > 0) {
-                select.innerHTML = '<option value="">— Выберите игру —</option>';
-                games.forEach(game => {
-                    select.innerHTML += `<option value="${game.id}">${game.name} ${game.code ? '(' + game.code + ')' : ''}</option>`;
-                });
-            } else {
-                select.innerHTML = '<option value="">— Игры не найдены —</option>';
-            }
-        } catch (error) {
-            console.error('Error loading games:', error);
-            select.innerHTML = '<option value="">— Ошибка загрузки игр —</option>';
+    function generateMemberFields() {
+        const container = document.getElementById('membersContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        const size = parseInt(document.getElementById('teamSizeHidden')?.value || '3', 10);
+        for (let i = 2; i <= size; i++) {
+            const row = document.createElement('div');
+            row.className = 'member-row';
+            row.innerHTML = `
+                <div class="member-number">${i}</div>
+                <div class="member-input">
+                    <input type="text" name="member${i}" placeholder="Никнейм игрока">
+                </div>`;
+            container.appendChild(row);
         }
-    }
-
-    // Загрузка изображения
-    async function uploadImage(file) {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        try {
-            const response = await fetch('/api/images/upload', {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (!response.ok) throw new Error('Ошибка загрузки изображения');
-            
-            const result = await response.json();
-            return result.url || result.imageUrl;
-        } catch (error) {
-            console.error('Upload error:', error);
-            return null;
-        }
-    }
-
-    function initImageUpload() {
-        const uploadArea = document.getElementById('imageUploadArea');
-        const imageInput = document.getElementById('teamImage');
-        const imagePreview = document.getElementById('imagePreview');
-        
-        if (!uploadArea || !imageInput) return;
-        
-        uploadArea.addEventListener('click', () => {
-            imageInput.click();
-        });
-        
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = 'var(--accent)';
-            uploadArea.style.background = 'rgba(124, 58, 237, 0.05)';
-        });
-        
-        uploadArea.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = 'var(--border-dim)';
-            uploadArea.style.background = 'transparent';
-        });
-        
-        uploadArea.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = 'var(--border-dim)';
-            uploadArea.style.background = 'transparent';
-            
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                await handleImageUpload(file, imagePreview);
-            } else {
-                showToast('❌ Пожалуйста, выберите изображение', true);
-            }
-        });
-        
-        imageInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                await handleImageUpload(file, imagePreview);
-            }
-        });
-    }
-    
-    async function handleImageUpload(file, previewContainer) {
-        if (file.size > 5 * 1024 * 1024) {
-            showToast('❌ Изображение не должно превышать 5MB', true);
-            return null;
-        }
-        
-        // Показываем превью
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            previewContainer.innerHTML = `
-                <img src="${e.target.result}" alt="Preview">
-                <button type="button" class="remove-image" id="removeImageBtn">
-                    <i class="fas fa-times-circle"></i>
-                </button>
-            `;
-            const removeBtn = document.getElementById('removeImageBtn');
-            if (removeBtn) {
-                removeBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    previewContainer.innerHTML = `
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Нажмите или перетащите изображение</p>
-                        <span class="image-hint">PNG, JPG, WEBP до 5MB</span>
-                    `;
-                    window.uploadedImageUrl = null;
-                });
-            }
-        };
-        reader.readAsDataURL(file);
-        
-        // Загружаем на сервер
-        const imageUrl = await uploadImage(file);
-        if (imageUrl) {
-            window.uploadedImageUrl = imageUrl;
-            showToast('✅ Изображение загружено');
-            return imageUrl;
-        }
-        return null;
     }
 
     function initFormSubmit() {
         const form = document.getElementById('createTeamForm');
         if (!form) return;
-        
         form.addEventListener('submit', async e => {
             e.preventDefault();
-            
             const auth = await authCheck();
             if (!auth.authenticated) {
                 showToast('❌ Для создания команды нужно войти в аккаунт', true);
                 setTimeout(() => window.location.href = '/login', 1200);
                 return;
             }
-            
             const teamName = document.getElementById('teamName')?.value.trim();
             if (!teamName) {
                 showToast('❌ Введите название команды', true);
                 return;
             }
-            
-            const gameTypeId = document.getElementById('gameType')?.value;
-            if (!gameTypeId) {
-                showToast('❌ Выберите игру', true);
-                return;
-            }
-            
-            // Формируем DTO
-            const payload = {
-                name: teamName,
-                gameTypeId: parseInt(gameTypeId),
-                imageUrl: window.uploadedImageUrl || null
-            };
-            
+            const payload = { name: teamName, imageUrl: null };
             try {
                 const response = await fetch('/api/teams', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
                 const team = await response.json();
-                
                 if (!response.ok || !team.id) {
                     throw new Error(team.message || 'Не удалось создать команду');
                 }
-                
-                showToast('✅ Команда успешно создана!');
-                setTimeout(() => {
-                    window.location.href = `/team/${team.id}`;
-                }, 1500);
-                
+                showToast('✅ Команда создана. Участников можно пригласить позже.');
+                setTimeout(() => window.location.href = '/', 1200);
             } catch (error) {
                 showToast(`❌ ${error.message}`, true);
             }
@@ -246,10 +111,8 @@
         });
     }
 
-    // Инициализация
     updateAuthButtons();
-    loadGameTypes();
-    initImageUpload();
+    generateMemberFields();
     initFormSubmit();
     initCancel();
 })();

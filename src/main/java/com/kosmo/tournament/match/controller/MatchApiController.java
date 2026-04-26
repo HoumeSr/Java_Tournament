@@ -21,6 +21,9 @@ public class MatchApiController {
 
     @GetMapping("/my")
     public List<MatchDTO> getMyMatches(Authentication authentication) {
+        if (authentication == null) {
+            return List.of();
+        }
         return matchService.getMyMatches(authentication.getName());
     }
 
@@ -45,17 +48,19 @@ public class MatchApiController {
         return matchService.getTeamMatch(matchId, currentUsername);
     }
 
-    @PostMapping("/solo/{matchId}/result")
+    @RequestMapping(value = "/solo/{matchId}/result", method = {RequestMethod.POST, RequestMethod.PUT})
     public MatchDTO updateSoloMatchResult(@PathVariable Long matchId,
-                                          @RequestBody UpdateSoloMatchResultDTO dfh,
+                                          @RequestBody UpdateSoloMatchResultDTO dto,
                                           Authentication authentication) {
-        return matchService.updateSoloMatchResult(matchId, dfh, authentication.getName());
+        String currentUsername = authentication != null ? authentication.getName() : null;
+        return matchService.updateSoloMatchResult(matchId, dto, currentUsername);
     }
 
-    @PostMapping("/team/{matchId}/result")
+    @RequestMapping(value = "/team/{matchId}/result", method = {RequestMethod.POST, RequestMethod.PUT})
     public MatchDTO updateTeamMatchResult(@PathVariable Long matchId,
-                                          @RequestBody UpdateTeamMatchResultDTO dfh,
+                                          @RequestBody UpdateTeamMatchResultDTO dto,
                                           Authentication authentication) {
-        return matchService.updateTeamMatchResult(matchId, dfh, authentication.getName());
+        String currentUsername = authentication != null ? authentication.getName() : null;
+        return matchService.updateTeamMatchResult(matchId, dto, currentUsername);
     }
 }

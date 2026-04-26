@@ -2,40 +2,77 @@ package com.kosmo.tournament.user.dto;
 
 public class UserGameStatsDTO {
 
+    private Long gameTypeId;
     private String gameName;
-    private Integer matchCount;
-    private Integer winPercent;
+    private Integer totalMatches;
+    private Integer totalWins;
+    private Integer winRate;
 
     public UserGameStatsDTO() {
     }
 
-    public UserGameStatsDTO(String gameName, Integer matchCount, Integer winPercent) {
+    public UserGameStatsDTO(Long gameTypeId, String gameName, Integer totalMatches, Integer totalWins, Integer winRate) {
+        this.gameTypeId = gameTypeId;
         this.gameName = gameName;
-        this.matchCount = matchCount;
-        this.winPercent = winPercent;
+        this.totalMatches = totalMatches;
+        this.totalWins = totalWins;
+        this.winRate = winRate;
+    }
+
+    public Long getGameTypeId() {
+        return gameTypeId;
+    }
+
+    public void setGameTypeId(Long gameTypeId) {
+        this.gameTypeId = gameTypeId;
     }
 
     public String getGameName() {
         return gameName;
     }
 
-    public Integer getMatchCount() {
-        return matchCount;
-    }
-
-    public Integer getWinPercent() {
-        return winPercent;
-    }
-
     public void setGameName(String gameName) {
         this.gameName = gameName;
     }
 
+    public Integer getTotalMatches() {
+        return totalMatches;
+    }
+
+    public void setTotalMatches(Integer totalMatches) {
+        this.totalMatches = totalMatches;
+    }
+
+    public Integer getTotalWins() {
+        return totalWins;
+    }
+
+    public void setTotalWins(Integer totalWins) {
+        this.totalWins = totalWins;
+    }
+
+    public Integer getWinRate() {
+        return winRate;
+    }
+
+    public void setWinRate(Integer winRate) {
+        this.winRate = winRate;
+    }
+
+    // Совместимость со старым фронтом
+    public Integer getMatchCount() {
+        return totalMatches;
+    }
+
     public void setMatchCount(Integer matchCount) {
-        this.matchCount = matchCount;
+        this.totalMatches = matchCount;
+    }
+
+    public Integer getWinPercent() {
+        return winRate;
     }
 
     public void setWinPercent(Integer winPercent) {
-        this.winPercent = winPercent;
+        this.winRate = winPercent;
     }
 }

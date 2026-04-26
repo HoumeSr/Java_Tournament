@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/tournaments/my").authenticated()
                         .requestMatchers("/api/teams/**", "/api/notifications/**", "/api/matches/my").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/matches/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/matches/**").authenticated()
                         .requestMatchers("/profile", "/my/**", "/notifications").authenticated()
                         .anyRequest().permitAll()
                 )

@@ -2,8 +2,6 @@ $(document).ready(function() {
     let currentCategory = 'all';
     let tournaments = [];
     let categories = [{ id: 'all', label: 'Все', icon: '🌍' }];
-    let notifications = [];
-    let notificationsPanelOpen = false;
 
     function showToast(message, isError = false) {
         const $toast = $('#demoToast');
@@ -31,6 +29,16 @@ $(document).ready(function() {
         })[status] || status || 'Неизвестно';
     }
 
+    function getStatusClass(status) {
+        return ({
+            REGISTRATION_OPEN: 'open',
+            IN_PROGRESS: 'in-progress',
+            FINISHED: 'finished',
+            DRAFT: 'draft',
+            CANCELLED: 'cancelled'
+        })[status] || '';
+    }
+
     function getParticipantTypeLabel(type) {
         return type === 'TEAM' ? '👥 Командный' : '👤 Одиночный';
     }
@@ -52,176 +60,6 @@ $(document).ready(function() {
         return '/images/' + imageUrl;
     }
 
-    // ========== УВЕДОМЛЕНИЯ ==========
-    function loadNotifications() {
-        $.get('/api/notifications/my')
-            .done(function(data) {
-                notifications = data || [];
-                updateNotificationBell();
-            })
-            .fail(function() {
-                console.error('Failed to load notifications');
-                notifications = [];
-                updateNotificationBell();
-            });
-    }
-
-    function updateNotificationBell() {
-        const $bell = $('.notification-bell');
-        const unreadCount = notifications.filter(n => n.type === 'TEAM_INVITE' && n.status === 'PENDING').length;
-        
-        // Удаляем старый бейдж
-        $bell.find('.notification-badge').remove();
-        
-        // Добавляем новый, если есть уведомления
-        if (unreadCount > 0) {
-            $bell.append(`<span class="notification-badge">${unreadCount > 99 ? '99+' : unreadCount}</span>`);
-        }
-    }
-
-    function formatDate(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = now - date;
-        
-        if (diff < 60000) return 'только что';
-        if (diff < 3600000) return `${Math.floor(diff / 60000)} мин назад`;
-        if (diff < 86400000) return `${Math.floor(diff / 3600000)} ч назад`;
-        return date.toLocaleDateString('ru-RU');
-    }
-
-    function acceptInvite(notificationId, teamId) {
-        $.post(`/api/teams/invite/${notificationId}/accept`)
-            .done(function() {
-                showToast('✅ Вы вступили в команду!');
-                loadNotifications();
-                $('.notifications-panel').remove();
-                notificationsPanelOpen = false;
-                // Обновляем страницу через секунду
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            })
-            .fail(function(err) {
-                showToast('❌ Не удалось принять приглашение', true);
-                console.error(err);
-            });
-    }
-    
-    function declineInvite(notificationId) {
-        $.post(`/api/teams/invite/${notificationId}/decline`)
-            .done(function() {
-                showToast('📩 Приглашение отклонено');
-                loadNotifications();
-                // Обновляем панель без перезагрузки
-                $('.notifications-panel').remove();
-                notificationsPanelOpen = false;
-                // Если нужно сразу показать обновлённую панель
-                setTimeout(() => {
-                    toggleNotifications();
-                }, 100);
-            })
-            .fail(function(err) {
-                showToast('❌ Не удалось отклонить приглашение', true);
-                console.error(err);
-            });
-    }
-
-    function renderNotificationsPanel() {
-        const $existingPanel = $('.notifications-panel');
-        if ($existingPanel.length) $existingPanel.remove();
-        
-        // Получаем только приглашения (TEAM_INVITE) со статусом PENDING
-        const pendingInvites = notifications.filter(n => n.type === 'TEAM_INVITE' && n.status === 'PENDING');
-        
-        const $panel = $(`
-            <div class="notifications-panel">
-                <div class="notifications-header">
-                    <h3><i class="fas fa-bell"></i> Приглашения в команды</h3>
-                </div>
-                <div class="notifications-list"></div>
-            </div>
-        `);
-        
-        const $list = $panel.find('.notifications-list');
-        
-        if (pendingInvites.length === 0) {
-            $list.html(`
-                <div class="empty-notifications">
-                    <i class="fas fa-bell-slash"></i>
-                    <p>Нет новых приглашений</p>
-                </div>
-            `);
-        } else {
-            pendingInvites.forEach(notification => {
-                const $item = $(`
-                    <div class="notification-item" data-id="${notification.id}">
-                        <div class="notification-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="notification-content">
-                            <div class="notification-message">
-                                Приглашение в команду <strong>${escapeHtml(notification.teamName || 'команду')}</strong>
-                            </div>
-                            <div class="notification-time">
-                                ${formatDate(notification.createdAt)}
-                            </div>
-                        </div>
-                        <div class="notification-actions">
-                            <button class="btn-accept">Принять</button>
-                            <button class="btn-decline">Отклонить</button>
-                        </div>
-                    </div>
-                `);
-                
-                $item.find('.btn-accept').on('click', (e) => {
-                    e.stopPropagation();
-                    acceptInvite(notification.id, notification.teamId);
-                });
-                
-                $item.find('.btn-decline').on('click', (e) => {
-                    e.stopPropagation();
-                    declineInvite(notification.id);
-                });
-                
-                $list.append($item);
-            });
-        }
-        
-        $('body').append($panel);
-        
-        // Позиционирование относительно колокольчика
-        const $bell = $('.notification-bell');
-        const offset = $bell.offset();
-        $panel.css({
-            top: offset.top + $bell.outerHeight() + 5,
-            right: $(window).width() - (offset.left + $bell.outerWidth())
-        });
-        
-        // Закрытие при клике вне
-        setTimeout(() => {
-            $(document).on('click.notification', function(e) {
-                if (!$(e.target).closest('.notifications-panel').length && !$(e.target).closest('.notification-bell').length) {
-                    $('.notifications-panel').remove();
-                    $(document).off('click.notification');
-                    notificationsPanelOpen = false;
-                }
-            });
-        }, 100);
-    }
-    
-    function toggleNotifications() {
-        if (notificationsPanelOpen) {
-            $('.notifications-panel').remove();
-            notificationsPanelOpen = false;
-        } else {
-            renderNotificationsPanel();
-            notificationsPanelOpen = true;
-        }
-    }
-
-    // ========== ОСНОВНЫЕ ФУНКЦИИ ==========
     function loadCategories() {
         $.get('/api/gametypes')
             .done(function(gameTypes) {
@@ -360,26 +198,11 @@ $(document).ready(function() {
                 if (data.authenticated) {
                     const imageUrl = data.user?.imageUrl ? resolveImageUrl(data.user.imageUrl) : null;
                     $auth.html(`
-                        <div class="notification-wrapper">
-                            <div class="notification-bell" id="notificationBell">
-                                <i class="fas fa-bell"></i>
-                            </div>
-                        </div>
                         <div class="profile-icon" id="profileIcon">
                             ${imageUrl ? `<img src="${imageUrl}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
                         </div>
                     `);
-                    
-                    // Обработчик клика по колокольчику
-                    $('#notificationBell').on('click', function(e) {
-                        e.stopPropagation();
-                        toggleNotifications();
-                    });
-                    
                     $('#profileIcon').on('click', () => window.location.href = '/profile');
-                    
-                    // Загружаем уведомления для авторизованного пользователя
-                    loadNotifications();
                 } else {
                     $auth.html(`
                         <button class="btn-outline" id="registerBtn">Регистрация</button>
@@ -411,7 +234,8 @@ $(document).ready(function() {
             if ($item.attr('href') && $item.attr('href') !== '#') return;
             $item.on('click', function() {
                 const page = $(this).text().trim().toLowerCase();
-                if (page === 'матчи') showToast('⚡ Раздел матчей пока не завершён');
+                if (page === 'команды') showToast('📋 Раздел команд пока не завершён');
+                else if (page === 'матчи') showToast('⚡ Раздел матчей пока не завершён');
                 else if (page === 'рейтинг') window.location.href = '/rating';
             });
         });

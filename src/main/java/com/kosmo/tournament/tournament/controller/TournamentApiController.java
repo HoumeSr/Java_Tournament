@@ -3,22 +3,25 @@ package com.kosmo.tournament.tournament.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.web.bind.annotation.PutMapping;
-import com.kosmo.tournament.tournament.dto.UpdateTournamentDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kosmo.tournament.team.dto.TeamShortDTO;
 import com.kosmo.tournament.tournament.dto.CreateTournamentDTO;
+import com.kosmo.tournament.tournament.dto.JoinSoloTournamentDTO;
+import com.kosmo.tournament.tournament.dto.JoinTeamTournamentDTO;
 import com.kosmo.tournament.tournament.dto.TournamentFullDTO;
 import com.kosmo.tournament.tournament.dto.TournamentShortDTO;
+import com.kosmo.tournament.tournament.dto.UpdateTournamentDTO;
 import com.kosmo.tournament.tournament.service.TournamentService;
 
 @RestController
@@ -60,6 +63,14 @@ public class TournamentApiController {
         return tournamentService.getTournamentsByGameType(gameTypeId);
     }
 
+    @GetMapping("/{id}/my-eligible-teams")
+    public List<TeamShortDTO> getMyEligibleTeams(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            return List.of();
+        }
+        return tournamentService.getMyEligibleTeams(id, authentication.getName());
+    }
+
     @GetMapping("/search")
     public List<TournamentShortDTO> search(@RequestParam String title) {
         return tournamentService.searchByTitle(title);
@@ -92,10 +103,11 @@ public class TournamentApiController {
                     ));
         }
     }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateTournament(@PathVariable Long id,
-                                            @RequestBody UpdateTournamentDTO dto,
-                                            Authentication authentication) {
+                                              @RequestBody UpdateTournamentDTO dto,
+                                              Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of(
@@ -119,6 +131,50 @@ public class TournamentApiController {
                             "success", false,
                             "message", e.getMessage()
                     ));
+        }
+    }
+
+    @PostMapping("/join/solo")
+    public ResponseEntity<?> joinSoloTournament(@RequestBody JoinSoloTournamentDTO dto,
+                                                Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+        }
+        try {
+            tournamentService.joinSoloTournament(dto, authentication.getName());
+            return ResponseEntity.ok(Map.of("success", true, "message", "Вы успешно зарегистрированы на турнир"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/join/team")
+    public ResponseEntity<?> joinTeamTournament(@RequestBody JoinTeamTournamentDTO dto,
+                                                Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+        }
+        try {
+            tournamentService.joinTeamTournament(dto, authentication.getName());
+            return ResponseEntity.ok(Map.of("success", true, "message", "Команда успешно зарегистрирована на турнир"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/start")
+    public ResponseEntity<?> startTournament(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+        }
+        try {
+            TournamentFullDTO updated = tournamentService.startTournament(id, authentication.getName());
+            return ResponseEntity.ok(Map.of("success", true, "message", "Турнир переведён в статус IN_PROGRESS", "tournament", updated));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
 }

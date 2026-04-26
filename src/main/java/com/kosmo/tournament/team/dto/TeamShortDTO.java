@@ -6,7 +6,6 @@ public class TeamShortDTO {
     private String name;
     private String captainUsername;
     private String gameTypeName;
-    private String accessType;
     private String imageUrl;
     private Integer currentMembersCount;
     private Integer maxMembersCount;
@@ -18,7 +17,6 @@ public class TeamShortDTO {
     public String getName() { return name; }
     public String getCaptainUsername() { return captainUsername; }
     public String getGameTypeName() { return gameTypeName; }
-    public String getAccessType() { return accessType; }
     public String getImageUrl() { return imageUrl; }
     public Integer getCurrentMembersCount() { return currentMembersCount; }
     public Integer getMaxMembersCount() { return maxMembersCount; }
@@ -27,7 +25,6 @@ public class TeamShortDTO {
     public void setName(String name) { this.name = name; }
     public void setCaptainUsername(String captainUsername) { this.captainUsername = captainUsername; }
     public void setGameTypeName(String gameTypeName) { this.gameTypeName = gameTypeName; }
-    public void setAccessType(String accessType) { this.accessType = accessType; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setCurrentMembersCount(Integer currentMembersCount) { this.currentMembersCount = currentMembersCount; }
     public void setMaxMembersCount(Integer maxMembersCount) { this.maxMembersCount = maxMembersCount; }

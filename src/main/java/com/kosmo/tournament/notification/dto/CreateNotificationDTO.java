@@ -12,51 +12,17 @@ public class CreateNotificationDTO {
     public CreateNotificationDTO() {
     }
 
-    public Long getUserId() {
-        return userId;
-    }
+    public Long getUserId() { return userId; }
+    public String getMessage() { return message; }
+    public Long getTeamId() { return teamId; }
+    public String getTeamName() { return teamName; }
+    public String getType() { return type; }
+    public String getStatus() { return status; }
 
-    public String getMessage() {
-        return message;
-    }
-
-    public Long getTeamId() {
-        return teamId;
-    }
-
-    public String getTeamName() {
-        return teamName;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public void setTeamId(Long teamId) {
-        this.teamId = teamId;
-    }
-
-    public void setTeamName(String teamName) {
-        this.teamName = teamName;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public void setUserId(Long userId) { this.userId = userId; }
+    public void setMessage(String message) { this.message = message; }
+    public void setTeamId(Long teamId) { this.teamId = teamId; }
+    public void setTeamName(String teamName) { this.teamName = teamName; }
+    public void setType(String type) { this.type = type; }
+    public void setStatus(String status) { this.status = status; }
 }

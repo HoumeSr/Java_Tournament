@@ -23,6 +23,8 @@ import com.kosmo.tournament.user.dto.UpdateUserDTO;
 import com.kosmo.tournament.user.dto.UserProfileDTO;
 import com.kosmo.tournament.user.service.UserService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserApiController {
@@ -40,8 +42,8 @@ public class UserApiController {
     }
 
     @GetMapping("/search")
-    public List<ShortUserDTO> searchUsers(@RequestParam String q) {
-        return userService.searchUsers(q);
+    public List<ShortUserDTO> searchUsers(@RequestParam String query) {
+        return userService.searchUsers(query);
     }
 
     @PostMapping
@@ -49,50 +51,78 @@ public class UserApiController {
         try {
             UserProfileDTO created = userService.createUser(dto);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(Map.of("success", true, "message", "Пользователь успешно создан", "user", created));
+                    .body(Map.of(
+                            "success", true,
+                            "message", "Пользователь успешно создан",
+                            "user", created
+                    ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
-                    .body(Map.of("success", false, "message", e.getMessage()));
+                    .body(Map.of(
+                            "success", false,
+                            "message", e.getMessage()
+                    ));
         }
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id,
                                         @RequestBody UpdateUserDTO dto,
-                                        Authentication authentication) {
+                                        Authentication authentication,
+                                        HttpServletRequest request) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
         }
+
         try {
             UserProfileDTO updated = userService.updateUser(id, dto, authentication.getName());
-            return ResponseEntity.ok(Map.of("success", true, "message", "Профиль успешно обновлён", "user", updated));
+            request.getSession().setAttribute("username", updated.getUsername());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Профиль успешно обновлён",
+                    "user", updated
+            ));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
         }
     }
 
     @PutMapping("/update")
-    public ResponseEntity<?> updateCurrentUser(@RequestBody UpdateUserDTO dto, Authentication authentication) {
+    public ResponseEntity<?> updateCurrentUser(@RequestBody UpdateUserDTO dto,
+                                               Authentication authentication,
+                                               HttpServletRequest request) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
         }
+
         try {
-            return ResponseEntity.ok(userService.updateCurrentUser(dto, authentication.getName()));
+            UserProfileDTO updated = userService.updateCurrentUser(dto, authentication.getName());
+            request.getSession().setAttribute("username", updated.getUsername());
+            return ResponseEntity.ok(updated);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
         }
     }
 
     @PostMapping("/avatar")
-    public ResponseEntity<?> updateAvatar(@RequestBody UpdateUserDTO dto, Authentication authentication) {
+    public ResponseEntity<?> updateAvatar(@RequestBody UpdateUserDTO dto,
+                                          Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
         }
+
         try {
-            return ResponseEntity.ok(userService.updateCurrentUserAvatar(dto.getImageUrl(), authentication.getName()));
+            userService.updateAvatar(authentication.getName(), dto.getImageUrl());
+            return ResponseEntity.ok(Map.of("success", true, "message", "Аватар обновлён"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -104,21 +134,25 @@ public class UserApiController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
         }
+
         try {
-            return ResponseEntity.ok(userService.resetCurrentUserAvatar(authentication.getName()));
+            userService.resetAvatar(authentication.getName());
+            return ResponseEntity.ok(Map.of("success", true, "message", "Аватар сброшен"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
 
     @PostMapping("/change-password")
-    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDTO dto, Authentication authentication) {
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDTO dto,
+                                            Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
         }
+
         try {
-            userService.changePassword(dto, authentication.getName());
+            userService.changePassword(authentication.getName(), dto);
             return ResponseEntity.ok(Map.of("success", true, "message", "Пароль успешно изменён"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
