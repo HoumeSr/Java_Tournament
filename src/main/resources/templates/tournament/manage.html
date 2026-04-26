@@ -104,10 +104,25 @@
 
 <div id="demoToast" class="demo-toast"></div>
 
-<script>
-    // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
-    const tournamentId = /*[[${tournament.id}]]*/ null;
-    const participantType = /*[[${tournament.participantType}]]*/ 'SOLO';
+<!-- ВАЖНО: Весь JavaScript должен быть внутри th:inline="javascript" -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ИЗ СЕРВЕРА ==========
+    const tournamentId = /*[[${tournament != null ? tournament.id : null}]]*/ null;
+    const tournamentTitle = /*[[${tournament != null ? tournament.title : ''}]]*/ '';
+    const participantType = /*[[${tournament != null ? tournament.participantType : 'SOLO'}]]*/ 'SOLO';
+    const tournamentStatus = /*[[${tournament != null ? tournament.status : 'NOT_FOUND'}]]*/ 'NOT_FOUND';
+    const isOwner = /*[[${isOwner != null ? isOwner : false}]]*/ false;
+    
+    // Для отладки
+    console.log('=== Tournament Data from Server ===');
+    console.log('tournamentId:', tournamentId);
+    console.log('tournamentTitle:', tournamentTitle);
+    console.log('participantType:', participantType);
+    console.log('tournamentStatus:', tournamentStatus);
+    console.log('isOwner:', isOwner);
+    console.log('===================================');
+    
     let currentMatches = [];
     let currentSelectedMatch = null;
     let isLoading = false;
@@ -167,6 +182,17 @@
                         window.location.href = '/login';
                     });
                 }
+            })
+            .catch(error => {
+                console.error('Auth check error:', error);
+                authContainer.innerHTML = `
+                    <div class="profile-icon" id="profileIcon">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                `;
+                document.getElementById('profileIcon')?.addEventListener('click', () => {
+                    window.location.href = '/profile';
+                });
             });
     }
 
@@ -176,21 +202,68 @@
         isLoading = true;
         
         const container = document.getElementById('bracketContainer');
+        if (!container) return;
+        
         container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Загрузка сетки...</div>';
         
+        // Проверяем, что tournamentId существует
+        if (!tournamentId) {
+            console.error('Tournament ID is null or undefined');
+            container.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>ID турнира не найден. Пожалуйста, проверьте, что турнир существует.</p>
+                    <a href="/" class="btn-primary" style="margin-top: 1rem; display: inline-block;">Вернуться на главную</a>
+                </div>
+            `;
+            isLoading = false;
+            return;
+        }
+        
+        console.log('Loading matches for tournament:', tournamentId);
+        
         try {
-            const response = await fetch(`/api/tournaments/${tournamentId}/matches`);
-            if (!response.ok) throw new Error('Ошибка загрузки матчей');
+            const url = `/api/matches/tournament/${tournamentId}`;
+            console.log('Fetching URL:', url);
+            
+            const response = await fetch(url);
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                if (response.status === 404) {
+                    container.innerHTML = `
+                        <div class="empty-message">
+                            <i class="fas fa-info-circle"></i>
+                            <p>Матчи ещё не созданы для турнира "${tournamentTitle}"</p>
+                        </div>
+                    `;
+                    return;
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             
             const matches = await response.json();
+            console.log('Loaded matches:', matches);
+            
+            if (!matches || matches.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-message">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Матчи ещё не созданы для турнира "${tournamentTitle}"</p>
+                    </div>
+                `;
+                return;
+            }
+            
             currentMatches = matches;
             renderBracket(matches);
+            
         } catch (error) {
             console.error('Error loading matches:', error);
             container.innerHTML = `
                 <div class="error-message">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>Ошибка загрузки сетки турнира</p>
+                    <p>Ошибка загрузки сетки турнира: ${error.message}</p>
                     <button onclick="loadMatches()" class="btn-retry">Повторить</button>
                 </div>
             `;
@@ -212,42 +285,24 @@
             grouped.get(round).push(match);
         });
         
-        // Сортируем раунды по номеру
         const sortedRounds = Array.from(grouped.keys()).sort((a, b) => a - b);
-        const result = [];
-        
-        // Находим максимальный раунд для определения названий
         const maxRound = Math.max(...sortedRounds);
         
-        sortedRounds.forEach(round => {
-            const matchesInRound = grouped.get(round);
-            // Сортируем матчи внутри раунда по id для правильного порядка
-            matchesInRound.sort((a, b) => {
-                // Извлекаем числовые части из id для сортировки
-                const aNum = parseInt(a.id.split('_')[1]) || 0;
-                const bNum = parseInt(b.id.split('_')[1]) || 0;
-                return aNum - bNum;
-            });
-            
-            result.push({
-                number: round,
-                name: getRoundName(round, maxRound),
-                matches: matchesInRound
-            });
-        });
-        
-        return result;
+        return sortedRounds.map(round => ({
+            number: round,
+            name: getRoundName(round, maxRound),
+            matches: grouped.get(round).sort((a, b) => a.id - b.id)
+        }));
     }
 
-    // ========== ПОЛУЧЕНИЕ НАЗВАНИЯ РАУНДА ==========
     function getRoundName(round, maxRound) {
-        if (round === maxRound) return 'Финал';
-        if (maxRound === 4 && round === 3) return '1/2 финала';
-        if (maxRound === 4 && round === 2) return '1/4 финала';
-        if (maxRound === 4 && round === 1) return '1/8 финала';
-        if (maxRound === 3 && round === 2) return '1/2 финала';
-        if (maxRound === 3 && round === 1) return '1/4 финала';
-        if (maxRound === 2 && round === 1) return '1/2 финала';
+        if (round === maxRound) return 'ФИНАЛ';
+        if (maxRound === 4 && round === 3) return '1/2 ФИНАЛА';
+        if (maxRound === 4 && round === 2) return '1/4 ФИНАЛА';
+        if (maxRound === 4 && round === 1) return '1/8 ФИНАЛА';
+        if (maxRound === 3 && round === 2) return '1/2 ФИНАЛА';
+        if (maxRound === 3 && round === 1) return '1/4 ФИНАЛА';
+        if (maxRound === 2 && round === 1) return '1/2 ФИНАЛА';
         return `${round}-й раунд`;
     }
 
@@ -256,22 +311,12 @@
         const container = document.getElementById('bracketContainer');
         if (!container) return;
         
-        if (!matches || matches.length === 0) {
-            container.innerHTML = `
-                <div class="empty-message">
-                    <i class="fas fa-info-circle"></i>
-                    <p>Матчи ещё не созданы</p>
-                </div>
-            `;
-            return;
-        }
-        
         const rounds = groupMatchesByRound(matches);
         
         const bracketDiv = document.createElement('div');
         bracketDiv.className = 'bracket';
         
-        rounds.forEach((round, roundIdx) => {
+        rounds.forEach(round => {
             const roundDiv = document.createElement('div');
             roundDiv.className = 'round';
             roundDiv.setAttribute('data-round', round.number);
@@ -284,7 +329,7 @@
             const matchesContainer = document.createElement('div');
             matchesContainer.className = 'matches-container';
             
-            round.matches.forEach((match) => {
+            round.matches.forEach(match => {
                 const matchDiv = createMatchCard(match);
                 matchesContainer.appendChild(matchDiv);
             });
@@ -296,22 +341,22 @@
         container.innerHTML = '';
         container.appendChild(bracketDiv);
         
-        // Добавляем соединительные линии
-        setTimeout(() => drawConnections(), 50);
+        setTimeout(() => drawConnections(), 100);
     }
 
-    // ========== СОЗДАНИЕ КАРТОЧКИ МАТЧА ==========
     function createMatchCard(match) {
         const matchDiv = document.createElement('div');
         matchDiv.className = 'match';
         matchDiv.setAttribute('data-match-id', match.id);
         matchDiv.setAttribute('data-match-type', match.matchType);
         
-        if (match.status === 'FINISHED' || match.winnerId) {
+        const isFinished = match.status === 'FINISHED' || match.winnerId !== null;
+        const isSolo = match.matchType === 'SOLO';
+        
+        if (isFinished) {
             matchDiv.classList.add('finished');
         }
         
-        // Определяем участников
         const participant1 = {
             id: match.participant1Id,
             name: match.participant1Name || 'TBD',
@@ -324,12 +369,9 @@
             isWinner: match.winnerId === match.participant2Id
         };
         
-        const isFinished = match.status === 'FINISHED' || !!match.winnerId;
-        const isSolo = match.matchType === 'SOLO';
-        
         matchDiv.innerHTML = `
             <div class="match-teams">
-                <div class="team ${isFinished && participant1.isWinner ? 'winner' : (isFinished && participant2.isWinner ? 'loser' : '')}">
+                <div class="team ${isFinished && participant1.isWinner ? 'winner' : ''}">
                     <div class="team-avatar">
                         <i class="fas ${isSolo ? 'fa-user' : 'fa-users'}"></i>
                     </div>
@@ -337,7 +379,7 @@
                     ${isFinished && participant1.isWinner ? '<span class="winner-badge"><i class="fas fa-crown"></i></span>' : ''}
                 </div>
                 <div class="match-divider-line"></div>
-                <div class="team ${isFinished && participant2.isWinner ? 'winner' : (isFinished && participant1.isWinner ? 'loser' : '')}">
+                <div class="team ${isFinished && participant2.isWinner ? 'winner' : ''}">
                     <div class="team-avatar">
                         <i class="fas ${isSolo ? 'fa-user' : 'fa-users'}"></i>
                     </div>
@@ -347,13 +389,14 @@
             </div>
             <div class="match-status">
                 <span class="${isFinished ? 'status-finished' : 'status-pending'}">
-                    ${isFinished ? 'Победитель определён' : (match.scheduledAt ? formatDate(match.scheduledAt) : 'Ожидает начала')}
+                    ${isFinished ? '✓ Победитель определён' : '⏳ Ожидает результатов'}
                 </span>
             </div>
         `;
         
-        // Добавляем обработчик клика только для незавершённых матчей
-        if (!isFinished && match.participant1Id && match.participant2Id) {
+        const canEdit = match.owner === true && !isFinished && match.participant1Id && match.participant2Id;
+        
+        if (canEdit) {
             matchDiv.classList.add('clickable');
             matchDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -364,7 +407,7 @@
         return matchDiv;
     }
 
-    // ========== ОТКРЫТИЕ МОДАЛЬНОГО ОКНА ==========
+    // ========== МОДАЛЬНОЕ ОКНО ==========
     function openWinnerModal(match) {
         currentSelectedMatch = match;
         
@@ -374,10 +417,9 @@
         const participantsSelector = document.getElementById('participantsSelector');
         const modalError = document.getElementById('modalError');
         
-        modalRound.textContent = `Раунд ${match.roundNumber}`;
+        modalRound.textContent = `${getRoundName(match.roundNumber, match.roundNumber)} - Раунд ${match.roundNumber}`;
         modalMatchId.textContent = `Матч #${match.id}`;
         
-        // Создаём выбор участников
         const isSolo = match.matchType === 'SOLO';
         const participants = [
             { id: match.participant1Id, name: match.participant1Name, type: 'participant1' },
@@ -404,7 +446,6 @@
             </div>
         `;
         
-        // Добавляем обработчики выбора
         document.querySelectorAll('.selector-option').forEach(option => {
             option.addEventListener('click', () => {
                 document.querySelectorAll('.selector-option').forEach(opt => {
@@ -420,7 +461,6 @@
         modal.style.display = 'flex';
     }
 
-    // ========== ОТПРАВКА РЕЗУЛЬТАТА ==========
     async function submitWinner() {
         const selectedOption = document.querySelector('.selector-option.selected');
         if (!selectedOption) {
@@ -429,23 +469,26 @@
         }
         
         const winnerId = selectedOption.dataset.winnerId;
-        const winnerType = selectedOption.dataset.winnerType;
         
         if (!currentSelectedMatch) return;
         
         const isSolo = currentSelectedMatch.matchType === 'SOLO';
         
         let body;
+        let url;
+        
         if (isSolo) {
             body = {
                 winnerUserId: parseInt(winnerId),
                 status: 'FINISHED'
             };
+            url = `/api/matches/solo/${currentSelectedMatch.id}/result`;
         } else {
             body = {
                 winnerTeamId: parseInt(winnerId),
                 status: 'FINISHED'
             };
+            url = `/api/matches/team/${currentSelectedMatch.id}/result`;
         }
         
         const submitBtn = document.getElementById('submitWinnerBtn');
@@ -454,12 +497,10 @@
         submitBtn.disabled = true;
         
         try {
-            const url = isSolo 
-                ? `/api/tournaments/${tournamentId}/matches/${currentSelectedMatch.id}/result/solo`
-                : `/api/tournaments/${tournamentId}/matches/${currentSelectedMatch.id}/result/team`;
+            console.log('Sending request to:', url, 'with body:', body);
             
             const response = await fetch(url, {
-                method: 'PUT',
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -467,13 +508,14 @@
             });
             
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Ошибка при сохранении результата');
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.message || `Ошибка ${response.status}`);
             }
             
             showToast('Победитель успешно определён!');
             closeModal();
-            await loadMatches(); // Перезагружаем сетку
+            await loadMatches();
+            
         } catch (error) {
             console.error('Error submitting winner:', error);
             showModalError(error.message);
@@ -483,7 +525,6 @@
         }
     }
 
-    // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
     function showModalError(message) {
         const modalError = document.getElementById('modalError');
         const modalErrorMessage = document.getElementById('modalErrorMessage');
@@ -501,20 +542,9 @@
         currentSelectedMatch = null;
     }
     
-    function formatDate(dateString) {
-        if (!dateString) return 'Дата не указана';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('ru-RU', {
-            day: 'numeric',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
-    
     function escapeHtml(str) {
         if (!str) return '—';
-        return str.replace(/[&<>]/g, function(m) {
+        return String(str).replace(/[&<>]/g, function(m) {
             if (m === '&') return '&amp;';
             if (m === '<') return '&lt;';
             if (m === '>') return '&gt;';
@@ -526,9 +556,8 @@
     function drawConnections() {
         const container = document.getElementById('bracketContainer');
         const rounds = document.querySelectorAll('.round');
-        if (rounds.length < 2) return;
+        if (!container || rounds.length < 2) return;
         
-        // Удаляем старый SVG
         const oldSvg = container.querySelector('svg');
         if (oldSvg) oldSvg.remove();
         
@@ -547,21 +576,21 @@
             const currentRound = rounds[i];
             const nextRound = rounds[i + 1];
             
-            const currentMatches = currentRound.querySelectorAll('.match');
-            const nextMatches = nextRound.querySelectorAll('.match');
+            const currentMatchesList = currentRound.querySelectorAll('.match');
+            const nextMatchesList = nextRound.querySelectorAll('.match');
             
-            if (currentMatches.length === 0 || nextMatches.length === 0) continue;
+            if (currentMatchesList.length === 0 || nextMatchesList.length === 0) continue;
             
-            const nextMatchesCount = nextMatches.length;
-            const matchesPerNext = currentMatches.length / nextMatchesCount;
+            const nextMatchesCount = nextMatchesList.length;
+            const matchesPerNext = currentMatchesList.length / nextMatchesCount;
             
             for (let j = 0; j < nextMatchesCount; j++) {
                 const startIdx = j * matchesPerNext;
                 const endIdx = startIdx + matchesPerNext - 1;
                 
-                const firstMatch = currentMatches[startIdx];
-                const lastMatch = currentMatches[endIdx];
-                const targetMatch = nextMatches[j];
+                const firstMatch = currentMatchesList[startIdx];
+                const lastMatch = currentMatchesList[endIdx];
+                const targetMatch = nextMatchesList[j];
                 
                 if (!firstMatch || !lastMatch || !targetMatch) continue;
                 
@@ -574,50 +603,45 @@
                 const endX = lastRect.right - containerRect.left;
                 const endY = lastRect.top + lastRect.height / 2 - containerRect.top;
                 const targetX = targetRect.left - containerRect.left;
-                const targetY = targetRect.top + targetRect.height / 2 - containerRect.top;
                 
                 const connectorX = targetX - 20;
                 
-                // Линия от первого матча
                 const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line1.setAttribute('x1', startX);
                 line1.setAttribute('y1', startY);
                 line1.setAttribute('x2', connectorX);
                 line1.setAttribute('y2', startY);
-                line1.setAttribute('stroke', 'var(--accent)');
+                line1.setAttribute('stroke', '#6366f1');
                 line1.setAttribute('stroke-width', '2');
                 line1.setAttribute('opacity', '0.5');
                 svg.appendChild(line1);
                 
-                // Линия от последнего матча
                 const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line2.setAttribute('x1', endX);
                 line2.setAttribute('y1', endY);
                 line2.setAttribute('x2', connectorX);
                 line2.setAttribute('y2', endY);
-                line2.setAttribute('stroke', 'var(--accent)');
+                line2.setAttribute('stroke', '#6366f1');
                 line2.setAttribute('stroke-width', '2');
                 line2.setAttribute('opacity', '0.5');
                 svg.appendChild(line2);
                 
-                // Вертикальная линия
                 const verticalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 verticalLine.setAttribute('x1', connectorX);
                 verticalLine.setAttribute('y1', startY);
                 verticalLine.setAttribute('x2', connectorX);
                 verticalLine.setAttribute('y2', endY);
-                verticalLine.setAttribute('stroke', 'var(--accent)');
+                verticalLine.setAttribute('stroke', '#6366f1');
                 verticalLine.setAttribute('stroke-width', '2');
                 verticalLine.setAttribute('opacity', '0.5');
                 svg.appendChild(verticalLine);
                 
-                // Линия к следующему матчу
                 const line3 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line3.setAttribute('x1', connectorX);
                 line3.setAttribute('y1', (startY + endY) / 2);
                 line3.setAttribute('x2', targetX);
                 line3.setAttribute('y2', (startY + endY) / 2);
-                line3.setAttribute('stroke', 'var(--accent)');
+                line3.setAttribute('stroke', '#6366f1');
                 line3.setAttribute('stroke-width', '2');
                 line3.setAttribute('opacity', '0.5');
                 svg.appendChild(line3);
@@ -628,7 +652,7 @@
         container.appendChild(svg);
     }
 
-    // ========== ОБРАБОТЧИКИ СОБЫТИЙ ==========
+    // ========== ОБРАБОТЧИКИ ==========
     function initEventListeners() {
         const refreshBtn = document.getElementById('refreshBtn');
         if (refreshBtn) {
@@ -648,22 +672,25 @@
             if (e.target === modal) closeModal();
         });
         
-        // Перерисовка линий при изменении размера окна
         let resizeTimeout;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
-                drawConnections();
+                if (currentMatches.length > 0) {
+                    drawConnections();
+                }
             }, 200);
         });
     }
 
-    // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    // ========== ЗАПУСК ==========
     document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded, tournamentId:', tournamentId);
         updateAuthButtons();
         initEventListeners();
         loadMatches();
     });
+    /*]]>*/
 </script>
 </body>
 </html>

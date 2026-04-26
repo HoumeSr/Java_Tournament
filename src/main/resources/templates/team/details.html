@@ -8,7 +8,11 @@
     <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link th:href="@{/css/team-profile.css}" rel="stylesheet">
+    
+    <link th:href="@{/css/team-details.css}" rel="stylesheet">
+    <link th:href="@{/css/team-notifications.css}" rel="stylesheet">
+    <link th:href="@{/css/team-modal.css}" rel="stylesheet">
+    <link th:href="@{/css/notifications.css}" rel="stylesheet">
 </head>
 <body>
 
@@ -26,61 +30,25 @@
 </header>
 
 <main class="container">
-    <!-- Шапка команды -->
-    <div class="team-header">
-        <div class="team-logo">
-            <div class="team-logo-placeholder">
-                <i class="fas fa-users"></i>
-            </div>
-        </div>
-        <div class="team-info">
-            <h1 class="team-name" th:text="${team.name}">Космо-Бобры</h1>
-            <div class="team-meta">
-                <span class="meta-item"><i class="fas fa-calendar-alt"></i> Создана: <span th:text="${#temporals.format(team.createdAt, 'dd.MM.yyyy')}">15.01.2025</span></span>
-                <span class="meta-item"><i class="fas fa-gamepad"></i> Турнир: <span th:text="${team.tournamentName}">Кибер Кубок 2025</span></span>
-            </div>
-            <div class="team-captain">
-                <i class="fas fa-crown"></i> Капитан: <a th:href="@{'/profile/' + ${team.captainId}}" th:text="${team.captain}">BobrMaster</a>
-            </div>
-        </div>
-        <div class="team-actions">
-            <button class="btn-join" id="joinTeamBtn" th:if="${!isMember}">
-                <i class="fas fa-user-plus"></i> Вступить в команду
-            </button>
-            <button class="btn-leave" id="leaveTeamBtn" th:if="${isMember && !isCaptain}">
-                <i class="fas fa-sign-out-alt"></i> Покинуть команду
-            </button>
+    <div th:if="${error}" class="error-container">
+        <div class="error-card">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h1>Ошибка</h1>
+            <p th:text="${error}"></p>
+            <a th:href="@{/teams}" class="btn-primary">Вернуться к командам</a>
         </div>
     </div>
 
-    <!-- Дополнительная информация -->
-    <div class="team-description" th:if="${team.description != null}">
-        <h3><i class="fas fa-info-circle"></i> О команде</h3>
-        <p th:text="${team.description}">Описание команды...</p>
-    </div>
-
-    <!-- Контакты -->
-    <div class="team-contacts" th:if="${team.telegram != null}">
-        <h3><i class="fas fa-phone-alt"></i> Контакты</h3>
-        <div class="contacts-list">
-            <a th:if="${team.telegram != null}" th:href="'https://t.me/' + ${team.telegram.replace('@', '')}" class="contact-link" target="_blank">
-                <i class="fab fa-telegram-plane"></i> <span th:text="${team.telegram}">@bobr_team</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- Состав команды -->
-    <div class="team-members">
-        <h3><i class="fas fa-user-friends"></i> Состав команды <span class="members-count" th:text="'(' + ${#lists.size(team.members)} + ' игроков)'">(0 игроков)</span></h3>
-        
-        <div class="members-grid">
-            <!-- Капитан -->
-            <div class="member-card captain-card">
-                <div class="member-avatar">
-                    <div class="avatar-placeholder">
-                        <i class="fas fa-user-circle"></i>
-                    </div>
-                    <div class="captain-badge">
+    <div th:unless="${error}" th:if="${team != null}">
+        <div class="team-info-card">
+            <div class="team-avatar">
+                <img th:if="${team.imageUrl}" th:src="${team.imageUrl}" alt="Team logo">
+                <i th:unless="${team.imageUrl}" class="fas fa-users"></i>
+            </div>
+            <div class="team-details">
+                <h1 th:text="${team.name}">Название команды</h1>
+                <div class="team-meta">
+                    <div class="meta-item">
                         <i class="fas fa-crown"></i>
                     </div>
                 </div>
@@ -96,16 +64,31 @@
                 </div>
             </div>
 
-            <!-- Остальные игроки -->
-            <div th:each="member : ${team.members}" class="member-card">
-                <div class="member-avatar">
-                    <div class="avatar-placeholder">
-                        <i class="fas fa-user-circle"></i>
+        <div class="members-section">
+            <div class="members-header">
+                <h2><i class="fas fa-user-friends"></i> Участники команды</h2>
+                <span class="members-count" th:text="${team.currentMembersCount} + ' / ' + ${team.maxMembersCount}">0/0</span>
+            </div>
+            
+            <div class="members-grid">
+                <div th:each="member : ${team.members}" class="member-card">
+                    <div class="member-avatar">
+                        <img th:if="${member.imageUrl}" th:src="${member.imageUrl}" alt="avatar">
+                        <i th:unless="${member.imageUrl}" class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="member-info">
+                        <span class="member-name" th:text="${member.username}">Username</span>
+                        <span class="member-role" th:classappend="'role-' + ${#strings.toLowerCase(member.role)}" th:text="${member.role}">MEMBER</span>
                     </div>
                 </div>
-                <div class="member-info">
-                    <div class="member-name">
-                        <a th:href="@{'/profile/' + ${member.userId}}" th:text="${member.username}">PlayerName</a>
+                
+                <div th:if="${isCaptain}" class="member-card add-member-card" id="addMemberCard">
+                    <div class="member-avatar add-avatar">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="member-info">
+                        <span class="member-name">Добавить участника</span>
+                        <span class="member-role">Пригласить в команду</span>
                     </div>
                     <div class="member-role">Игрок</div>
                     <div class="member-stats">
@@ -114,6 +97,23 @@
                     </div>
                 </div>
             </div>
+            
+            <div class="empty-members" th:unless="${team.members != null and !team.members.isEmpty()}" th:if="not ${isCaptain}">
+                <i class="fas fa-user-friends"></i>
+                <p>В команде пока нет участников</p>
+            </div>
+        </div>
+
+        <div class="join-section" th:if="${not isMember and not isCaptain and isAuthenticated}">
+            <button class="btn-join" id="joinTeamBtn">
+                <i class="fas fa-sign-in-alt"></i> Вступить в команду
+            </button>
+        </div>
+        
+        <div class="leave-section" th:if="${isMember and not isCaptain}">
+            <button class="btn-leave" id="leaveTeamBtn">
+                <i class="fas fa-sign-out-alt"></i> Покинуть команду
+            </button>
         </div>
     </div>
 </main>
@@ -134,8 +134,78 @@
     </div>
 </footer>
 
+<!-- Модальное окно приглашения -->
+<div id="inviteModal" class="modal" style="display: none;">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+        <div class="modal-header">
+            <div class="modal-header-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <h2>Пригласить игрока</h2>
+            <button class="modal-close" id="closeInviteModalBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="modal-body">
+            <div class="form-group">
+                <label>
+                    <i class="fas fa-search"></i>
+                    Поиск игрока
+                    <span class="required">*</span>
+                </label>
+                <input type="text" 
+                       id="usernameOrEmail" 
+                       placeholder="Введите имя пользователя"
+                       autocomplete="off">
+                <span class="input-hint">
+                    <i class="fas fa-info-circle"></i>
+                    Введите минимум 2 символа для поиска
+                </span>
+            </div>
+            
+            <div id="searchResults" class="search-results" style="display: none;"></div>
+            
+            <div id="selectedUserContainer" style="display: none;">
+                <div class="selected-user-header">
+                    <i class="fas fa-user-check"></i>
+                    <span>Выбранный игрок</span>
+                </div>
+                <div id="selectedUserCard" class="selected-user-card"></div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel" id="cancelInviteBtn">
+                <i class="fas fa-times"></i> Отмена
+            </button>
+            <button type="button" class="btn-submit" id="sendInviteBtn" disabled>
+                <i class="fas fa-paper-plane"></i> Отправить приглашение
+            </button>
+        </div>
+    </div>
+</div>
+
 <div id="demoToast" class="demo-toast"></div>
 
-<script th:src="@{/js/team-profile.js}"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    window.teamData = {
+        id: /*[[${team != null ? team.id : null}]]*/ null,
+        isCaptain: /*[[${isCaptain != null ? isCaptain : false}]]*/ false,
+        isMember: /*[[${isMember != null ? isMember : false}]]*/ false,
+        isAuthenticated: /*[[${isAuthenticated != null ? isAuthenticated : false}]]*/ false,
+        maxMembersCount: /*[[${team != null ? team.maxMembersCount : 0}]]*/ 0,
+        currentMembersCount: /*[[${team != null ? team.currentMembersCount : 0}]]*/ 0
+    };
+    /*]]>*/
+</script>
+
+<script th:src="@{/js/team-common.js}"></script>
+<script th:src="@{/js/team-notifications.js}"></script>
+<script th:src="@{/js/team-modal.js}"></script>
+<script th:src="@{/js/team-actions.js}"></script>
+<script th:src="@{/js/notifications.js}"></script>
 </body>
 </html>

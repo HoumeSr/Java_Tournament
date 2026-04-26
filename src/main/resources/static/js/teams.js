@@ -135,7 +135,7 @@ function renderTeams(teams) {
     container.innerHTML = `
         <div class="teams-grid">
             ${teams.map(team => `
-                <div class="team-card" onclick="window.location.href='/team/${team.id}'">
+                <div class="team-card" onclick="window.location.href='/teams/${team.id}'">
                     <div class="team-image">
                         ${team.imageUrl ? 
                             `<img src="${team.imageUrl}" alt="${escapeHtml(team.name)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
@@ -381,7 +381,7 @@ async function initModalFormSubmit() {
             closeCreateTeamModal();
             
             setTimeout(() => {
-                window.location.href = `/team/${team.id}`;
+                window.location.href = `/teams/${team.id}`;
             }, 1500);
             
         } catch (error) {

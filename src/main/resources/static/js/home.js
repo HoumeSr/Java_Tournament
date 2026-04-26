@@ -3,6 +3,7 @@ $(document).ready(function() {
     let tournaments = [];
     let categories = [{ id: 'all', label: 'Все', icon: '🌍' }];
 
+    // Вспомогательные функции
     function showToast(message, isError = false) {
         const $toast = $('#demoToast');
         if (!$toast.length) return;
@@ -60,6 +61,7 @@ $(document).ready(function() {
         return '/images/' + imageUrl;
     }
 
+    // Загрузка данных
     function loadCategories() {
         $.get('/api/gametypes')
             .done(function(gameTypes) {
@@ -104,6 +106,7 @@ $(document).ready(function() {
             });
     }
 
+    // Рендер UI
     function renderCategories() {
         const $container = $('#categoriesContainer');
         if (!$container.length) return;
@@ -140,8 +143,19 @@ $(document).ready(function() {
     function updateTournamentCount() {
         const $count = $('#tournamentCount');
         if ($count.length) {
-            $count.text(`${getFilteredTournaments().length} событий`);
+            const filtered = getFilteredTournaments();
+            $count.text(`${filtered.length} ${getNoun(filtered.length, 'событие', 'события', 'событий')}`);
         }
+    }
+
+    function getNoun(number, one, two, five) {
+        let n = Math.abs(number);
+        n %= 100;
+        if (n >= 5 && n <= 20) return five;
+        n %= 10;
+        if (n === 1) return one;
+        if (n >= 2 && n <= 4) return two;
+        return five;
     }
 
     function renderTournaments() {
@@ -149,10 +163,12 @@ $(document).ready(function() {
         const $grid = $('#tournamentsGrid');
         if (!$grid.length) return;
         updateTournamentCount();
+        
         if (filtered.length === 0) {
             $grid.html('<div class="no-results">😔 В этой категории пока нет турниров. Загляни позже!</div>');
             return;
         }
+        
         $grid.empty();
         filtered.forEach(t => {
             const $card = $('<div>').addClass('tournament-card').on('click', function() {
@@ -190,11 +206,13 @@ $(document).ready(function() {
         });
     }
 
+    // Авторизация
     function updateAuthButtons() {
         $.get('/api/auth/check')
             .done(function(data) {
                 const $auth = $('#authButtons');
                 if (!$auth.length) return;
+                
                 if (data.authenticated) {
                     const imageUrl = data.user?.imageUrl ? resolveImageUrl(data.user.imageUrl) : null;
                     $auth.html(`
@@ -202,7 +220,14 @@ $(document).ready(function() {
                             ${imageUrl ? `<img src="${imageUrl}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
                         </div>
                     `);
+                    
                     $('#profileIcon').on('click', () => window.location.href = '/profile');
+                    
+                    // Инициализируем модуль уведомлений
+                    if (window.NotificationsModule) {
+                        window.NotificationsModule.init();
+                        window.NotificationsModule.loadNotifications();
+                    }
                 } else {
                     $auth.html(`
                         <button class="btn-outline" id="registerBtn">Регистрация</button>
@@ -210,6 +235,11 @@ $(document).ready(function() {
                     `);
                     $('#registerBtn').on('click', () => window.location.href = '/register');
                     $('#loginBtn').on('click', () => window.location.href = '/login');
+                    
+                    // Очищаем уведомления для неавторизованных
+                    if (window.NotificationsModule) {
+                        window.NotificationsModule.destroy();
+                    }
                 }
             })
             .fail(function() {
@@ -241,9 +271,17 @@ $(document).ready(function() {
         });
     }
 
+    // Старт
     loadCategories();
     loadTournaments();
     updateAuthButtons();
     updateCreateTournamentButton();
     initNavBar();
+
+    // Очистка при выгрузке
+    $(window).on('beforeunload', function() {
+        if (window.NotificationsModule) {
+            window.NotificationsModule.destroy();
+        }
+    });
 });
