@@ -1,6 +1,7 @@
 package com.kosmo.tournament.tournament.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -258,6 +259,26 @@ public class TournamentService {
     }
 
     @Transactional
+    public TournamentFullDTO openRegistration(Long tournamentId, String currentUsername) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+        
+        if (currentUsername == null
+                || tournament.getOrganizer() == null
+                || !currentUsername.equals(tournament.getOrganizer().getUsername())) {
+            throw new RuntimeException("Only tournament organizer can open registration");
+        }
+        
+        if (!"DRAFT".equalsIgnoreCase(tournament.getStatus())) {
+            throw new RuntimeException("Tournament must be in DRAFT status to open registration");
+        }
+        
+        tournament.setStatus("REGISTRATION_OPEN");
+        Tournament saved = tournamentRepository.save(tournament);
+        return toFullDTO(saved, true);
+    }
+
+    @Transactional
     public void joinSoloTournament(JoinSoloTournamentDTO dto, String username) {
         Tournament tournament = tournamentRepository.findById(dto.getTournamentId())
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
@@ -287,6 +308,93 @@ public class TournamentService {
         participant.setSeed((int) currentCount + 1);
         participant.setParallel(0);
         soloParticipantRepository.save(participant);
+    }
+
+    public boolean isUserRegistered(Long tournamentId, String username) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+        
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if ("SOLO".equalsIgnoreCase(tournament.getParticipantType())) {
+            return soloParticipantRepository.existsByTournamentIdAndPlayerId(tournamentId, user.getId());
+        } else if ("TEAM".equalsIgnoreCase(tournament.getParticipantType())) {
+            // Проверяем, зарегистрирована ли любая команда пользователя
+            List<Team> userTeams = teamMemberRepository.findByPlayerId(user.getId())
+                    .stream()
+                    .map(TeamMember::getTeam)
+                    .toList();
+            
+            for (Team team : userTeams) {
+                if (teamParticipantRepository.existsByTournamentIdAndTeamId(tournamentId, team.getId())) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    public int getParticipantsCount(Long tournamentId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+        
+        if ("SOLO".equalsIgnoreCase(tournament.getParticipantType())) {
+            return (int) soloParticipantRepository.countByTournamentId(tournamentId);
+        } else {
+            return (int) teamParticipantRepository.countByTournamentId(tournamentId);
+        }
+    }
+
+    public List<?> getTournamentParticipants(Long tournamentId, String currentUsername) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+        
+        // Проверяем права: только организатор может видеть участников
+        boolean isOwner = currentUsername != null 
+                && tournament.getOrganizer() != null 
+                && currentUsername.equals(tournament.getOrganizer().getUsername());
+        
+        if (!isOwner && !"IN_PROGRESS".equalsIgnoreCase(tournament.getStatus()) 
+                && !"COMPLETED".equalsIgnoreCase(tournament.getStatus())) {
+            throw new RuntimeException("Participants list is only available to tournament organizer before tournament starts");
+        }
+        
+        if ("SOLO".equalsIgnoreCase(tournament.getParticipantType())) {
+            List<TournamentSoloParticipant> participants = soloParticipantRepository
+                    .findByTournamentIdOrderBySeedAsc(tournamentId);
+            
+            return participants.stream()
+                    .map(p -> {
+                        Map<String, Object> dto = new HashMap<>();
+                        dto.put("id", p.getId());
+                        dto.put("playerId", p.getPlayer().getId());
+                        dto.put("playerUsername", p.getPlayer().getUsername());
+                        dto.put("playerImageUrl", p.getPlayer().getImageUrl());
+                        dto.put("seed", p.getSeed());
+                        dto.put("status", p.getStatus());
+                        return dto;
+                    })
+                    .toList();
+        } else {
+            List<TournamentTeamParticipant> participants = teamParticipantRepository
+                    .findByTournamentIdOrderBySeedAsc(tournamentId);
+            
+            return participants.stream()
+                    .map(p -> {
+                        Map<String, Object> dto = new HashMap<>();
+                        dto.put("id", p.getId());
+                        dto.put("teamId", p.getTeam().getId());
+                        dto.put("teamName", p.getTeam().getName());
+                        dto.put("teamImageUrl", p.getTeam().getImageUrl());
+                        dto.put("captainUsername", p.getTeam().getCaptain() != null ? p.getTeam().getCaptain().getUsername() : null);
+                        dto.put("seed", p.getSeed());
+                        dto.put("status", p.getStatus());
+                        return dto;
+                    })
+                    .toList();
+        }
     }
 
     @Transactional
@@ -352,9 +460,7 @@ public class TournamentService {
             throw new RuntimeException("Tournament cannot be started");
         }
 
-        if (tournament.getStartDate() != null && tournament.getStartDate().isAfter(java.time.LocalDateTime.now())) {
-            throw new RuntimeException("Tournament start date has not arrived yet");
-        }
+    
 
         if ("SOLO".equalsIgnoreCase(tournament.getParticipantType()) && !matchSoloRepository.findByTournamentId(tournamentId).isEmpty()) {
             throw new RuntimeException("Tournament bracket has already been generated");

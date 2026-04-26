@@ -57,6 +57,256 @@ function updateAuthButtons() {
         .catch(() => {});
 }
 
+// ========== ПРОВЕРКА РЕГИСТРАЦИИ ПОЛЬЗОВАТЕЛЯ ==========
+async function checkUserRegistration(tournamentId) {
+    try {
+        const response = await fetch(`/api/tournaments/${tournamentId}/my-registration`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.registered;
+        }
+        return false;
+    } catch (error) {
+        console.error('Error checking registration:', error);
+        return false;
+    }
+}
+
+// ========== ЗАГРУЗКА КОМАНД ДЛЯ ТУРНИРА ==========
+async function loadUserTeamsForTournament(tournamentId) {
+    try {
+        const response = await fetch(`/api/tournaments/${tournamentId}/my-eligible-teams`);
+        if (response.ok) {
+            const teams = await response.json();
+            return teams;
+        }
+        return [];
+    } catch (error) {
+        console.error('Error loading teams:', error);
+        return [];
+    }
+}
+
+// ========== ЗАГРУЗКА КОМАНД В SELECT ==========
+async function loadTeamsIntoSelect() {
+    const tournamentId = window.tournamentData?.id;
+    const teamSelect = document.getElementById('teamSelect');
+    const registerTeamBtn = document.getElementById('registerTeamBtn');
+    
+    if (!teamSelect || !tournamentId) return;
+    
+    // Показываем загрузку
+    teamSelect.innerHTML = '<option value="">Загрузка команд...</option>';
+    teamSelect.disabled = true;
+    
+    const teams = await loadUserTeamsForTournament(tournamentId);
+    
+    if (teams.length === 0) {
+        teamSelect.innerHTML = '<option value="">Нет доступных команд</option>';
+        if (registerTeamBtn) registerTeamBtn.disabled = true;
+    } else {
+        teamSelect.innerHTML = '<option value="">Выберите команду...</option>';
+        teams.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team.id;
+            option.textContent = `${team.name} (${team.currentMembersCount || 0}/${team.maxMembersCount || 1} участников)`;
+            if (team.captainUsername === window.currentUsername) {
+                option.textContent += ' 👑';
+            }
+            teamSelect.appendChild(option);
+        });
+        teamSelect.disabled = false;
+    }
+    
+    // Обработчик изменения выбора команды
+    teamSelect.addEventListener('change', () => {
+        if (registerTeamBtn) {
+            registerTeamBtn.disabled = !teamSelect.value;
+        }
+    });
+}
+
+// ========== РЕГИСТРАЦИЯ В СОЛО ТУРНИР ==========
+async function registerForSoloTournament(tournamentId) {
+    const registerBtn = document.getElementById('registerSoloBtn');
+    const originalText = registerBtn?.innerHTML;
+    
+    try {
+        // Показываем состояние загрузки
+        if (registerBtn) {
+            registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Регистрация...';
+            registerBtn.disabled = true;
+        }
+        
+        const response = await fetch('/api/tournaments/join/solo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                tournamentId: tournamentId
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('✅ ' + result.message);
+            // Обновляем страницу через 2 секунды
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            showToast('❌ ' + result.message, true);
+            if (registerBtn) {
+                registerBtn.innerHTML = originalText;
+                registerBtn.disabled = false;
+            }
+        }
+    } catch (error) {
+        showToast('❌ Ошибка при регистрации: ' + error.message, true);
+        if (registerBtn) {
+            registerBtn.innerHTML = originalText;
+            registerBtn.disabled = false;
+        }
+    }
+}
+
+// ========== РЕГИСТРАЦИЯ КОМАНДЫ В ТУРНИР ==========
+async function registerTeamForTournament(tournamentId, teamId) {
+    const registerBtn = document.getElementById('registerTeamBtn');
+    const originalText = registerBtn?.innerHTML;
+    
+    try {
+        // Показываем состояние загрузки
+        if (registerBtn) {
+            registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Регистрация...';
+            registerBtn.disabled = true;
+        }
+        
+        const response = await fetch('/api/tournaments/join/team', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                tournamentId: tournamentId,
+                teamId: teamId
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('✅ ' + result.message);
+            // Обновляем страницу через 2 секунды
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            showToast('❌ ' + result.message, true);
+            if (registerBtn) {
+                registerBtn.innerHTML = originalText;
+                registerBtn.disabled = false;
+            }
+        }
+    } catch (error) {
+        showToast('❌ Ошибка при регистрации: ' + error.message, true);
+        if (registerBtn) {
+            registerBtn.innerHTML = originalText;
+            registerBtn.disabled = false;
+        }
+    }
+}
+
+// ========== ИНИЦИАЛИЗАЦИЯ КНОПОК РЕГИСТРАЦИИ ==========
+async function initRegistrationButtons() {
+    const tournamentId = window.tournamentData?.id;
+    const tournamentStatus = window.tournamentData?.status;
+    const isOwner = window.tournamentData?.isOwner;
+    const participantType = window.tournamentData?.participantType;
+    
+    if (!tournamentId || isOwner) return;
+    
+    // Сначала проверяем авторизацию пользователя
+    let isAuthenticated = false;
+    try {
+        const authCheck = await fetch('/api/auth/check');
+        const authData = await authCheck.json();
+        isAuthenticated = authData.authenticated;
+        if (authData.user?.username) {
+            window.currentUsername = authData.user.username;
+        }
+    } catch (error) {
+        console.error('Error checking auth:', error);
+    }
+    
+    if (!isAuthenticated) {
+        // Показываем кнопку "Войдите чтобы зарегистрироваться"
+        const participantActions = document.querySelector('.participant-actions');
+        if (participantActions) {
+            participantActions.innerHTML = `
+                <div class="info-message">
+                    <i class="fas fa-sign-in-alt"></i> 
+                    <a href="/login" style="color: #6366f1;">Войдите</a>, чтобы зарегистрироваться на турнир
+                </div>
+            `;
+        }
+        return;
+    }
+    
+    // Проверяем, зарегистрирован ли уже пользователь
+    const isRegistered = await checkUserRegistration(tournamentId);
+    
+    if (isRegistered) {
+        const alreadyRegisteredDiv = document.getElementById('alreadyRegisteredMessage');
+        if (alreadyRegisteredDiv) {
+            alreadyRegisteredDiv.style.display = 'block';
+        }
+        // Скрываем кнопки регистрации
+        const participantActions = document.querySelector('.participant-actions');
+        if (participantActions) {
+            participantActions.style.display = 'none';
+        }
+        return;
+    }
+    
+    // Если турнир не в статусе регистрации, скрываем кнопки
+    if (tournamentStatus !== 'REGISTRATION_OPEN') {
+        const participantActions = document.querySelector('.participant-actions');
+        if (participantActions) {
+            participantActions.style.display = 'none';
+        }
+        return;
+    }
+    
+    // Инициализируем кнопку для соло турнира
+    const registerSoloBtn = document.getElementById('registerSoloBtn');
+    if (registerSoloBtn && participantType === 'SOLO') {
+        registerSoloBtn.addEventListener('click', () => {
+            registerForSoloTournament(tournamentId);
+        });
+    }
+    
+    // Инициализируем выбор команды для командного турнира
+    if (participantType === 'TEAM') {
+        const teamSelect = document.getElementById('teamSelect');
+        if (teamSelect) {
+            await loadTeamsIntoSelect();
+        }
+        
+        const registerTeamBtn = document.getElementById('registerTeamBtn');
+        if (registerTeamBtn) {
+            registerTeamBtn.addEventListener('click', () => {
+                const teamId = document.getElementById('teamSelect')?.value;
+                if (teamId) {
+                    registerTeamForTournament(tournamentId, parseInt(teamId));
+                }
+            });
+        }
+    }
+}
+
 // ========== ГЕНЕРАЦИЯ ТУРНИРНОЙ СЕТКИ ==========
 function generateBracket(maxParticipants) {
     // Проверяем, что число участников - степень двойки
@@ -156,7 +406,8 @@ async function loadMatchesData(tournamentId) {
     if (!tournamentId) return null;
     
     try {
-        const response = await fetch(`/api/tournaments/${tournamentId}/matches`);
+        // Используем правильный эндпоинт из MatchApiController
+        const response = await fetch(`/api/matches/tournament/${tournamentId}`);
         if (!response.ok) {
             if (response.status === 404) {
                 console.log('Матчи ещё не созданы');
@@ -165,6 +416,7 @@ async function loadMatchesData(tournamentId) {
             throw new Error('Failed to load matches');
         }
         const matches = await response.json();
+        console.log('Загружены матчи:', matches);
         return matches;
     } catch (error) {
         console.error('Error loading matches:', error);
@@ -179,7 +431,7 @@ function applyMatchesData(rounds, matchesData) {
     // Группируем матчи по раундам
     const matchesByRound = {};
     matchesData.forEach(match => {
-        const roundNumber = match.roundNumber || match.round || 1;
+        const roundNumber = match.roundNumber || 1;
         if (!matchesByRound[roundNumber]) {
             matchesByRound[roundNumber] = [];
         }
@@ -191,18 +443,41 @@ function applyMatchesData(rounds, matchesData) {
         const roundMatches = matchesByRound[round.number];
         if (roundMatches) {
             round.matches.forEach((match, idx) => {
-                const realMatch = roundMatches.find(m => m.matchIndex === idx || m.position === idx);
+                // Находим соответствующий реальный матч по позиции или индексу
+                const realMatch = roundMatches.find(m => 
+                    m.position === idx || 
+                    m.matchIndex === idx ||
+                    (m.participant1Name && match.team1.name.includes('TBD'))
+                );
+                
                 if (realMatch) {
-                    match.team1 = {
-                        name: realMatch.team1Name || realMatch.team1?.name || match.team1.name,
-                        score: realMatch.team1Score || realMatch.team1?.score
-                    };
-                    match.team2 = {
-                        name: realMatch.team2Name || realMatch.team2?.name || match.team2.name,
-                        score: realMatch.team2Score || realMatch.team2?.score
-                    };
-                    match.winner = realMatch.winner;
-                    match.finished = realMatch.finished || realMatch.status === 'FINISHED';
+                    // Обновляем команду 1
+                    if (realMatch.participant1Name) {
+                        match.team1.name = realMatch.participant1Name;
+                    }
+                    if (realMatch.participant1Score !== undefined && realMatch.participant1Score !== null) {
+                        match.team1.score = realMatch.participant1Score;
+                    }
+                    
+                    // Обновляем команду 2
+                    if (realMatch.participant2Name) {
+                        match.team2.name = realMatch.participant2Name;
+                    }
+                    if (realMatch.participant2Score !== undefined && realMatch.participant2Score !== null) {
+                        match.team2.score = realMatch.participant2Score;
+                    }
+                    
+                    // Определяем победителя
+                    if (realMatch.winnerName) {
+                        if (realMatch.winnerName === match.team1.name) {
+                            match.winner = 'team1';
+                        } else if (realMatch.winnerName === match.team2.name) {
+                            match.winner = 'team2';
+                        }
+                    }
+                    
+                    // Определяем статус
+                    match.finished = realMatch.status === 'FINISHED';
                 }
             });
         }
@@ -453,12 +728,64 @@ function initNavBar() {
 
 // ========== УПРАВЛЕНИЕ ТУРНИРОМ ==========
 function initTournamentActions() {
-    const manageBtn = document.getElementById('manageTournamentBtn');
+    const startBtn = document.getElementById('startTournamentBtn');
     const deleteBtn = document.getElementById('deleteTournamentBtn');
+    const openRegBtn = document.getElementById('openRegistrationBtn');
     
-    if (manageBtn) {
-        manageBtn.addEventListener('click', () => {
-            window.location.href = `/tournaments/${window.tournamentData?.id}/manage`;
+    if (openRegBtn) {
+        openRegBtn.addEventListener('click', async () => {
+            if (confirm('Открыть регистрацию на турнир? Участники смогут регистрироваться.')) {
+                try {
+                    const response = await fetch(`/api/tournaments/${window.tournamentData?.id}/open-registration`, {
+                        method: 'POST'
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        showToast('✅ ' + result.message);
+                        setTimeout(() => window.location.reload(), 1500);
+                    } else {
+                        throw new Error(result.message);
+                    }
+                } catch (error) {
+                    showToast(`❌ ${error.message}`, true);
+                }
+            }
+        });
+    }
+    
+    if (startBtn) {
+        startBtn.addEventListener('click', async () => {
+            // Используем данные из уже загруженного турнира
+            // Они передаются в HTML и доступны в window.tournamentData
+            const participantsCount = 3;
+            const minParticipants = window.tournamentData?.minParticipants || 2;
+            
+            console.log('Participants count from tournament data:', participantsCount);
+            console.log('Min participants:', minParticipants);
+            
+            if (participantsCount < minParticipants) {
+                showToast(`❌ Недостаточно участников. Минимум: ${minParticipants}, зарегистрировано: ${participantsCount}`, true);
+                return;
+            }
+            
+            if (confirm(`Зарегистрировано участников: ${participantsCount}\nМинимум: ${minParticipants}\n\nВы уверены, что хотите начать турнир? После начала регистрация будет закрыта.`)) {
+                try {
+                    const response = await fetch(`/api/tournaments/${window.tournamentData?.id}/start`, {
+                        method: 'POST'
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        showToast('✅ Турнир успешно начат');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        throw new Error(result.message || 'Не удалось начать турнир');
+                    }
+                } catch (error) {
+                    showToast(`❌ ${error.message}`, true);
+                }
+            }
         });
     }
     
@@ -486,8 +813,38 @@ function initTournamentActions() {
     }
 }
 
+// ========== ЗАГРУЗКА КОЛИЧЕСТВА УЧАСТНИКОВ ==========
+async function loadParticipantsCount(tournamentId) {
+    try {
+        const response = await fetch(`/api/tournaments/${tournamentId}/participants/count`);
+        if (response.ok) {
+            const data = await response.json();
+            return data.count;
+        }
+        return 0;
+    } catch (error) {
+        console.error('Error loading participants count:', error);
+        return 0;
+    }
+}
+
+// ========== ЗАГРУЗКА СПИСКА УЧАСТНИКОВ ==========
+async function loadParticipantsList(tournamentId) {
+    try {
+        const response = await fetch(`/api/tournaments/${tournamentId}/participants`);
+        if (response.ok) {
+            const participants = await response.json();
+            console.log('Участники:', participants);
+            return participants;
+        }
+        return [];
+    } catch (error) {
+        console.error('Error loading participants list:', error);
+        return [];
+    }
+}
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
-function init() {
+async function init() {
     // Проверяем, существуют ли данные турнира
     if (!window.tournamentData || !window.tournamentData.id) {
         console.warn('Данные турнира отсутствуют');
@@ -503,17 +860,32 @@ function init() {
     const maxParticipants = window.tournamentData.maxParticipants || 4;
     const tournamentId = window.tournamentData.id;
     
+    // Загружаем реальное количество участников
+    const actualParticipantsCount = await loadParticipantsCount(tournamentId);
+    
     // Обновляем отображение количества участников
     const teamsCountDisplay = document.getElementById('teamsCountDisplay');
     if (teamsCountDisplay) {
-        teamsCountDisplay.textContent = maxParticipants;
+        teamsCountDisplay.textContent = `${actualParticipantsCount}/${maxParticipants}`;
+    }
+    
+    // Обновляем информацию в мета-данных
+    const participantsMetaItem = document.querySelector('.meta-item .fa-users')?.parentElement;
+    if (participantsMetaItem) {
+        const strongElement = participantsMetaItem.querySelector('strong');
+        if (strongElement) {
+            strongElement.textContent = `${actualParticipantsCount}/${maxParticipants}`;
+        }
     }
     
     // Рендерим сетку
     renderBracket(maxParticipants, tournamentId);
     
-    // Инициализируем кнопки управления
+    // Инициализируем кнопки управления (только для организатора)
     initTournamentActions();
+    
+    // Инициализируем кнопки регистрации (для участников)
+    await initRegistrationButtons();
 }
 
 // ========== ЗАПУСК ==========

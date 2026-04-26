@@ -1,13 +1,19 @@
 package com.kosmo.tournament.match.controller;
 
+import java.util.List;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.kosmo.tournament.match.dto.MatchDTO;
 import com.kosmo.tournament.match.dto.UpdateSoloMatchResultDTO;
 import com.kosmo.tournament.match.dto.UpdateTeamMatchResultDTO;
 import com.kosmo.tournament.match.service.MatchService;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/matches")

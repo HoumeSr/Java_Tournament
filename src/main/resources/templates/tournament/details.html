@@ -97,6 +97,11 @@
                         <span>Панель организатора</span>
                         <i class="fas fa-chevron-down panel-toggle"></i>
                     </div>
+                    <button class="mgmt-btn open-reg-btn" 
+                            th:if="${tournament.status == 'DRAFT'}" 
+                            id="openRegistrationBtn">
+                        <i class="fas fa-door-open"></i> Открыть регистрацию
+                    </button>
                     <div class="panel-buttons">
                         <a th:href="@{/tournaments/{id}/manage(id=${tournament.id})}" class="mgmt-btn edit-btn">
                             <i class="fas fa-pen"></i> Редактировать
@@ -107,12 +112,53 @@
                         <a th:href="@{/tournaments/{id}/matches(id=${tournament.id})}" class="mgmt-btn matches-btn">
                             <i class="fas fa-calendar-alt"></i> Матчи
                         </a>
-                        <button class="mgmt-btn start-btn" th:if="${tournament.status == 'DRAFT'}" id="startTournamentBtn">
+                        <!-- В панели организатора измените условие для кнопки Старт -->
+                        <button class="mgmt-btn start-btn" 
+                                th:if="${tournament.status == 'REGISTRATION_OPEN'}" 
+                                id="startTournamentBtn">
                             <i class="fas fa-play"></i> Старт
                         </button>
                         <button class="mgmt-btn delete-btn" th:if="${tournament.status == 'DRAFT'}" id="deleteTournamentBtn">
                             <i class="fas fa-trash"></i> Удалить
                         </button>
+                    </div>
+                </div>
+                <!-- Кнопки для участников (не организаторов) -->
+                <div class="participant-actions" th:if="${!isOwner && tournament.status == 'REGISTRATION_OPEN'}">
+                    <div th:if="${tournament.participantType == 'SOLO'}">
+                        <button class="register-btn" id="registerSoloBtn">
+                            <i class="fas fa-user-plus"></i> Зарегистрироваться на турнир
+                        </button>
+                    </div>
+                    <div th:if="${tournament.participantType == 'TEAM'}">
+                        <div class="team-selection-container">
+                            <select id="teamSelect" class="team-select">
+                                <option value="">Выберите команду...</option>
+                            </select>
+                            <button class="register-btn" id="registerTeamBtn" disabled>
+                                <i class="fas fa-users"></i> Зарегистрировать команду
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Сообщение о статусе регистрации -->
+                <div class="registration-status" th:if="${!isOwner && tournament.status != 'REGISTRATION_OPEN'}">
+                    <div th:if="${tournament.status == 'DRAFT'}" class="info-message">
+                        <i class="fas fa-info-circle"></i> Регистрация ещё не открыта
+                    </div>
+                    <div th:if="${tournament.status == 'IN_PROGRESS'}" class="info-message">
+                        <i class="fas fa-play-circle"></i> Турнир уже начался
+                    </div>
+                    <div th:if="${tournament.status == 'COMPLETED'}" class="info-message">
+                        <i class="fas fa-check-circle"></i> Турнир завершён
+                    </div>
+                </div>
+
+                <!-- Сообщение о том, что пользователь уже зарегистрирован -->
+                <div class="already-registered" id="alreadyRegisteredMessage" style="display: none;">
+                    <div class="success-message">
+                        <i class="fas fa-check-circle"></i> Вы уже зарегистрированы на этот турнир
                     </div>
                 </div>
             </div>
@@ -158,6 +204,18 @@
         maxParticipants: /*[[${tournament != null ? tournament.maxParticipants : 4}]]*/ 4,
         status: /*[[${tournament != null ? tournament.status : 'NOT_FOUND'}]]*/ 'NOT_FOUND',
         isOwner: /*[[${isOwner != null ? isOwner : false}]]*/ false
+    };
+    /*]]>*/
+</script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    window.tournamentData = {
+        id: /*[[${tournament != null ? tournament.id : null}]]*/ null,
+        title: /*[[${tournament != null ? tournament.title : ''}]]*/ '',
+        maxParticipants: /*[[${tournament != null ? tournament.maxParticipants : 4}]]*/ 4,
+        status: /*[[${tournament != null ? tournament.status : 'NOT_FOUND'}]]*/ 'NOT_FOUND',
+        isOwner: /*[[${isOwner != null ? isOwner : false}]]*/ false,
+        participantType: /*[[${tournament != null ? tournament.participantType : 'SOLO'}]]*/ 'SOLO'
     };
     /*]]>*/
 </script>
