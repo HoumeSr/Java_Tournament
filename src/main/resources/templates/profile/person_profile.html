@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link th:href="@{/css/profile.css}" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script th:src="@{/js/profile.js}"></script>
 </head>
 <body>
 
@@ -40,9 +42,6 @@
                 </div>
                 <h2 class="profile-username" id="profileUsername">Загрузка...</h2>
                 <p class="profile-member-since">Участник с <span id="memberSince">--</span></p>
-                <button class="btn-edit-sidebar" id="editProfileBtn" style="display: none;">
-                    <i class="fas fa-pen"></i> Редактировать
-                </button>
             </div>
 
             <input type="file" id="avatarUpload" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
@@ -95,45 +94,6 @@
                     <div class="info-value" id="displayCreatedAt">--</div>
                 </div>
             </div>
-
-            <!-- Режим редактирования -->
-            <div class="edit-card" id="editMode" style="display: none;">
-                <form id="profileForm">
-                    <div class="edit-row">
-                        <label><i class="fas fa-user"></i> Имя пользователя</label>
-                        <input type="text" id="editUsername" class="edit-input" required>
-                    </div>
-                    <div class="edit-row">
-                        <label><i class="fas fa-globe"></i> Страна</label>
-                        <select id="editCountry" class="edit-input">
-                            <option value="">— Выберите страну —</option>
-                            <option value="Россия">🇷🇺 Россия</option>
-                            <option value="Беларусь">🇧🇾 Беларусь</option>
-                            <option value="Казахстан">🇰🇿 Казахстан</option>
-                            <option value="США">🇺🇸 США</option>
-                            <option value="Германия">🇩🇪 Германия</option>
-                            <option value="Франция">🇫🇷 Франция</option>
-                            <option value="Италия">🇮🇹 Италия</option>
-                            <option value="Испания">🇪🇸 Испания</option>
-                            <option value="Великобритания">🇬🇧 Великобритания</option>
-                            <option value="Китай">🇨🇳 Китай</option>
-                            <option value="Япония">🇯🇵 Япония</option>
-                            <option value="Корея">🇰🇷 Корея</option>
-                            <option value="Бразилия">🇧🇷 Бразилия</option>
-                            <option value="Другая">🌍 Другая</option>
-                        </select>
-                    </div>
-                    <div class="edit-actions">
-                        <button type="submit" class="btn-save">
-                            <i class="fas fa-save"></i> Сохранить
-                        </button>
-                        <button type="button" class="btn-cancel" id="cancelEditBtn">
-                            <i class="fas fa-times"></i> Отмена
-                        </button>
-                    </div>
-                </form>
-            </div>
-
             <!-- Кнопка смены пароля -->
             <div class="password-card" id="passwordCard" style="display: none;">
                 <div class="password-info">
@@ -174,6 +134,11 @@
     </div>
 </footer>
 
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    window.profileUserIdFromServer = /*[[${profileUserId != null ? profileUserId : null}]]*/ null;
+    /*]]>*/
+</script>
 <script th:src="@{/js/profile.js}"></script>
 <div id="demoToast" class="demo-toast"></div>
 
