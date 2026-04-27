@@ -1,7 +1,9 @@
 package com.kosmo.tournament.tournament.service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -342,10 +344,8 @@ public class TournamentService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
-        if (currentUsername == null
-                || tournament.getOrganizer() == null
-                || !currentUsername.equals(tournament.getOrganizer().getUsername())) {
-            throw new RuntimeException("Only tournament organizer can start tournament");
+        if (!isOrganizerOrAdmin(tournament, currentUsername)) {
+            throw new RuntimeException("Only tournament organizer or admin can start tournament");
         }
 
         if (!"REGISTRATION_OPEN".equalsIgnoreCase(tournament.getStatus())) {
@@ -373,6 +373,94 @@ public class TournamentService {
         Tournament saved = tournamentRepository.save(tournament);
         return toFullDTO(saved, true);
     }
+    public List<Map<String, Object>> getTournamentParticipants(Long tournamentId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+
+        if ("TEAM".equalsIgnoreCase(tournament.getParticipantType())) {
+            return teamParticipantRepository.findByTournamentIdOrderBySeedAsc(tournamentId)
+                    .stream()
+                    .map(participant -> {
+                        Map<String, Object> item = new LinkedHashMap<>();
+                        Team team = participant.getTeam();
+                        item.put("id", participant.getId());
+                        item.put("participantType", "TEAM");
+                        item.put("teamId", team != null ? team.getId() : null);
+                        item.put("name", team != null ? team.getName() : null);
+                        item.put("seed", participant.getSeed());
+                        item.put("status", participant.getStatus());
+                        return item;
+                    })
+                    .toList();
+        }
+
+        return soloParticipantRepository.findByTournamentIdOrderBySeedAsc(tournamentId)
+                .stream()
+                .map(participant -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    User player = participant.getPlayer();
+                    item.put("id", participant.getId());
+                    item.put("participantType", "SOLO");
+                    item.put("userId", player != null ? player.getId() : null);
+                    item.put("name", player != null ? player.getUsername() : null);
+                    item.put("seed", participant.getSeed());
+                    item.put("status", participant.getStatus());
+                    return item;
+                })
+                .toList();
+    }
+
+    @Transactional
+    public TournamentFullDTO openRegistration(Long tournamentId, String currentUsername) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+
+        if (!isOrganizerOrAdmin(tournament, currentUsername)) {
+            throw new RuntimeException("Only tournament organizer or admin can open registration");
+        }
+        if (!"DRAFT".equalsIgnoreCase(tournament.getStatus())) {
+            throw new RuntimeException("Only DRAFT tournament can be opened for registration");
+        }
+
+        tournament.setStatus("REGISTRATION_OPEN");
+        Tournament saved = tournamentRepository.save(tournament);
+        return toFullDTO(saved, isOrganizerOrAdmin(saved, currentUsername));
+    }
+
+    @Transactional
+    public TournamentFullDTO cancelTournament(Long tournamentId, String currentUsername) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+
+        if (!isOrganizerOrAdmin(tournament, currentUsername)) {
+            throw new RuntimeException("Only tournament organizer or admin can cancel tournament");
+        }
+        if ("FINISHED".equalsIgnoreCase(tournament.getStatus())) {
+            throw new RuntimeException("Finished tournament cannot be cancelled");
+        }
+
+        tournament.setStatus("CANCELLED");
+        Tournament saved = tournamentRepository.save(tournament);
+        return toFullDTO(saved, isOrganizerOrAdmin(saved, currentUsername));
+    }
+
+    @Transactional
+    public TournamentFullDTO finishTournament(Long tournamentId, String currentUsername) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+
+        if (!isOrganizerOrAdmin(tournament, currentUsername)) {
+            throw new RuntimeException("Only tournament organizer or admin can finish tournament");
+        }
+        if (!"IN_PROGRESS".equalsIgnoreCase(tournament.getStatus())) {
+            throw new RuntimeException("Only IN_PROGRESS tournament can be finished");
+        }
+
+        tournament.setStatus("FINISHED");
+        Tournament saved = tournamentRepository.save(tournament);
+        return toFullDTO(saved, isOrganizerOrAdmin(saved, currentUsername));
+    }
+
 
     private void startSoloTournament(Tournament tournament) {
         List<TournamentSoloParticipant> participants = soloParticipantRepository.findByTournamentIdOrderBySeedAsc(tournament.getId());
@@ -567,6 +655,21 @@ public class TournamentService {
 
         matchTeamRepository.save(nextMatch);
     }
+    private boolean isOrganizerOrAdmin(Tournament tournament, String currentUsername) {
+        if (currentUsername == null || currentUsername.isBlank()) {
+            return false;
+        }
+
+        if (tournament.getOrganizer() != null
+                && currentUsername.equals(tournament.getOrganizer().getUsername())) {
+            return true;
+        }
+
+        return userRepository.findByUsername(currentUsername)
+                .map(user -> "ADMIN".equalsIgnoreCase(user.getRole()))
+                .orElse(false);
+    }
+
 
     private void validateCreateTournament(CreateTournamentDTO dto) {
         if (dto.getTitle() == null || dto.getTitle().isBlank()) {

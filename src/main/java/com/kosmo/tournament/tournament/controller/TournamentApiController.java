@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kosmo.tournament.match.dto.MatchDTO;
+import com.kosmo.tournament.match.service.MatchService;
 import com.kosmo.tournament.team.dto.TeamShortDTO;
 import com.kosmo.tournament.tournament.dto.CreateTournamentDTO;
 import com.kosmo.tournament.tournament.dto.JoinSoloTournamentDTO;
@@ -29,9 +31,12 @@ import com.kosmo.tournament.tournament.service.TournamentService;
 public class TournamentApiController {
 
     private final TournamentService tournamentService;
+    private final MatchService matchService;
 
-    public TournamentApiController(TournamentService tournamentService) {
+    public TournamentApiController(TournamentService tournamentService,
+                                   MatchService matchService) {
         this.tournamentService = tournamentService;
+        this.matchService = matchService;
     }
 
     @GetMapping
@@ -69,6 +74,17 @@ public class TournamentApiController {
             return List.of();
         }
         return tournamentService.getMyEligibleTeams(id, authentication.getName());
+    }
+
+    @GetMapping("/{id}/matches")
+    public List<MatchDTO> getTournamentMatches(@PathVariable Long id, Authentication authentication) {
+        String currentUsername = authentication != null ? authentication.getName() : null;
+        return matchService.getTournamentMatches(id, currentUsername);
+    }
+
+    @GetMapping("/{id}/participants")
+    public List<Map<String, Object>> getTournamentParticipants(@PathVariable Long id) {
+        return tournamentService.getTournamentParticipants(id);
     }
 
     @GetMapping("/search")
@@ -164,6 +180,25 @@ public class TournamentApiController {
         }
     }
 
+    @PostMapping("/{id}/open-registration")
+    public ResponseEntity<?> openRegistration(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+        }
+
+        try {
+            TournamentFullDTO updated = tournamentService.openRegistration(id, authentication.getName());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Регистрация на турнир открыта",
+                    "tournament", updated
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
     @PostMapping("/{id}/start")
     public ResponseEntity<?> startTournament(@PathVariable Long id, Authentication authentication) {
         if (authentication == null) {
@@ -173,6 +208,44 @@ public class TournamentApiController {
         try {
             TournamentFullDTO updated = tournamentService.startTournament(id, authentication.getName());
             return ResponseEntity.ok(Map.of("success", true, "message", "Турнир переведён в статус IN_PROGRESS", "tournament", updated));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelTournament(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+        }
+
+        try {
+            TournamentFullDTO updated = tournamentService.cancelTournament(id, authentication.getName());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Турнир отменён",
+                    "tournament", updated
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/finish")
+    public ResponseEntity<?> finishTournament(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+        }
+
+        try {
+            TournamentFullDTO updated = tournamentService.finishTournament(id, authentication.getName());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Турнир завершён",
+                    "tournament", updated
+            ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }

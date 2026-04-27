@@ -11,6 +11,7 @@ public class NotificationDTO {
     private String type;
     private String status;
     private LocalDateTime createdAt;
+    private Boolean read;
 
     public NotificationDTO() {
     }
@@ -22,6 +23,7 @@ public class NotificationDTO {
     public String getType() { return type; }
     public String getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public Boolean getRead() { return read; }
 
     public void setId(Long id) { this.id = id; }
     public void setMessage(String message) { this.message = message; }
@@ -30,4 +32,5 @@ public class NotificationDTO {
     public void setType(String type) { this.type = type; }
     public void setStatus(String status) { this.status = status; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setRead(Boolean read) { this.read = read; }
 }

@@ -152,16 +152,83 @@ public class MatchService {
 
         return toTeamDTO(saved, currentUsername);
     }
+    @Transactional
+    public MatchDTO startMatch(String matchType, Long matchId, String currentUsername) {
+        if ("TEAM".equalsIgnoreCase(matchType)) {
+            MatchTeam match = matchTeamRepository.findById(matchId)
+                    .orElseThrow(() -> new RuntimeException("Team match not found"));
+            validateCanManageMatch(match.getTournament(), currentUsername);
+            if (!"SCHEDULED".equalsIgnoreCase(match.getStatus())) {
+                throw new RuntimeException("Only SCHEDULED match can be started");
+            }
+            if (match.getTeam1() == null || match.getTeam2() == null) {
+                throw new RuntimeException("Match does not have two teams");
+            }
+            match.setStatus("IN_PROGRESS");
+            return toTeamDTO(matchTeamRepository.save(match), currentUsername);
+        }
+
+        MatchSolo match = matchSoloRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Solo match not found"));
+        validateCanManageMatch(match.getTournament(), currentUsername);
+        if (!"SCHEDULED".equalsIgnoreCase(match.getStatus())) {
+            throw new RuntimeException("Only SCHEDULED match can be started");
+        }
+        if (match.getPlayer1() == null || match.getPlayer2() == null) {
+            throw new RuntimeException("Match does not have two players");
+        }
+        match.setStatus("IN_PROGRESS");
+        return toSoloDTO(matchSoloRepository.save(match), currentUsername);
+    }
+
+    @Transactional
+    public MatchDTO cancelMatch(String matchType, Long matchId, String currentUsername) {
+        if ("TEAM".equalsIgnoreCase(matchType)) {
+            MatchTeam match = matchTeamRepository.findById(matchId)
+                    .orElseThrow(() -> new RuntimeException("Team match not found"));
+            validateCanManageMatch(match.getTournament(), currentUsername);
+            if ("FINISHED".equalsIgnoreCase(match.getStatus())) {
+                throw new RuntimeException("Finished match cannot be cancelled");
+            }
+            match.setStatus("CANCELLED");
+            return toTeamDTO(matchTeamRepository.save(match), currentUsername);
+        }
+
+        MatchSolo match = matchSoloRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Solo match not found"));
+        validateCanManageMatch(match.getTournament(), currentUsername);
+        if ("FINISHED".equalsIgnoreCase(match.getStatus())) {
+            throw new RuntimeException("Finished match cannot be cancelled");
+        }
+        match.setStatus("CANCELLED");
+        return toSoloDTO(matchSoloRepository.save(match), currentUsername);
+    }
+
+    @Transactional
+    public MatchDTO resetMatchResult(String matchType, Long matchId, String currentUsername) {
+        if ("TEAM".equalsIgnoreCase(matchType)) {
+            MatchTeam match = matchTeamRepository.findById(matchId)
+                    .orElseThrow(() -> new RuntimeException("Team match not found"));
+            validateCanManageMatch(match.getTournament(), currentUsername);
+            match.setWinnerTeam(null);
+            match.setStatus(match.getTeam1() != null && match.getTeam2() != null ? "IN_PROGRESS" : "SCHEDULED");
+            return toTeamDTO(matchTeamRepository.save(match), currentUsername);
+        }
+
+        MatchSolo match = matchSoloRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Solo match not found"));
+        validateCanManageMatch(match.getTournament(), currentUsername);
+        match.setWinnerPlayer(null);
+        match.setStatus(match.getPlayer1() != null && match.getPlayer2() != null ? "IN_PROGRESS" : "SCHEDULED");
+        return toSoloDTO(matchSoloRepository.save(match), currentUsername);
+    }
+
 
     private void validateMatchOwnershipAndState(Tournament tournament,
                                                 String currentUsername,
                                                 String matchStatus,
                                                 boolean hasTwoParticipants) {
-        if (currentUsername == null
-                || tournament.getOrganizer() == null
-                || !currentUsername.equals(tournament.getOrganizer().getUsername())) {
-            throw new RuntimeException("Only tournament organizer can update match result");
-        }
+        validateCanManageMatch(tournament, currentUsername);
 
         if (!"IN_PROGRESS".equalsIgnoreCase(tournament.getStatus())) {
             throw new RuntimeException("Tournament is not in progress");
@@ -175,6 +242,22 @@ public class MatchService {
             throw new RuntimeException("Match does not have two participants");
         }
     }
+    private void validateCanManageMatch(Tournament tournament, String currentUsername) {
+        if (currentUsername == null || currentUsername.isBlank()) {
+            throw new RuntimeException("Authentication required");
+        }
+
+        boolean organizer = tournament.getOrganizer() != null
+                && currentUsername.equals(tournament.getOrganizer().getUsername());
+        boolean admin = userRepository.findByUsername(currentUsername)
+                .map(user -> "ADMIN".equalsIgnoreCase(user.getRole()))
+                .orElse(false);
+
+        if (!organizer && !admin) {
+            throw new RuntimeException("Only tournament organizer or admin can manage match");
+        }
+    }
+
 
     private void propagateSoloWinner(MatchSolo finishedMatch, User winner) {
         MatchSolo next = finishedMatch.getNextMatch();
