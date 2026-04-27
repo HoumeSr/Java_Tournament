@@ -2,6 +2,9 @@ package com.kosmo.tournament.tournament.dto;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UpdateTournamentDTO {
 
     private String title;
@@ -9,7 +12,6 @@ public class UpdateTournamentDTO {
     private String participantType;
     private String access;
     private Long gameTypeId;
-    private String status;
     private LocalDateTime startDate;
     private LocalDateTime registrationDeadline;
     private Integer maxParticipants;
@@ -37,10 +39,6 @@ public class UpdateTournamentDTO {
 
     public Long getGameTypeId() {
         return gameTypeId;
-    }
-
-    public String getStatus() {
-        return status;
     }
 
     public LocalDateTime getStartDate() {
@@ -81,10 +79,6 @@ public class UpdateTournamentDTO {
 
     public void setGameTypeId(Long gameTypeId) {
         this.gameTypeId = gameTypeId;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 
     public void setStartDate(LocalDateTime startDate) {

@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -111,6 +112,12 @@ public class TournamentApiController {
                             "message", "Турнир успешно создан",
                             "tournament", created
                     ));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of(
+                            "success", false,
+                            "message", e.getMessage()
+                    ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
                     .body(Map.of(
@@ -141,6 +148,12 @@ public class TournamentApiController {
                             "tournament", updated
                     )
             );
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of(
+                            "success", false,
+                            "message", e.getMessage()
+                    ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
                     .body(Map.of(
@@ -160,6 +173,8 @@ public class TournamentApiController {
         try {
             tournamentService.joinSoloTournament(dto, authentication.getName());
             return ResponseEntity.ok(Map.of("success", true, "message", "Вы успешно зарегистрированы на турнир"));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("success", false, "message", e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -175,6 +190,8 @@ public class TournamentApiController {
         try {
             tournamentService.joinTeamTournament(dto, authentication.getName());
             return ResponseEntity.ok(Map.of("success", true, "message", "Команда успешно зарегистрирована на турнир"));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("success", false, "message", e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -194,6 +211,8 @@ public class TournamentApiController {
                     "message", "Регистрация на турнир открыта",
                     "tournament", updated
             ));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("success", false, "message", e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -208,6 +227,8 @@ public class TournamentApiController {
         try {
             TournamentFullDTO updated = tournamentService.startTournament(id, authentication.getName());
             return ResponseEntity.ok(Map.of("success", true, "message", "Турнир переведён в статус IN_PROGRESS", "tournament", updated));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("success", false, "message", e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -227,6 +248,8 @@ public class TournamentApiController {
                     "message", "Турнир отменён",
                     "tournament", updated
             ));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("success", false, "message", e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
@@ -246,6 +269,8 @@ public class TournamentApiController {
                     "message", "Турнир завершён",
                     "tournament", updated
             ));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("success", false, "message", e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }

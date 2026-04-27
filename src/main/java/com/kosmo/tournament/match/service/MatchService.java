@@ -3,6 +3,7 @@ package com.kosmo.tournament.match.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import com.kosmo.tournament.team.entity.TeamMember;
 import com.kosmo.tournament.team.repository.TeamMemberRepository;
 import com.kosmo.tournament.team.repository.TeamRepository;
 import com.kosmo.tournament.tournament.entity.Tournament;
+import com.kosmo.tournament.tournament.model.TournamentStatus;
 import com.kosmo.tournament.tournament.repository.TournamentRepository;
 import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
@@ -111,9 +113,8 @@ public class MatchService {
         }
 
         match.setWinnerPlayer(winner);
-        match.setStatus(dto.getStatus() != null && !dto.getStatus().isBlank()
-                ? dto.getStatus().toUpperCase()
-                : "FINISHED");
+        // Результат матча всегда завершает матч. Статус нельзя свободно менять из DTO.
+        match.setStatus("FINISHED");
         MatchSolo saved = matchSoloRepository.save(match);
 
         propagateSoloWinner(saved, winner);
@@ -142,9 +143,8 @@ public class MatchService {
         }
 
         match.setWinnerTeam(winner);
-        match.setStatus(dto.getStatus() != null && !dto.getStatus().isBlank()
-                ? dto.getStatus().toUpperCase()
-                : "FINISHED");
+        // Результат матча всегда завершает матч. Статус нельзя свободно менять из DTO.
+        match.setStatus("FINISHED");
         MatchTeam saved = matchTeamRepository.save(match);
 
         propagateTeamWinner(saved, winner);
@@ -243,18 +243,27 @@ public class MatchService {
         }
     }
     private void validateCanManageMatch(Tournament tournament, String currentUsername) {
+        User currentUser = getUserByUsername(currentUsername);
+        assertCanManageTournament(tournament, currentUser);
+    }
+
+    private User getUserByUsername(String currentUsername) {
         if (currentUsername == null || currentUsername.isBlank()) {
-            throw new RuntimeException("Authentication required");
+            throw new AccessDeniedException("Authentication required");
         }
 
-        boolean organizer = tournament.getOrganizer() != null
-                && currentUsername.equals(tournament.getOrganizer().getUsername());
-        boolean admin = userRepository.findByUsername(currentUsername)
-                .map(user -> "ADMIN".equalsIgnoreCase(user.getRole()))
-                .orElse(false);
+        return userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new AccessDeniedException("Authentication required"));
+    }
 
-        if (!organizer && !admin) {
-            throw new RuntimeException("Only tournament organizer or admin can manage match");
+    private void assertCanManageTournament(Tournament tournament, User currentUser) {
+        boolean isAdmin = currentUser != null && "ADMIN".equalsIgnoreCase(currentUser.getRole());
+        boolean isOrganizer = tournament.getOrganizer() != null
+                && currentUser != null
+                && tournament.getOrganizer().getId().equals(currentUser.getId());
+
+        if (!isAdmin && !isOrganizer) {
+            throw new AccessDeniedException("Only organizer or admin can manage this tournament");
         }
     }
 
@@ -304,8 +313,8 @@ public class MatchService {
             boolean allFinished = matchSoloRepository.findByTournamentId(tournament.getId())
                     .stream()
                     .allMatch(match -> "FINISHED".equalsIgnoreCase(match.getStatus()));
-            if (allFinished) {
-                tournament.setStatus("FINISHED");
+            if (allFinished && TournamentStatus.IN_PROGRESS.value().equalsIgnoreCase(tournament.getStatus())) {
+                tournament.setStatus(TournamentStatus.FINISHED.value());
                 tournamentRepository.save(tournament);
             }
             return;
@@ -314,8 +323,8 @@ public class MatchService {
         boolean allFinished = matchTeamRepository.findByTournamentId(tournament.getId())
                 .stream()
                 .allMatch(match -> "FINISHED".equalsIgnoreCase(match.getStatus()));
-        if (allFinished) {
-            tournament.setStatus("FINISHED");
+        if (allFinished && TournamentStatus.IN_PROGRESS.value().equalsIgnoreCase(tournament.getStatus())) {
+            tournament.setStatus(TournamentStatus.FINISHED.value());
             tournamentRepository.save(tournament);
         }
     }
