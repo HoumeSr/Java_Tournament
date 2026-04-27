@@ -1,230 +1,176 @@
-(function() {
-    let uploadedImageName = null;
+$(function () {
+    const POWERS_OF_TWO = [2, 4, 8, 16, 32, 64, 128, 256];
     let gameTypes = [];
 
     function showToast(message, isError = false) {
-        const toast = document.getElementById('demoToast');
-        if (!toast) return;
-        toast.textContent = message;
-        toast.style.background = isError ? '#b91c1c' : '#1f2937';
-        toast.style.opacity = '1';
-        toast.style.visibility = 'visible';
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.visibility = 'hidden';
-        }, 3000);
+        const $toast = $('#demoToast');
+        if (!$toast.length) return;
+        $toast.text(message).css({
+            background: isError ? '#b91c1c' : '#1f2937',
+            opacity: '1',
+            visibility: 'visible'
+        });
+        setTimeout(function () { $toast.css({ opacity: '0', visibility: 'hidden' }); }, 3000);
     }
 
-    function resolveImageUrl(path) {
-        if (!path) return null;
-        if (/^https?:\/\//.test(path) || path.startsWith('/') || path.startsWith('data:')) return path;
-        return '/images/' + path;
-    }
-
-    function updateAuthButtons() {
-        const authContainer = document.getElementById('authButtons');
-        if (!authContainer) return;
-        fetch('/api/auth/check').then(r => r.json()).then(data => {
-            if (data.authenticated) {
-                const imageUrl = data.user?.imageUrl ? resolveImageUrl(data.user.imageUrl) : null;
-                authContainer.innerHTML = `
-                    <div class="profile-icon" id="profileIcon">
-                        ${imageUrl ? `<img src="${imageUrl}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
-                    </div>`;
-                document.getElementById('profileIcon')?.addEventListener('click', () => window.location.href = '/profile');
-            } else {
-                authContainer.innerHTML = `
-                    <button class="btn-outline" id="registerBtn">Регистрация</button>
-                    <button class="btn-primary" id="loginBtn">Вход</button>`;
-                document.getElementById('registerBtn')?.addEventListener('click', () => window.location.href = '/register');
-                document.getElementById('loginBtn')?.addEventListener('click', () => window.location.href = '/login');
-            }
-        }).catch(() => {});
-    }
-
-    async function loadGameTypes() {
-        const select = document.getElementById('category');
-        if (!select) return;
-        try {
-            const response = await fetch('/api/gametypes/active');
-            if (!response.ok) throw new Error('load failed');
-            gameTypes = await response.json();
-            select.innerHTML = '<option value="">— Выберите игру —</option>';
-            gameTypes.forEach(game => {
-                const option = document.createElement('option');
-                option.value = String(game.id);
-                option.textContent = `${game.name}`;
-                option.dataset.maxPlayers = game.maxPlayers || 1;
-                select.appendChild(option);
-            });
-        } catch (e) {
-            showToast('❌ Не удалось загрузить игры', true);
-        }
-    }
-
-    function validateDates() {
-        const startDate = document.getElementById('startDate')?.value;
-        const registrationDeadline = document.getElementById('registrationDeadline')?.value;
-        if (!startDate) {
-            showToast('❌ Укажите дату начала', true);
-            return false;
-        }
-        if (registrationDeadline && registrationDeadline > startDate) {
-            showToast('❌ Дедлайн регистрации должен быть не позже даты начала', true);
-            return false;
-        }
-        return true;
-    }
-
-    function initImageUpload() {
-        const uploadArea = document.getElementById('imageUploadArea');
-        const fileInput = document.getElementById('tournamentImage');
-        const preview = document.getElementById('imagePreview');
-        if (!uploadArea || !fileInput || !preview) return;
-        
-        uploadArea.addEventListener('click', () => fileInput.click());
-        
-        fileInput.addEventListener('change', async e => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            
-            // Сначала загружаем изображение на сервер
-            const formData = new FormData();
-            formData.append('image', file);
-            
-            try {
-                showToast('📤 Загрузка изображения...');
-                const uploadResponse = await fetch('/api/images/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!uploadResponse.ok) throw new Error('Не удалось загрузить изображение');
-                
-                const uploadResult = await uploadResponse.json();
-                uploadedImageName = uploadResult.imageUrl; // Сохраняем URL загруженного изображения
-                
-                // Показываем превью
-                const reader = new FileReader();
-                reader.onload = ev => {
-                    preview.innerHTML = `<img src="${ev.target.result}" style="width:100%;max-height:200px;object-fit:cover;border-radius:1rem">`;
-                    preview.classList.add('has-image');
-                };
-                reader.readAsDataURL(file);
-                
-                showToast('✅ Изображение загружено');
-            } catch (error) {
-                showToast(`❌ ${error.message}`, true);
-            }
+    function escapeHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, function (m) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m];
         });
     }
 
-    function setMinDate() {
-        const today = new Date().toISOString().split('T')[0];
-        const startDateInput = document.getElementById('startDate');
-        const registrationInput = document.getElementById('registrationDeadline');
-        if (startDateInput) startDateInput.min = today;
-        if (registrationInput) registrationInput.min = today;
+    function resolveImageUrl(imageUrl) {
+        if (!imageUrl || imageUrl === 'DEFAULT_USER_IMAGE.jpg') return null;
+        if (/^https?:\/\//.test(imageUrl) || imageUrl.startsWith('/') || imageUrl.startsWith('data:')) return imageUrl;
+        return '/images/' + imageUrl;
+    }
+
+    function updateAuthButtons() {
+        $.ajax({ url: '/api/auth/check', method: 'GET', dataType: 'json' })
+            .done(function (data) {
+                const $auth = $('#authButtons');
+                if (!$auth.length) return;
+                if (data.authenticated && data.user) {
+                    const imageUrl = resolveImageUrl(data.user.imageUrl);
+                    $auth.html(`
+                        <div class="profile-icon" id="profileIcon">
+                            ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
+                        </div>
+                    `);
+                    $('#profileIcon').on('click', function () { window.location.href = '/profile'; });
+                } else {
+                    $auth.html(`
+                        <button class="btn-outline" id="registerBtn">Регистрация</button>
+                        <button class="btn-primary" id="loginBtn">Вход</button>
+                    `);
+                    $('#registerBtn').on('click', function () { window.location.href = '/register'; });
+                    $('#loginBtn').on('click', function () { window.location.href = '/login'; });
+                }
+            });
+    }
+
+    function loadGameTypes() {
+        const $select = $('#category');
+        if (!$select.length) return;
+        $.ajax({ url: '/api/gametypes/active', method: 'GET', dataType: 'json' })
+            .done(function (data) {
+                gameTypes = data || [];
+                $select.html('<option value="">— Выберите игру —</option>');
+                gameTypes.forEach(function (game) {
+                    $select.append(`<option value="${game.id}">${escapeHtml(game.name)}</option>`);
+                });
+            })
+            .fail(function () {
+                $select.html('<option value="">— Ошибка загрузки игр —</option>');
+                showToast('❌ Не удалось загрузить категории', true);
+            });
+    }
+
+    function normalizePower(value) {
+        const numericValue = Number(value);
+        if (POWERS_OF_TWO.includes(numericValue)) return numericValue;
+        return POWERS_OF_TWO.reduce(function (closest, current) {
+            return Math.abs(current - numericValue) < Math.abs(closest - numericValue) ? current : closest;
+        }, 16);
+    }
+
+    function setMaxPlayers(value) {
+        $('#maxPlayers').val(normalizePower(value));
+    }
+
+    function initMaxPlayersControl() {
+        const $input = $('#maxPlayers');
+        if (!$input.length) return;
+        $input.attr({ min: 2, max: 256, step: 2, inputmode: 'numeric' });
+        setMaxPlayers($input.val() || 16);
+
+        $('.number-up').on('click', function () {
+            const current = normalizePower($input.val());
+            const index = POWERS_OF_TWO.indexOf(current);
+            setMaxPlayers(POWERS_OF_TWO[Math.min(index + 1, POWERS_OF_TWO.length - 1)]);
+        });
+        $('.number-down').on('click', function () {
+            const current = normalizePower($input.val());
+            const index = POWERS_OF_TWO.indexOf(current);
+            setMaxPlayers(POWERS_OF_TWO[Math.max(index - 1, 0)]);
+        });
+        $input.on('input change blur', function () { setMaxPlayers(this.value); });
+        $input.on('keydown', function (event) {
+            if (event.key === 'ArrowUp') { event.preventDefault(); $('.number-up').trigger('click'); }
+            if (event.key === 'ArrowDown') { event.preventDefault(); $('.number-down').trigger('click'); }
+        });
+    }
+
+    function initPrizeToggle() {
+        $('#hasPrize').on('change', function () { $('#prizeFields').toggle(this.checked); });
     }
 
     function initFormSubmit() {
-        const form = document.getElementById('createTournamentForm');
-        if (!form) return;
-        
-        form.addEventListener('submit', async e => {
-            e.preventDefault();
-            
-            // Сбор данных из формы
-            const title = document.getElementById('tournamentName')?.value.trim();
-            const description = document.getElementById('description')?.value.trim();
-            const participantType = document.getElementById('participantType')?.value || 'SOLO';
-            const access = document.getElementById('access')?.value || 'OPEN';
-            const gameTypeId = document.getElementById('category')?.value;
-            const startDate = document.getElementById('startDate')?.value;
-            const registrationDeadline = document.getElementById('registrationDeadline')?.value;
-            const maxParticipants = parseInt(document.getElementById('maxPlayers')?.value || '0', 10);
-            
-            // Валидация
+        $('#createTournamentForm').on('submit', function (event) {
+            event.preventDefault();
+
+            const title = $.trim($('#tournamentName').val());
+            const gameTypeId = Number($('#category').val());
+            const maxParticipants = normalizePower($('#maxPlayers').val());
+            const minParticipants = Math.min(2, maxParticipants);
+
             if (!title) return showToast('❌ Введите название турнира', true);
-            if (!gameTypeId) return showToast('❌ Выберите игру', true);
-            if (!validateDates()) return;
-            
-            // Формируем DTO в точном соответствии с CreateTournamentDTO
-            const createTournamentDTO = {
+            if (!gameTypeId) return showToast('❌ Выберите категорию', true);
+
+            const dto = {
                 title: title,
-                description: description || 'Описание пока не добавлено',
-                participantType: participantType,
-                access: access,
-                gameTypeId: Number(gameTypeId),
-                status: 'DRAFT', // Статус по умолчанию для создаваемого турнира
-                startDate: `${startDate}T12:00:00`,
-                registrationDeadline: registrationDeadline ? `${registrationDeadline}T23:59:00` : null,
-                maxParticipants: Number.isFinite(maxParticipants) && maxParticipants > 1 ? maxParticipants : 16,
-                imageUrl: uploadedImageName || null // URL загруженного изображения или null
+                description: $.trim($('#description').val()) || 'Описание пока не добавлено',
+                participantType: $('#participantType').val() || 'SOLO',
+                access: $('#access').val() || 'OPEN',
+                gameTypeId: gameTypeId,
+                status: 'DRAFT',
+                startDate: new Date().toISOString().slice(0, 19),
+                registrationDeadline: null,
+                maxParticipants: maxParticipants,
+                minParticipants: minParticipants,
+                imageUrl: null
             };
-            
-            console.log('Отправляем DTO:', createTournamentDTO);
-            
-            try {
-                const response = await fetch('/api/tournaments', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(createTournamentDTO)
-                });
-                
-                const result = await response.json();
-                
-                if (!response.ok || !result.success) {
-                    throw new Error(result.message || 'Не удалось создать турнир');
-                }
-                
+
+            const $submit = $('.btn-submit');
+            $submit.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Создание...');
+
+            $.ajax({
+                url: '/api/tournaments',
+                method: 'POST',
+                contentType: 'application/json',
+                dataType: 'json',
+                data: JSON.stringify(dto)
+            }).done(function (result) {
                 showToast('✅ Турнир успешно создан');
-                
-                // Перенаправление на страницу созданного турнира
-                setTimeout(() => {
-                    const tournamentId = result.tournament?.id;
-                    if (tournamentId) {
-                        window.location.href = `/tournaments/${tournamentId}`;
-                    } else {
-                        window.location.href = '/';
-                    }
-                }, 1500);
-                
-            } catch (error) {
-                console.error('Ошибка создания турнира:', error);
-                showToast(`❌ ${error.message}`, true);
-            }
+                const tournamentId = result.tournament?.id;
+                setTimeout(function () { window.location.href = tournamentId ? `/tournaments/${tournamentId}` : '/'; }, 1000);
+            }).fail(function (xhr) {
+                showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось создать турнир'), true);
+            }).always(function () {
+                $submit.prop('disabled', false).html('<i class="fas fa-check"></i> Создать турнир');
+            });
         });
     }
 
     function initCancel() {
-        const cancelBtn = document.getElementById('cancelBtn');
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => {
-                if (confirm('Все введённые данные будут потеряны. Продолжить?')) {
-                    window.location.href = '/';
-                }
-            });
-        }
-    }
-
-    function initNavBar() {
-        document.querySelectorAll('.nav-item').forEach(item => {
-            const href = item.getAttribute('href');
-            if (href && href !== '#') return;
-            item.addEventListener('click', () => showToast('📋 Этот раздел пока в разработке'));
+        $('#cancelBtn').on('click', function () {
+            if (confirm('Все введённые данные будут потеряны. Продолжить?')) window.location.href = '/';
         });
     }
 
-    // Инициализация
+    function initNavBar() {
+        $('.nav-item').each(function () {
+            const href = $(this).attr('href');
+            if (href && href !== '#') return;
+            $(this).on('click', function () { showToast('📋 Этот раздел пока в разработке'); });
+        });
+    }
+
     updateAuthButtons();
     loadGameTypes();
-    setMinDate();
-    initImageUpload();
+    initMaxPlayersControl();
+    initPrizeToggle();
     initFormSubmit();
     initCancel();
     initNavBar();
-})();
+});
