@@ -989,3 +989,9 @@ main.container {
     padding: 1.5rem;
     color: var(--text-secondary);
 }
+/* Детали команды: убрана картинка команды, оставлен тёмный placeholder */
+.team-avatar-placeholder {
+    background: linear-gradient(135deg, rgba(124, 58, 237, .32), rgba(96, 165, 250, .2));
+    border: 1px solid rgba(255, 255, 255, .08);
+}
+.team-avatar-placeholder i { font-size: 2rem; color: #f8fafc; }

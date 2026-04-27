@@ -82,7 +82,7 @@ $(document).ready(function() {
                     participantType: t.participantType,
                     gameName: t.gameName,
                     organizerUsername: t.organizerUsername,
-                    imageUrl: resolveImageUrl(t.imageUrl)
+                    imageUrl: null
                 }));
                 renderTournaments();
                 updateTournamentCount();
@@ -165,9 +165,7 @@ $(document).ready(function() {
                 window.location.href = `/tournaments/${t.id}`;
             });
 
-            const bannerStyle = t.imageUrl
-                ? `linear-gradient(125deg, rgba(0,0,0,0.7), rgba(0,0,0,0.3)), url('${t.imageUrl}')`
-                : 'linear-gradient(125deg, #1e1b2e, #2d1b4e)';
+            const bannerStyle = 'linear-gradient(125deg, #1e1b2e, #2d1b4e)';
 
             const $banner = $('<div>').addClass('card-banner')
                 .css({ background: bannerStyle, backgroundSize: 'cover', backgroundPosition: 'center 30%' })

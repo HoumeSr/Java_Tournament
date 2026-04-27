@@ -13,6 +13,7 @@
     <link th:href="@{/css/team-notifications.css}" rel="stylesheet">
     <link th:href="@{/css/team-modal.css}" rel="stylesheet">
     <link th:href="@{/css/notifications.css}" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body>
 
@@ -41,9 +42,8 @@
 
     <div th:unless="${error}" th:if="${team != null}">
         <div class="team-info-card">
-            <div class="team-avatar">
-                <img th:if="${team.imageUrl}" th:src="${team.imageUrl}" alt="Team logo">
-                <i th:unless="${team.imageUrl}" class="fas fa-users"></i>
+            <div class="team-avatar team-avatar-placeholder">
+                <i class="fas fa-users"></i>
             </div>
             <div class="team-details">
                 <h1 th:text="${team.name}">Название команды</h1>

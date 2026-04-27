@@ -1,442 +1,186 @@
-// ========== УВЕДОМЛЕНИЯ ==========
-function showToast(message, isError = false) {
-    const toast = document.getElementById('demoToast');
-    if (!toast) return;
-    
-    toast.textContent = message;
-    toast.style.background = isError ? '#b91c1c' : '#1f2937';
-    toast.style.opacity = '1';
-    toast.style.visibility = 'visible';
-    
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.visibility = 'hidden';
-    }, 3000);
-}
+/* teams.js — список открытых + моих команд, создание без фото */
+$(function () {
+    let availableGames = [];
 
-// ========== АВТОРИЗАЦИЯ ==========
-function updateAuthButtons() {
-    const authContainer = document.getElementById('authButtons');
-    if (!authContainer) return;
-    
-    fetch('/api/auth/check')
-        .then(response => response.json())
-        .then(data => {
-            if (data.authenticated) {
-                const imageUrl = data.user?.imageUrl;
-                
-                if (imageUrl) {
-                    authContainer.innerHTML = `
+    function showToast(message, isError = false) {
+        const $toast = $('#demoToast');
+        if (!$toast.length) return;
+        $toast.text(message).css({ background: isError ? '#b91c1c' : '#1f2937', opacity: '1', visibility: 'visible' });
+        setTimeout(function () { $toast.css({ opacity: '0', visibility: 'hidden' }); }, 3000);
+    }
+
+    function escapeHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, function (m) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m];
+        });
+    }
+
+    function resolveImageUrl(imageUrl) {
+        if (!imageUrl || imageUrl === 'DEFAULT_USER_IMAGE.jpg') return null;
+        if (/^https?:\/\//.test(imageUrl) || imageUrl.startsWith('/') || imageUrl.startsWith('data:')) return imageUrl;
+        return '/images/' + imageUrl;
+    }
+
+    function gameIcon(gameName) {
+        const lower = String(gameName || '').toLowerCase();
+        if (lower.includes('chess')) return '♟️';
+        if (lower.includes('football') || lower.includes('fifa')) return '⚽';
+        if (lower.includes('tennis')) return '🎾';
+        if (lower.includes('dota') || lower.includes('valorant') || lower.includes('counter') || lower.includes('cs')) return '🎮';
+        return '🏆';
+    }
+
+    function updateAuthButtons() {
+        $.ajax({ url: '/api/auth/check', method: 'GET', dataType: 'json' })
+            .done(function (data) {
+                const $auth = $('#authButtons');
+                if (!$auth.length) return;
+                if (data.authenticated && data.user) {
+                    const imageUrl = resolveImageUrl(data.user.imageUrl);
+                    $auth.html(`
                         <div class="profile-icon" id="profileIcon">
-                            <img src="${imageUrl}">
+                            ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
                         </div>
-                    `;
+                    `);
+                    $('#profileIcon').on('click', function () { window.location.href = '/profile'; });
+                    $('#createTeamFab').show();
                 } else {
-                    authContainer.innerHTML = `
-                        <div class="profile-icon" id="profileIcon">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
-                    `;
+                    $auth.html(`
+                        <button class="btn-outline" id="registerBtn">Регистрация</button>
+                        <button class="btn-primary" id="loginBtn">Вход</button>
+                    `);
+                    $('#registerBtn').on('click', function () { window.location.href = '/register'; });
+                    $('#loginBtn').on('click', function () { window.location.href = '/login'; });
+                    $('#createTeamFab').show();
                 }
-                document.getElementById('profileIcon')?.addEventListener('click', () => {
-                    window.location.href = '/profile';
-                });
-            } else {
-                authContainer.innerHTML = `
-                    <button class="btn-outline" id="registerBtn">Регистрация</button>
-                    <button class="btn-primary" id="loginBtn">Вход</button>
-                `;
-                document.getElementById('registerBtn')?.addEventListener('click', () => {
-                    window.location.href = '/register';
-                });
-                document.getElementById('loginBtn')?.addEventListener('click', () => {
-                    window.location.href = '/login';
-                });
-            }
-        })
-        .catch(() => {});
-}
-
-// ========== ПРОВЕРКА АВТОРИЗАЦИИ ==========
-async function checkAuth() {
-    try {
-        const response = await fetch('/api/auth/check');
-        const data = await response.json();
-        return data.authenticated;
-    } catch (error) {
-        return false;
-    }
-}
-
-// ========== ЗАГРУЗКА КОМАНД ==========
-async function loadTeams() {
-    const container = document.getElementById('teamsContainer');
-    
-    const isAuthenticated = await checkAuth();
-    
-    if (!isAuthenticated) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-lock"></i>
-                <h3>Требуется авторизация</h3>
-                <p>Войдите в аккаунт, чтобы просматривать свои команды</p>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = `
-        <div class="loading-spinner">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>Загрузка команд...</p>
-        </div>
-    `;
-    
-    try {
-        const response = await fetch('/api/teams/my');
-        
-        if (!response.ok) {
-            throw new Error('Ошибка загрузки команд');
-        }
-        
-        const teams = await response.json();
-        
-        if (!teams || teams.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-users"></i>
-                    <h3>Пока нет команд</h3>
-                    <p>Создайте свою первую команду, нажав на кнопку "+"</p>
-                </div>
-            `;
-            return;
-        }
-        
-        renderTeams(teams);
-    } catch (error) {
-        console.error('Error loading teams:', error);
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Ошибка загрузки</h3>
-                <p>Не удалось загрузить список команд. Попробуйте позже.</p>
-                <button class="retry-btn" onclick="loadTeams()">
-                    <i class="fas fa-sync-alt"></i> Повторить
-                </button>
-            </div>
-        `;
-    }
-}
-
-// ========== ОТРИСОВКА КОМАНД ==========
-function renderTeams(teams) {
-    const container = document.getElementById('teamsContainer');
-    
-    container.innerHTML = `
-        <div class="teams-grid">
-            ${teams.map(team => `
-                <div class="team-card" onclick="window.location.href='/teams/${team.id}'">
-                    <div class="team-image">
-                        ${team.imageUrl ? 
-                            `<img src="${team.imageUrl}" alt="${escapeHtml(team.name)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                             <i class="fas fa-users" style="display: none;"></i>` : 
-                            `<i class="fas fa-users"></i>`
-                        }
-                    </div>
-                    <div class="team-info">
-                        <div class="team-name">
-                            ${escapeHtml(team.name)}
-                            <span class="team-captain">
-                                <i class="fas fa-crown"></i> ${escapeHtml(team.captainUsername || 'Нет капитана')}
-                            </span>
-                        </div>
-                        <div class="team-tag">
-                            <i class="fas fa-hashtag"></i> ${escapeHtml(team.name.substring(0, 3).toUpperCase())}
-                        </div>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
-}
-
-// ========== ESCAPE HTML ==========
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    });
-}
-
-// ========== МОДАЛЬНОЕ ОКНО СОЗДАНИЯ КОМАНДЫ ==========
-let currentUploadedImageUrl = null;
-let availableGames = [];
-
-async function loadGamesForModal() {
-    try {
-        const response = await fetch('/api/gametypes');
-        if (!response.ok) throw new Error('Ошибка загрузки игр');
-        
-        const games = await response.json();
-        availableGames = games.filter(game => game.isActive !== false);
-        
-        const select = document.getElementById('modalGameType');
-        if (select) {
-            if (availableGames.length > 0) {
-                select.innerHTML = '<option value="">— Выберите игру —</option>';
-                availableGames.forEach(game => {
-                    select.innerHTML += `<option value="${game.id}">${getGameIcon(game.name)} ${escapeHtml(game.name)}</option>`;
-                });
-            } else {
-                select.innerHTML = '<option value="">— Игры не найдены —</option>';
-            }
-        }
-    } catch (error) {
-        console.error('Error loading games:', error);
-        const select = document.getElementById('modalGameType');
-        if (select) {
-            select.innerHTML = '<option value="">— Ошибка загрузки игр —</option>';
-        }
-    }
-}
-
-function getGameIcon(gameName) {
-    if (!gameName) return '🎮';
-    const lower = gameName.toLowerCase();
-    if (lower.includes('chess')) return '♟️';
-    if (lower.includes('tennis')) return '🎾';
-    if (lower.includes('dota')) return '⚔️';
-    if (lower.includes('counter') || lower.includes('cs')) return '🔫';
-    if (lower.includes('valorant')) return '🎯';
-    if (lower.includes('league') || lower.includes('lol')) return '🏆';
-    if (lower.includes('football') || lower.includes('fifa')) return '⚽';
-    if (lower.includes('rocket')) return '🚗';
-    if (lower.includes('fortnite')) return '🎈';
-    return '🎮';
-}
-
-function openCreateTeamModal() {
-    const modal = document.getElementById('createTeamModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-        
-        const form = document.getElementById('modalCreateTeamForm');
-        if (form) form.reset();
-        
-        const preview = document.getElementById('modalImagePreview');
-        if (preview) {
-            preview.innerHTML = `
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p>Нажмите для загрузки</p>
-                <span>PNG, JPG, WEBP до 5MB</span>
-            `;
-        }
-        currentUploadedImageUrl = null;
-        
-        if (availableGames.length === 0) {
-            loadGamesForModal();
-        }
-    }
-}
-
-function closeCreateTeamModal() {
-    const modal = document.getElementById('createTeamModal');
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-}
-
-async function uploadModalImage(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-        const response = await fetch('/api/images/upload', {
-            method: 'POST',
-            body: formData
-        });
-        
-        if (!response.ok) throw new Error('Ошибка загрузки');
-        
-        const result = await response.json();
-        return result.url || result.imageUrl;
-    } catch (error) {
-        console.error('Upload error:', error);
-        return null;
-    }
-}
-
-function initModalImageUpload() {
-    const uploadArea = document.getElementById('modalImageUploadArea');
-    const imageInput = document.getElementById('modalTeamImage');
-    const previewContainer = document.getElementById('modalImagePreview');
-    
-    if (!uploadArea || !imageInput) return;
-    
-    uploadArea.addEventListener('click', () => {
-        imageInput.click();
-    });
-    
-    imageInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        if (file.size > 5 * 1024 * 1024) {
-            showToast('❌ Изображение не должно превышать 5MB', true);
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            previewContainer.innerHTML = `
-                <div class="image-preview-modal">
-                    <img src="${ev.target.result}" alt="Preview">
-                    <button type="button" class="remove-image-modal" id="removeModalImage">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `;
-            
-            const removeBtn = document.getElementById('removeModalImage');
-            if (removeBtn) {
-                removeBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    previewContainer.innerHTML = `
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Нажмите для загрузки</p>
-                        <span>PNG, JPG, WEBP до 5MB</span>
-                    `;
-                    currentUploadedImageUrl = null;
-                    imageInput.value = '';
-                });
-            }
-        };
-        reader.readAsDataURL(file);
-        
-        const imageUrl = await uploadModalImage(file);
-        if (imageUrl) {
-            currentUploadedImageUrl = imageUrl;
-            showToast('✅ Изображение загружено');
-        }
-    });
-}
-
-async function initModalFormSubmit() {
-    const form = document.getElementById('modalCreateTeamForm');
-    if (!form) return;
-    
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const auth = await checkAuth();
-        if (!auth) {
-            showToast('❌ Для создания команды нужно войти в аккаунт', true);
-            closeCreateTeamModal();
-            setTimeout(() => window.location.href = '/login', 1200);
-            return;
-        }
-        
-        const teamName = document.getElementById('modalTeamName')?.value.trim();
-        if (!teamName) {
-            showToast('❌ Введите название команды', true);
-            return;
-        }
-        
-        if (teamName.length < 3) {
-            showToast('❌ Название команды должно быть не менее 3 символов', true);
-            return;
-        }
-        
-        const gameTypeId = document.getElementById('modalGameType')?.value;
-        if (!gameTypeId) {
-            showToast('❌ Выберите игру', true);
-            return;
-        }
-        
-        const payload = {
-            name: teamName,
-            gameTypeId: parseInt(gameTypeId),
-            imageUrl: currentUploadedImageUrl || null
-        };
-        
-        try {
-            const response = await fetch('/api/teams', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
             });
-            
-            const team = await response.json();
-            
-            if (!response.ok || !team.id) {
-                throw new Error(team.message || 'Не удалось создать команду');
-            }
-            
-            showToast('✅ Команда успешно создана!');
-            closeCreateTeamModal();
-            
-            setTimeout(() => {
-                window.location.href = `/teams/${team.id}`;
-            }, 1500);
-            
-        } catch (error) {
-            showToast(`❌ ${error.message}`, true);
-        }
-    });
-}
-
-function initModal() {
-    loadGamesForModal();
-    initModalImageUpload();
-    initModalFormSubmit();
-    
-    const overlay = document.querySelector('.modal-overlay');
-    if (overlay) {
-        overlay.addEventListener('click', closeCreateTeamModal);
     }
-    
-    const closeBtn = document.getElementById('closeModalBtn');
-    if (closeBtn) closeBtn.addEventListener('click', closeCreateTeamModal);
-    
-    const cancelBtn = document.getElementById('cancelModalBtn');
-    if (cancelBtn) cancelBtn.addEventListener('click', closeCreateTeamModal);
-    
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            const modal = document.getElementById('createTeamModal');
-            if (modal && modal.style.display === 'flex') {
-                closeCreateTeamModal();
-            }
-        }
-    });
-}
 
-function initFloatingButton() {
-    const fabBtn = document.getElementById('createTeamFab');
-    if (fabBtn) {
-        const newFabBtn = fabBtn.cloneNode(true);
-        fabBtn.parentNode.replaceChild(newFabBtn, fabBtn);
-        newFabBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openCreateTeamModal();
+    function mergeTeams(openTeams, myTeams) {
+        const map = new Map();
+        (openTeams || []).forEach(function (team) { map.set(team.id, Object.assign({}, team, { listType: 'open' })); });
+        (myTeams || []).forEach(function (team) { map.set(team.id, Object.assign({}, map.get(team.id) || team, team, { listType: 'my' })); });
+        return Array.from(map.values());
+    }
+
+    function loadTeams() {
+        const $container = $('#teamsContainer');
+        $container.html('<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><p>Загрузка команд...</p></div>');
+
+        $.when(
+            $.ajax({ url: '/api/teams/open', method: 'GET', dataType: 'json' }),
+            $.ajax({ url: '/api/teams/my', method: 'GET', dataType: 'json' })
+        ).done(function (openResponse, myResponse) {
+            renderTeams(mergeTeams(openResponse[0], myResponse[0]));
+        }).fail(function () {
+            $.ajax({ url: '/api/teams/open', method: 'GET', dataType: 'json' })
+                .done(renderTeams)
+                .fail(function () {
+                    $container.html('<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Не удалось загрузить команды</p></div>');
+                });
         });
     }
-}
 
-function init() {
+    function renderTeams(teams) {
+        const $container = $('#teamsContainer');
+        if (!teams || !teams.length) {
+            $container.html('<div class="empty-state"><i class="fas fa-users"></i><p>Пока нет открытых команд</p></div>');
+            return;
+        }
+
+        const cards = teams.map(function (team) {
+            const isMine = team.listType === 'my';
+            const count = `${team.currentMembersCount || 0} / ${team.maxMembersCount || 1}`;
+            return `
+                <div class="team-card" data-team-id="${team.id}">
+                    <div class="team-card-avatar"><i class="fas fa-users"></i></div>
+                    <div class="team-card-body">
+                        <div class="team-card-top">
+                            <h3>${escapeHtml(team.name)}</h3>
+                            ${isMine ? '<span class="team-pill mine">Моя команда</span>' : '<span class="team-pill open">Открытая</span>'}
+                        </div>
+                        <div class="team-card-meta">
+                            <span><i class="fas fa-crown"></i> ${escapeHtml(team.captainUsername || '—')}</span>
+                            <span>${gameIcon(team.gameTypeName)} ${escapeHtml(team.gameTypeName || 'Без категории')}</span>
+                            <span><i class="fas fa-user-friends"></i> ${count}</span>
+                        </div>
+                    </div>
+                    <div class="team-card-arrow"><i class="fas fa-chevron-right"></i></div>
+                </div>
+            `;
+        }).join('');
+
+        $container.html(cards);
+        $('.team-card').on('click', function () { window.location.href = '/teams/' + $(this).data('team-id'); });
+    }
+
+    function loadGamesForModal() {
+        const $select = $('#modalGameType');
+        $.ajax({ url: '/api/gametypes/active', method: 'GET', dataType: 'json' })
+            .done(function (games) {
+                availableGames = games || [];
+                $select.html('<option value="">— Выберите игру —</option>');
+                availableGames.forEach(function (game) {
+                    $select.append(`<option value="${game.id}">${gameIcon(game.name)} ${escapeHtml(game.name)}</option>`);
+                });
+            })
+            .fail(function () { $select.html('<option value="">— Ошибка загрузки игр —</option>'); });
+    }
+
+    function openCreateTeamModal() {
+        $.ajax({ url: '/api/auth/check', method: 'GET', dataType: 'json' }).done(function (data) {
+            if (!data.authenticated) {
+                showToast('❌ Для создания команды нужно войти в аккаунт', true);
+                setTimeout(function () { window.location.href = '/login'; }, 1000);
+                return;
+            }
+            $('#modalCreateTeamForm')[0]?.reset();
+            $('#createTeamModal').css('display', 'flex');
+            $('body').css('overflow', 'hidden');
+            if (!availableGames.length) loadGamesForModal();
+        });
+    }
+
+    function closeCreateTeamModal() {
+        $('#createTeamModal').hide();
+        $('body').css('overflow', '');
+    }
+
+    function initModal() {
+        loadGamesForModal();
+        $('#createTeamFab').on('click', openCreateTeamModal);
+        $('#closeModalBtn, #cancelModalBtn, #createTeamModal .modal-overlay').on('click', closeCreateTeamModal);
+        $(document).on('keydown', function (event) { if (event.key === 'Escape') closeCreateTeamModal(); });
+
+        $('#modalCreateTeamForm').on('submit', function (event) {
+            event.preventDefault();
+            const name = $.trim($('#modalTeamName').val());
+            const gameTypeId = Number($('#modalGameType').val());
+            if (name.length < 3) return showToast('❌ Название команды должно быть от 3 символов', true);
+            if (!gameTypeId) return showToast('❌ Выберите категорию / игру', true);
+
+            const $button = $('.btn-submit-modal');
+            $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Создание...');
+
+            $.ajax({
+                url: '/api/teams',
+                method: 'POST',
+                contentType: 'application/json',
+                dataType: 'json',
+                data: JSON.stringify({ name: name, gameTypeId: gameTypeId, imageUrl: null })
+            }).done(function (team) {
+                showToast('✅ Команда успешно создана');
+                closeCreateTeamModal();
+                setTimeout(function () { window.location.href = '/teams/' + team.id; }, 800);
+            }).fail(function (xhr) {
+                showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось создать команду'), true);
+            }).always(function () {
+                $button.prop('disabled', false).html('<i class="fas fa-check"></i> Создать команду');
+            });
+        });
+    }
+
+    updateAuthButtons();
     loadTeams();
     initModal();
-    initFloatingButton();
-}
-
-// Запуск
-document.addEventListener('DOMContentLoaded', () => {
-    updateAuthButtons();
-    init();
 });

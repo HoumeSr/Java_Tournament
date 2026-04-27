@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link th:href="@{/css/teams.css}" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body>
 
@@ -27,7 +28,8 @@
 
 <main class="container">
     <div class="page-header">
-        <h1><i class="fas fa-users"></i> Мои команды</h1>
+        <h1><i class="fas fa-users"></i> Команды</h1>
+        <p class="page-subtitle">Открытые команды и команды, в которых вы состоите</p>
     </div>
     
     <div id="teamsContainer" class="teams-container">
@@ -93,21 +95,6 @@
                     <select id="modalGameType" name="gameTypeId" required>
                         <option value="">— Загрузка игр... —</option>
                     </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Логотип команды</label>
-                    <div class="modal-image-upload" id="modalImageUploadArea">
-                        <input type="file" 
-                               id="modalTeamImage" 
-                               accept="image/jpeg,image/png,image/webp" 
-                               style="display: none;">
-                        <div class="image-upload-placeholder" id="modalImagePreview">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <p>Нажмите для загрузки</p>
-                            <span>PNG, JPG, WEBP до 5MB</span>
-                        </div>
-                    </div>
                 </div>
             </div>
 

@@ -1,173 +1,138 @@
-// ========== ДЕЙСТВИЯ С КОМАНДОЙ ==========
+/* team-actions.js — действия с DTO через jQuery/AJAX */
+$(function () {
+    function showToast(message, isError = false) {
+        const $toast = $('#demoToast');
+        if (!$toast.length) return;
+        $toast.text(message).css({ background: isError ? '#b91c1c' : '#1f2937', opacity: '1', visibility: 'visible' });
+        setTimeout(function () { $toast.css({ opacity: '0', visibility: 'hidden' }); }, 3000);
+    }
 
-function updateAuthButtons() {
-    const authContainer = document.getElementById('authButtons');
-    if (!authContainer) return;
-    
-    fetch('/api/auth/check')
-        .then(response => response.json())
-        .then(data => {
-            if (data.authenticated) {
-                const imageUrl = data.user?.imageUrl;
-                
-                if (imageUrl) {
-                    authContainer.innerHTML = `
-                        <div class="profile-icon" id="profileIcon">
-                            <img src="${imageUrl}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
-                        </div>
-                    `;
-                } else {
-                    authContainer.innerHTML = `
-                        <div class="profile-icon" id="profileIcon">
-                            <i class="fas fa-user-circle" style="font-size: 36px; color: #9ca3af;"></i>
-                        </div>
-                    `;
-                }
-                
-                document.getElementById('profileIcon')?.addEventListener('click', () => {
-                    window.location.href = '/profile';
-                });
-                
-                getCurrentUser().then(() => {
-                    setTimeout(createNotificationIcon, 100);
-                });
+    function escapeHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, function (m) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m];
+        });
+    }
+
+    function resolveImageUrl(imageUrl) {
+        if (!imageUrl || imageUrl === 'DEFAULT_USER_IMAGE.jpg') return null;
+        if (/^https?:\/\//.test(imageUrl) || imageUrl.startsWith('/') || imageUrl.startsWith('data:')) return imageUrl;
+        return '/images/' + imageUrl;
+    }
+
+    function updateAuthButtons() {
+        $.ajax({ url: '/api/auth/check', method: 'GET', dataType: 'json' }).done(function (data) {
+            const $auth = $('#authButtons');
+            if (!$auth.length) return;
+
+            if (data.authenticated && data.user) {
+                const imageUrl = resolveImageUrl(data.user.imageUrl);
+                $auth.html(`
+                    <div class="profile-icon" id="profileIcon">
+                        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
+                    </div>
+                `);
+                $('#profileIcon').on('click', function () { window.location.href = '/profile'; });
+                if (typeof getCurrentUser === 'function') getCurrentUser();
+                if (typeof createNotificationIcon === 'function') setTimeout(createNotificationIcon, 100);
             } else {
-                authContainer.innerHTML = `
+                $auth.html(`
                     <button class="btn-outline" id="registerBtn">Регистрация</button>
                     <button class="btn-primary" id="loginBtn">Вход</button>
-                `;
-                document.getElementById('registerBtn')?.addEventListener('click', () => {
-                    window.location.href = '/register';
-                });
-                document.getElementById('loginBtn')?.addEventListener('click', () => {
-                    window.location.href = '/login';
-                });
+                `);
+                $('#registerBtn').on('click', function () { window.location.href = '/register'; });
+                $('#loginBtn').on('click', function () { window.location.href = '/login'; });
             }
-        })
-        .catch(() => {});
-}
+        });
+    }
 
-function initActionButtons() {
-    const addMemberBtn = document.getElementById('addMemberBtn');
-    if (addMemberBtn) {
-        addMemberBtn.addEventListener('click', () => {
-            if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
-                showToast('❌ Команда уже заполнена', true);
-                return;
-            }
-            openInviteModal();
+    function getAuthUser() {
+        return $.ajax({ url: '/api/auth/check', method: 'GET', dataType: 'json' }).then(function (data) {
+            if (data.authenticated && data.user) return data.user;
+            throw new Error('Необходимо авторизоваться');
         });
     }
-    
-    const addMemberCard = document.getElementById('addMemberCard');
-    if (addMemberCard) {
-        addMemberCard.addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-add') || e.target.closest('.btn-add')) return;
+
+    function initInviteButton() {
+        $('#addMemberBtn, #addMemberCard').on('click', function (event) {
+            event.preventDefault();
             if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
                 showToast('❌ Команда уже заполнена', true);
                 return;
             }
-            openInviteModal();
+            if (typeof openInviteModal === 'function') openInviteModal();
         });
     }
-    
-    const kickBtns = document.querySelectorAll('.btn-kick');
-    kickBtns.forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const userId = btn.dataset.userId;
-            if (confirm('Вы уверены, что хотите исключить этого участника?')) {
-                try {
-                    const response = await fetch(`/api/teams/${window.teamData.id}/members/${userId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        showToast('✅ Участник исключен из команды');
-                        setTimeout(() => window.location.reload(), 1000);
-                    } else {
-                        const error = await response.json();
-                        showToast(`❌ ${error.message || 'Не удалось исключить участника'}`, true);
-                    }
-                } catch (error) {
-                    showToast('❌ Ошибка при исключении участника', true);
-                }
-            }
+
+    function initKickButtons() {
+        $('.btn-kick').on('click', function (event) {
+            event.stopPropagation();
+            const userId = $(this).data('user-id');
+            if (!confirm('Вы уверены, что хотите исключить этого участника?')) return;
+
+            $.ajax({
+                url: `/api/teams/${window.teamData.id}/members/${userId}`,
+                method: 'DELETE',
+                dataType: 'json'
+            }).done(function () {
+                showToast('✅ Участник исключён из команды');
+                setTimeout(function () { window.location.reload(); }, 800);
+            }).fail(function (xhr) {
+                showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось исключить участника'), true);
+            });
         });
-    });
-    
-    const joinBtn = document.getElementById('joinTeamBtn');
-    if (joinBtn) {
-        joinBtn.addEventListener('click', async () => {
+    }
+
+    function initJoinButton() {
+        $('#joinTeamBtn').on('click', function () {
             if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
                 showToast('❌ Команда уже заполнена', true);
                 return;
             }
-            
-            try {
-                if (!currentUser) {
-                    await getCurrentUser();
-                }
-                
-                const response = await fetch(`/api/teams/${window.teamData.id}/members`, {
+
+            const $button = $(this);
+            $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Вступление...');
+
+            getAuthUser().then(function (user) {
+                return $.ajax({
+                    url: `/api/teams/${window.teamData.id}/members`,
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-                    },
-                    body: JSON.stringify({ userId: currentUser?.id })
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    data: JSON.stringify({ userId: user.id })
                 });
-                
-                if (response.ok) {
-                    showToast('✅ Вы вступили в команду!');
-                    setTimeout(() => window.location.reload(), 1000);
-                } else {
-                    const error = await response.json();
-                    showToast(`❌ ${error.message || 'Не удалось вступить в команду'}`, true);
-                }
-            } catch (error) {
-                showToast('❌ Ошибка при вступлении в команду', true);
-            }
+            }).done(function () {
+                showToast('✅ Вы вступили в команду');
+                setTimeout(function () { window.location.reload(); }, 800);
+            }).fail(function (xhr) {
+                showToast('❌ ' + (xhr.responseJSON?.message || xhr.message || 'Не удалось вступить в команду'), true);
+                $button.prop('disabled', false).html('<i class="fas fa-sign-in-alt"></i> Вступить в команду');
+            });
         });
     }
-    
-    const leaveBtn = document.getElementById('leaveTeamBtn');
-    if (leaveBtn) {
-        leaveBtn.addEventListener('click', async () => {
-            if (confirm('Вы уверены, что хотите покинуть команду?')) {
-                try {
-                    if (!currentUser) {
-                        await getCurrentUser();
-                    }
-                    
-                    const response = await fetch(`/api/teams/${window.teamData.id}/members/${currentUser?.id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        showToast('✅ Вы покинули команду');
-                        setTimeout(() => window.location.reload(), 1000);
-                    } else {
-                        const error = await response.json();
-                        showToast(`❌ ${error.message || 'Не удалось покинуть команду'}`, true);
-                    }
-                } catch (error) {
-                    showToast('❌ Ошибка при выходе из команды', true);
-                }
-            }
-        });
-    }
-}
 
-// Запуск
-document.addEventListener('DOMContentLoaded', () => {
+    function initLeaveButton() {
+        $('#leaveTeamBtn').on('click', function () {
+            if (!confirm('Вы уверены, что хотите покинуть команду?')) return;
+            const $button = $(this);
+            $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Выход...');
+
+            $.ajax({
+                url: `/api/teams/${window.teamData.id}/leave`,
+                method: 'POST'
+            }).done(function () {
+                showToast('✅ Вы покинули команду');
+                setTimeout(function () { window.location.href = '/teams'; }, 800);
+            }).fail(function (xhr) {
+                showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось покинуть команду'), true);
+                $button.prop('disabled', false).html('<i class="fas fa-sign-out-alt"></i> Покинуть команду');
+            });
+        });
+    }
+
     updateAuthButtons();
-    initActionButtons();
-    initModal();
+    initInviteButton();
+    initKickButtons();
+    initJoinButton();
+    initLeaveButton();
+    if (typeof initModal === 'function') initModal();
 });
