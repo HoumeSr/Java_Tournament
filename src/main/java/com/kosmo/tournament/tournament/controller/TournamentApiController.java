@@ -92,7 +92,15 @@ public class TournamentApiController {
     public List<TournamentShortDTO> search(@RequestParam String title) {
         return tournamentService.searchByTitle(title);
     }
-
+    @GetMapping("/{id}/participants/count")
+    public ResponseEntity<?> getParticipantsCount(@PathVariable Long id) {
+        try {
+            int count = tournamentService.getParticipantsCount(id);
+            return ResponseEntity.ok(Map.of("count", count));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
     @PostMapping
     public ResponseEntity<?> createTournament(@RequestBody CreateTournamentDTO dto,
                                               Authentication authentication) {
@@ -163,6 +171,25 @@ public class TournamentApiController {
         }
     }
 
+    @PostMapping("/{id}/open-registration")
+    public ResponseEntity<?> openRegistration(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+        }
+        try {
+            TournamentFullDTO updated = tournamentService.openRegistration(id, authentication.getName());
+            return ResponseEntity.ok(Map.of(
+                    "success", true, 
+                    "message", "Регистрация на турнир открыта", 
+                    "tournament", updated
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
     @PostMapping("/join/solo")
     public ResponseEntity<?> joinSoloTournament(@RequestBody JoinSoloTournamentDTO dto,
                                                 Authentication authentication) {
@@ -178,6 +205,16 @@ public class TournamentApiController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
+    }
+
+    @GetMapping("/{id}/my-registration")
+    public ResponseEntity<?> checkMyRegistration(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.ok(Map.of("registered", false));
+        }
+        
+        boolean isRegistered = tournamentService.isUserRegistered(id, authentication.getName());
+        return ResponseEntity.ok(Map.of("registered", isRegistered));
     }
 
     @PostMapping("/join/team")
