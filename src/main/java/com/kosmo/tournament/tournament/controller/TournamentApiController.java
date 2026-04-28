@@ -171,24 +171,6 @@ public class TournamentApiController {
         }
     }
 
-    @PostMapping("/{id}/open-registration")
-    public ResponseEntity<?> openRegistration(@PathVariable Long id, Authentication authentication) {
-        if (authentication == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
-        }
-        try {
-            TournamentFullDTO updated = tournamentService.openRegistration(id, authentication.getName());
-            return ResponseEntity.ok(Map.of(
-                    "success", true, 
-                    "message", "Регистрация на турнир открыта", 
-                    "tournament", updated
-            ));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("success", false, "message", e.getMessage()));
-        }
-    }
 
     @PostMapping("/join/solo")
     public ResponseEntity<?> joinSoloTournament(@RequestBody JoinSoloTournamentDTO dto,

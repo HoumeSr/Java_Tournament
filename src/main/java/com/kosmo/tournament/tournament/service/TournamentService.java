@@ -265,26 +265,6 @@ public class TournamentService {
     }
 
     @Transactional
-    public TournamentFullDTO openRegistration(Long tournamentId, String currentUsername) {
-        Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
-        
-        if (currentUsername == null
-                || tournament.getOrganizer() == null
-                || !currentUsername.equals(tournament.getOrganizer().getUsername())) {
-            throw new RuntimeException("Only tournament organizer can open registration");
-        }
-        
-        if (!"DRAFT".equalsIgnoreCase(tournament.getStatus())) {
-            throw new RuntimeException("Tournament must be in DRAFT status to open registration");
-        }
-        
-        tournament.setStatus("REGISTRATION_OPEN");
-        Tournament saved = tournamentRepository.save(tournament);
-        return toFullDTO(saved, true);
-    }
-
-    @Transactional
     public void joinSoloTournament(JoinSoloTournamentDTO dto, String username) {
         Tournament tournament = tournamentRepository.findById(dto.getTournamentId())
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
