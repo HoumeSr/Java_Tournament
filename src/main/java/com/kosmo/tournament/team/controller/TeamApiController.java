@@ -97,6 +97,7 @@ public class TeamApiController {
 
         try {
             AddTeamMemberDTO dto = new AddTeamMemberDTO();
+            dto.setUserId(getCurrentUserIdPlaceholder());
             TeamFullDTO updated = teamService.addMember(teamId, dto, authentication.getName());
             return ResponseEntity.ok(Map.of(
                     "success", true,
@@ -170,13 +171,26 @@ public class TeamApiController {
     }
 
     @PostMapping("/{id}/invite")
-    public void inviteUser(@PathVariable Long id,
-                           @RequestBody InviteTeamMemberDTO dto,
-                           Authentication authentication) {
+    public ResponseEntity<?> inviteUser(@PathVariable Long id,
+                                        @RequestBody InviteTeamMemberDTO dto,
+                                        Authentication authentication) {
         if (authentication == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
         }
-        teamService.inviteUserToTeam(id, dto.getUserId(), authentication.getName());
+
+        try {
+            teamService.inviteUserToTeam(id, dto.getUserId(), authentication.getName());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Приглашение отправлено"
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
     }
 
     @PostMapping("/invite/{notificationId}/accept")
@@ -195,5 +209,13 @@ public class TeamApiController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
         teamService.declineInvite(notificationId, authentication.getName());
+    }
+
+    /**
+     * Заглушка, если старый фронт вызывает join legacy без userId.
+     * Если у тебя этот метод не нужен — убери legacy endpoint целиком.
+     */
+    private Long getCurrentUserIdPlaceholder() {
+        return null;
     }
 }
