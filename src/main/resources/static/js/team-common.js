@@ -3,12 +3,19 @@
 function showToast(message, isError = false) {
     const toast = document.getElementById('demoToast');
     if (!toast) return;
-    
+
+    // Toast должен быть выше модальных затемнений и выпадающих уведомлений.
+    // Перенос в body защищает от локальных stacking context внутри страницы.
+    if (toast.parentElement !== document.body) {
+        document.body.appendChild(toast);
+    }
+
     toast.textContent = message;
     toast.style.background = isError ? '#b91c1c' : '#1f2937';
+    toast.style.zIndex = '30000';
     toast.style.opacity = '1';
     toast.style.visibility = 'visible';
-    
+
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.visibility = 'hidden';

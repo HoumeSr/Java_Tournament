@@ -125,6 +125,25 @@ function selectUser(user) {
     });
 }
 
+
+async function readErrorMessage(response, fallbackMessage) {
+    try {
+        const text = await response.text();
+        if (!text) {
+            return fallbackMessage;
+        }
+
+        try {
+            const data = JSON.parse(text);
+            return data.message || data.error || data.detail || fallbackMessage;
+        } catch (_) {
+            return text;
+        }
+    } catch (_) {
+        return fallbackMessage;
+    }
+}
+
 async function sendInvite() {
     if (!selectedUserId) {
         showToast('❌ Выберите пользователя', true);
@@ -148,29 +167,29 @@ async function sendInvite() {
     sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
     
     try {
-        const response = await fetch('/api/notifications', {
+        const teamId = window.teamData && window.teamData.id;
+        if (!teamId) {
+            throw new Error('Не удалось определить команду для приглашения');
+        }
+
+        const response = await fetch(`/api/teams/${teamId}/invite`, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                userId: selectedUserId,
-                teamId: window.teamData.id,
-                teamName: document.querySelector('h1')?.textContent || 'Команда',
-                type: 'TEAM_INVITE',
-                message: `Вас приглашают в команду ${document.querySelector('h1')?.textContent || 'Команда'}`,
-                status: 'PENDING'
+                userId: selectedUserId
             })
         });
-        
+
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Не удалось отправить приглашение');
+            const message = await readErrorMessage(response, 'Не удалось отправить приглашение');
+            throw new Error(message);
         }
-        
-        showToast(`✅ Приглашение отправлено игроку ${selectedUserData.username}!`);
+
         closeInviteModal();
+        showToast(`✅ Приглашение отправлено игроку ${selectedUserData.username}!`);
     } catch (error) {
         showToast(`❌ ${error.message}`, true);
     } finally {

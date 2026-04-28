@@ -89,7 +89,7 @@
                     </button>
                 </div>
                 
-                <div th:if="${isCaptain}" class="member-card add-member-card" id="addMemberCard">
+                <div th:if="${canInvite}" class="member-card add-member-card" id="addMemberCard">
                     <div class="member-avatar add-avatar">
                         <i class="fas fa-plus"></i>
                     </div>
@@ -203,6 +203,7 @@
         id: /*[[${team != null ? team.id : null}]]*/ null,
         isCaptain: /*[[${isCaptain != null ? isCaptain : false}]]*/ false,
         isMember: /*[[${isMember != null ? isMember : false}]]*/ false,
+        canInvite: /*[[${canInvite != null ? canInvite : false}]]*/ false,
         isAuthenticated: /*[[${isAuthenticated != null ? isAuthenticated : false}]]*/ false,
         maxMembersCount: /*[[${team != null ? team.maxMembersCount : 0}]]*/ 0,
         currentMembersCount: /*[[${team != null ? team.currentMembersCount : 0}]]*/ 0

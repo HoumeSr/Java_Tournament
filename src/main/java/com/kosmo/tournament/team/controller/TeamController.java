@@ -59,9 +59,17 @@ public class TeamController {
                 }
             }
 
+            boolean canInvite = authentication != null
+                    && authentication.isAuthenticated()
+                    && (isCaptain
+                    || isMember
+                    || authentication.getAuthorities().stream()
+                    .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority())));
+
             model.addAttribute("team", team);
             model.addAttribute("isCaptain", isCaptain);
             model.addAttribute("isMember", isMember);
+            model.addAttribute("canInvite", canInvite);
             model.addAttribute("isAuthenticated", authentication != null);
             model.addAttribute("pageTitle", team.getName());
 
