@@ -95,6 +95,7 @@ public class NotificationService {
         notification.setStatus(dto.getStatus() != null && !dto.getStatus().isBlank()
                 ? dto.getStatus()
                 : "PENDING");
+        notification.setRead(false);
 
         Notification saved = notificationRepository.save(notification);
         return toDTO(saved);
@@ -120,6 +121,7 @@ public class NotificationService {
         notification.setType("TEAM_INVITE");
         notification.setStatus("PENDING");
         notification.setMessage("Вы приглашены в команду " + team.getName());
+        notification.setRead(false);
 
         notificationRepository.save(notification);
     }
@@ -167,6 +169,38 @@ public class NotificationService {
         return notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
     }
+    @Transactional
+    public NotificationDTO markRead(Long notificationId, String currentUsername) {
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+
+        if (!notification.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("This notification does not belong to current user");
+        }
+
+        notification.setRead(true);
+        Notification saved = notificationRepository.save(notification);
+        return toDTO(saved);
+    }
+
+    @Transactional
+    public List<NotificationDTO> markAllRead(String currentUsername) {
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Notification> notifications =
+                notificationRepository.findByUserIdOrderByCreatedAtDesc(currentUser.getId());
+
+        notifications.forEach(notification -> notification.setRead(true));
+        notificationRepository.saveAll(notifications);
+
+        return notifications.stream()
+                .map(this::toDTO)
+                .toList();
+    }
 
     private NotificationDTO toDTO(Notification notification) {
         NotificationDTO dto = new NotificationDTO();
@@ -177,6 +211,7 @@ public class NotificationService {
         dto.setType(notification.getType());
         dto.setStatus(notification.getStatus());
         dto.setCreatedAt(notification.getCreatedAt());
+        dto.setRead(notification.getRead());
         return dto;
     }
 }

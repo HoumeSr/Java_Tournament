@@ -104,7 +104,16 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (currentUsername == null || !currentUsername.equals(user.getUsername())) {
+        if (currentUsername == null) {
+            throw new RuntimeException("Authentication required");
+        }
+
+        boolean owner = currentUsername.equals(user.getUsername());
+        boolean admin = userRepository.findByUsername(currentUsername)
+                .map(currentUser -> "ADMIN".equalsIgnoreCase(currentUser.getRole()))
+                .orElse(false);
+
+        if (!owner && !admin) {
             throw new RuntimeException("You can update only your own profile");
         }
 

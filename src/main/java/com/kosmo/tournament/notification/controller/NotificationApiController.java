@@ -58,8 +58,18 @@ public class NotificationApiController {
         }
     }
 
+    /**
+     * Обычные пользователи не должны создавать произвольные уведомления.
+     * Для приглашений в команду используется POST /api/teams/{id}/invite.
+     */
     @PostMapping
-    public ResponseEntity<?> createNotification(@RequestBody CreateNotificationDTO dto) {
+    public ResponseEntity<?> createNotification(@RequestBody CreateNotificationDTO dto,
+                                                Authentication authentication) {
+        if (!isAdmin(authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("success", false, "message", "Только ADMIN может создавать произвольные уведомления"));
+        }
+
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                     "success", true,
@@ -89,5 +99,48 @@ public class NotificationApiController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
+    }
+
+    @PostMapping("/{id}/read")
+    public ResponseEntity<?> markRead(@PathVariable Long id, Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+        }
+
+        try {
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Уведомление отмечено прочитанным",
+                    "notification", notificationService.markRead(id, authentication.getName())
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/read-all")
+    public ResponseEntity<?> markAllRead(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+        }
+
+        
+        try {
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Все уведомления отмечены прочитанными",
+                    "notifications", notificationService.markAllRead(authentication.getName())
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication != null
+                && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
     }
 }

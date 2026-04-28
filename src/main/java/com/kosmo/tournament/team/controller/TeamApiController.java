@@ -1,8 +1,10 @@
 package com.kosmo.tournament.team.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -20,7 +23,6 @@ import com.kosmo.tournament.team.dto.RemoveTeamMemberDTO;
 import com.kosmo.tournament.team.dto.TeamFullDTO;
 import com.kosmo.tournament.team.dto.TeamMemberDTO;
 import com.kosmo.tournament.team.dto.TeamShortDTO;
-
 import com.kosmo.tournament.team.service.TeamService;
 
 @RestController
@@ -71,11 +73,6 @@ public class TeamApiController {
         return teamService.createTeam(dto, authentication.getName());
     }
 
-    /**
-     * Совместимость с текущим фронтом:
-     * - капитан может добавить любого
-     * - обычный пользователь может добавить только самого себя (join)
-     */
     @PostMapping("/{id}/members")
     public TeamFullDTO addMember(@PathVariable Long id,
                                  @RequestBody AddTeamMemberDTO dto,
@@ -87,8 +84,30 @@ public class TeamApiController {
     }
 
     /**
-     * Новый вариант удаления по body.
+     * Старый фронт team-profile.js отправляет application/x-www-form-urlencoded:
+     * POST /api/teams/join, body: teamId=123.
      */
+    @PostMapping("/join")
+    public ResponseEntity<?> joinTeamLegacy(@RequestParam Long teamId,
+                                            Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+        }
+
+        try {
+            AddTeamMemberDTO dto = new AddTeamMemberDTO();
+            TeamFullDTO updated = teamService.addMember(teamId, dto, authentication.getName());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Вы вступили в команду",
+                    "team", updated
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/{id}/members")
     public TeamFullDTO removeMember(@PathVariable Long id,
                                     @RequestBody RemoveTeamMemberDTO dto,
@@ -99,13 +118,6 @@ public class TeamApiController {
         return teamService.removeMember(id, dto.getUserId(), authentication.getName());
     }
 
-    /**
-     * Совместимость с текущим фронтом team-actions.js:
-     * DELETE /api/teams/{teamId}/members/{userId}
-     *
-     * Если userId == текущий пользователь -> leaveTeam
-     * Иначе -> removeMember
-     */
     @DeleteMapping("/{teamId}/members/{userId}")
     public TeamFullDTO removeMemberByPath(@PathVariable Long teamId,
                                           @PathVariable Long userId,
@@ -135,6 +147,26 @@ public class TeamApiController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
         teamService.leaveTeam(id, authentication.getName());
+    }
+
+    /**
+     * Старый фронт team-profile.js отправляет application/x-www-form-urlencoded:
+     * POST /api/teams/leave, body: teamId=123.
+     */
+    @PostMapping("/leave")
+    public ResponseEntity<?> leaveTeamLegacy(@RequestParam Long teamId,
+                                             Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+        }
+
+        try {
+            teamService.leaveTeam(teamId, authentication.getName());
+            return ResponseEntity.ok(Map.of("success", true, "message", "Вы покинули команду"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
     }
 
     @PostMapping("/{id}/invite")

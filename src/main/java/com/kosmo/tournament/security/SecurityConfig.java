@@ -22,26 +22,24 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    SessionAuthenticationFilter sessionAuthenticationFilter) throws Exception {
         http
+                // Пока оставлено как было в проекте, чтобы не сломать существующие fetch/ajax-формы.
+                // Следующий шаг — включить CSRF и передавать токен во всех POST/PUT/DELETE запросах.
                 .csrf(AbstractHttpConfigurer::disable)
                 .addFilterBefore(sessionAuthenticationFilter, AnonymousAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/",
                                 "/login",
+                                "/signin",
                                 "/register",
                                 "/rating",
                                 "/forgot-password",
+                                "/error",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
                                 "/favicon.ico",
                                 "/api/auth/**",
-                                "/api/tournaments",
-                                "/api/tournaments/*",
-                                "/api/tournaments/status/*",
-                                "/api/tournaments/game/*",
-                                "/api/tournaments/search",
-                                "/api/gametypes/**",
                                 "/tournaments",
                                 "/tournaments/*",
                                 "/teams",
@@ -49,21 +47,38 @@ public class SecurityConfig {
                                 "/profile/*"
                         ).permitAll()
 
-                        .requestMatchers("/api/tournaments/my").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/tournaments").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/gametypes/**", "/api/game-types/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/gametypes/**", "/api/game-types/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/gametypes/**", "/api/game-types/**").hasRole("ADMIN")
 
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/tournaments",
+                                "/api/tournaments/*",
+                                "/api/tournaments/*/matches",
+                                "/api/tournaments/*/participants",
+                                "/api/tournaments/status/*",
+                                "/api/tournaments/game/*",
+                                "/api/tournaments/search"
+                        ).permitAll()
+                        .requestMatchers("/api/tournaments/my", "/api/tournaments/*/my-eligible-teams").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/tournaments/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/tournaments/**").authenticated()
+
+                        .requestMatchers(HttpMethod.GET, "/api/teams", "/api/teams/open", "/api/teams/*", "/api/teams/*/members").permitAll()
                         .requestMatchers("/api/teams/my").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/teams").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/teams/open").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/teams/*").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/teams/*/members").permitAll()
-                        .requestMatchers("/api/teams/**", "/api/notifications/**", "/api/matches/my").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/teams/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/teams/**").authenticated()
 
+                        .requestMatchers(HttpMethod.GET, "/api/matches/tournament/*", "/api/matches/solo/*", "/api/matches/team/*").permitAll()
+                        .requestMatchers("/api/matches/my").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/matches/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/matches/**").authenticated()
 
+                        .requestMatchers("/api/notifications/**").authenticated()
+                        .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers("/profile", "/my/**", "/notifications").authenticated()
-                        .anyRequest().permitAll()
+
+                        .anyRequest().authenticated()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable);

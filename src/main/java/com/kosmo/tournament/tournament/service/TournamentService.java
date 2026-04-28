@@ -1,9 +1,12 @@
 package com.kosmo.tournament.tournament.service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +30,7 @@ import com.kosmo.tournament.tournament.dto.UpdateTournamentDTO;
 import com.kosmo.tournament.tournament.entity.Tournament;
 import com.kosmo.tournament.tournament.entity.TournamentSoloParticipant;
 import com.kosmo.tournament.tournament.entity.TournamentTeamParticipant;
+import com.kosmo.tournament.tournament.model.TournamentStatus;
 import com.kosmo.tournament.tournament.repository.TournamentRepository;
 import com.kosmo.tournament.tournament.repository.TournamentSoloParticipantRepository;
 import com.kosmo.tournament.tournament.repository.TournamentTeamParticipantRepository;
@@ -95,7 +99,7 @@ public class TournamentService {
     }
 
     public List<TournamentShortDTO> getTournamentsByStatus(String status) {
-        return tournamentRepository.findByStatus(status.toUpperCase())
+        return tournamentRepository.findByStatus(TournamentStatus.from(status).value())
                 .stream()
                 .map(this::toShortDTO)
                 .toList();
@@ -159,7 +163,9 @@ public class TournamentService {
         tournament.setDescription(dto.getDescription());
         tournament.setParticipantType(normalizeParticipantType(dto.getParticipantType()));
         tournament.setAccess(normalizeAccess(dto.getAccess()));
-        tournament.setStatus(normalizeStatus(dto.getStatus()));
+        // Статус нового турнира всегда начинается с DRAFT.
+        // Клиент не должен задавать lifecycle-статус при создании.
+        tournament.setStatus(TournamentStatus.DRAFT.value());
         tournament.setGameType(gameType);
         tournament.setOrganizer(organizer);
         tournament.setStartDate(dto.getStartDate());
@@ -179,11 +185,8 @@ public class TournamentService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
-        if (currentUsername == null
-                || tournament.getOrganizer() == null
-                || !currentUsername.equals(tournament.getOrganizer().getUsername())) {
-            throw new RuntimeException("Only tournament organizer can update tournament");
-        }
+        User currentUser = getUserByUsername(currentUsername);
+        assertCanManageTournament(tournament, currentUser);
 
         if (dto.getTitle() != null && !dto.getTitle().isBlank()) {
             if (!dto.getTitle().equals(tournament.getTitle())
@@ -205,9 +208,12 @@ public class TournamentService {
             tournament.setAccess(dto.getAccess().toUpperCase());
         }
 
-        if (dto.getStatus() != null && !dto.getStatus().isBlank()) {
-            tournament.setStatus(dto.getStatus().toUpperCase());
-        }
+        // ВАЖНО: статус турнира нельзя менять через PUT /api/tournaments/{id}.
+        // Для lifecycle-изменений используются только action endpoint-ы:
+        // POST /api/tournaments/{id}/open-registration
+        // POST /api/tournaments/{id}/start
+        // POST /api/tournaments/{id}/cancel
+        // POST /api/tournaments/{id}/finish
 
         if (dto.getGameTypeId() != null) {
             GameType gameType = gameTypeRepository.findById(dto.getGameTypeId())
@@ -450,15 +456,9 @@ public class TournamentService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
 
-        if (currentUsername == null
-                || tournament.getOrganizer() == null
-                || !currentUsername.equals(tournament.getOrganizer().getUsername())) {
-            throw new RuntimeException("Only tournament organizer can start tournament");
-        }
-
-        if (!"REGISTRATION_OPEN".equalsIgnoreCase(tournament.getStatus())) {
-            throw new RuntimeException("Tournament cannot be started");
-        }
+        User currentUser = getUserByUsername(currentUsername);
+        assertCanManageTournament(tournament, currentUser);
+        assertStatusTransitionAllowed(tournament, TournamentStatus.IN_PROGRESS);
 
     
 
@@ -475,10 +475,89 @@ public class TournamentService {
             startTeamTournament(tournament);
         }
 
-        tournament.setStatus("IN_PROGRESS");
+        tournament.setStatus(TournamentStatus.IN_PROGRESS.value());
         Tournament saved = tournamentRepository.save(tournament);
         return toFullDTO(saved, true);
     }
+    public List<Map<String, Object>> getTournamentParticipants(Long tournamentId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+
+        if ("TEAM".equalsIgnoreCase(tournament.getParticipantType())) {
+            return teamParticipantRepository.findByTournamentIdOrderBySeedAsc(tournamentId)
+                    .stream()
+                    .map(participant -> {
+                        Map<String, Object> item = new LinkedHashMap<>();
+                        Team team = participant.getTeam();
+                        item.put("id", participant.getId());
+                        item.put("participantType", "TEAM");
+                        item.put("teamId", team != null ? team.getId() : null);
+                        item.put("name", team != null ? team.getName() : null);
+                        item.put("seed", participant.getSeed());
+                        item.put("status", participant.getStatus());
+                        return item;
+                    })
+                    .toList();
+        }
+
+        return soloParticipantRepository.findByTournamentIdOrderBySeedAsc(tournamentId)
+                .stream()
+                .map(participant -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    User player = participant.getPlayer();
+                    item.put("id", participant.getId());
+                    item.put("participantType", "SOLO");
+                    item.put("userId", player != null ? player.getId() : null);
+                    item.put("name", player != null ? player.getUsername() : null);
+                    item.put("seed", participant.getSeed());
+                    item.put("status", participant.getStatus());
+                    return item;
+                })
+                .toList();
+    }
+
+    @Transactional
+    public TournamentFullDTO openRegistration(Long tournamentId, String currentUsername) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+
+        User currentUser = getUserByUsername(currentUsername);
+        assertCanManageTournament(tournament, currentUser);
+        assertStatusTransitionAllowed(tournament, TournamentStatus.REGISTRATION_OPEN);
+
+        tournament.setStatus(TournamentStatus.REGISTRATION_OPEN.value());
+        Tournament saved = tournamentRepository.save(tournament);
+        return toFullDTO(saved, true);
+    }
+
+    @Transactional
+    public TournamentFullDTO cancelTournament(Long tournamentId, String currentUsername) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+
+        User currentUser = getUserByUsername(currentUsername);
+        assertCanManageTournament(tournament, currentUser);
+        assertStatusTransitionAllowed(tournament, TournamentStatus.CANCELLED);
+
+        tournament.setStatus(TournamentStatus.CANCELLED.value());
+        Tournament saved = tournamentRepository.save(tournament);
+        return toFullDTO(saved, true);
+    }
+
+    @Transactional
+    public TournamentFullDTO finishTournament(Long tournamentId, String currentUsername) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+
+        User currentUser = getUserByUsername(currentUsername);
+        assertCanManageTournament(tournament, currentUser);
+        assertStatusTransitionAllowed(tournament, TournamentStatus.FINISHED);
+
+        tournament.setStatus(TournamentStatus.FINISHED.value());
+        Tournament saved = tournamentRepository.save(tournament);
+        return toFullDTO(saved, true);
+    }
+
 
     private void startSoloTournament(Tournament tournament) {
         List<TournamentSoloParticipant> participants = soloParticipantRepository.findByTournamentIdOrderBySeedAsc(tournament.getId());
@@ -673,6 +752,59 @@ public class TournamentService {
 
         matchTeamRepository.save(nextMatch);
     }
+    private User getUserByUsername(String currentUsername) {
+        if (currentUsername == null || currentUsername.isBlank()) {
+            throw new AccessDeniedException("Authentication required");
+        }
+
+        return userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new AccessDeniedException("Authentication required"));
+    }
+
+    private void assertCanManageTournament(Tournament tournament, User currentUser) {
+        boolean isAdmin = currentUser != null && "ADMIN".equalsIgnoreCase(currentUser.getRole());
+        boolean isOrganizer = tournament.getOrganizer() != null
+                && currentUser != null
+                && tournament.getOrganizer().getId().equals(currentUser.getId());
+
+        if (!isAdmin && !isOrganizer) {
+            throw new AccessDeniedException("Only organizer or admin can manage this tournament");
+        }
+    }
+
+    private void assertStatusTransitionAllowed(Tournament tournament, TournamentStatus targetStatus) {
+        TournamentStatus currentStatus = TournamentStatus.from(tournament.getStatus());
+
+        boolean allowed = switch (currentStatus) {
+            case DRAFT -> targetStatus == TournamentStatus.REGISTRATION_OPEN;
+            case REGISTRATION_OPEN -> targetStatus == TournamentStatus.IN_PROGRESS
+                    || targetStatus == TournamentStatus.CANCELLED;
+            case IN_PROGRESS -> targetStatus == TournamentStatus.FINISHED
+                    || targetStatus == TournamentStatus.CANCELLED;
+            case FINISHED, CANCELLED -> false;
+        };
+
+        if (!allowed) {
+            throw new IllegalStateException("Tournament status transition "
+                    + currentStatus.value() + " -> " + targetStatus.value() + " is not allowed");
+        }
+    }
+
+    private boolean isOrganizerOrAdmin(Tournament tournament, String currentUsername) {
+        if (currentUsername == null || currentUsername.isBlank()) {
+            return false;
+        }
+
+        return userRepository.findByUsername(currentUsername)
+                .map(user -> {
+                    boolean isAdmin = "ADMIN".equalsIgnoreCase(user.getRole());
+                    boolean isOrganizer = tournament.getOrganizer() != null
+                            && tournament.getOrganizer().getId().equals(user.getId());
+                    return isAdmin || isOrganizer;
+                })
+                .orElse(false);
+    }
+
 
     private void validateCreateTournament(CreateTournamentDTO dto) {
         if (dto.getTitle() == null || dto.getTitle().isBlank()) {
@@ -703,7 +835,7 @@ public class TournamentService {
     }
 
     private void validateTournamentJoinCommon(Tournament tournament) {
-        if (tournament.getStatus() == null || !"REGISTRATION_OPEN".equalsIgnoreCase(tournament.getStatus())) {
+        if (tournament.getStatus() == null || !TournamentStatus.REGISTRATION_OPEN.value().equalsIgnoreCase(tournament.getStatus())) {
             throw new RuntimeException("Tournament registration is closed");
         }
         if (tournament.getAccess() != null && !"OPEN".equalsIgnoreCase(tournament.getAccess())) {
@@ -750,8 +882,8 @@ public class TournamentService {
     }
 
     private String normalizeStatus(String value) {
-        if (value == null || value.isBlank()) return "DRAFT";
-        return value.toUpperCase();
+        if (value == null || value.isBlank()) return TournamentStatus.DRAFT.value();
+        return TournamentStatus.from(value).value();
     }
 
     private int getCurrentParticipantsCount(Tournament tournament) {

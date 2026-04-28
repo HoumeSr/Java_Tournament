@@ -18,7 +18,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "Notification")
+@Table(name = "\"Notification\"")
 public class Notification {
 
     @Id
@@ -48,6 +48,9 @@ public class Notification {
     @Column(name = "\"status\"", nullable = false)
     private String status;
 
+    @Column(name = "\"read\"", nullable = false)
+    private Boolean read;
+
     public Notification() {
     }
 
@@ -57,6 +60,7 @@ public class Notification {
         if (message == null) message = "Вы приглашены в команду";
         if (type == null) type = "TEAM_INVITE";
         if (status == null) status = "PENDING";
+        if (read == null) read = false;
     }
 
     public Long getId() { return id; }
@@ -67,6 +71,7 @@ public class Notification {
     public String getType() { return type; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public String getStatus() { return status; }
+    public Boolean getRead() { return read; }
 
     public void setId(Long id) { this.id = id; }
     public void setUser(User user) { this.user = user; }
@@ -76,6 +81,7 @@ public class Notification {
     public void setType(String type) { this.type = type; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setStatus(String status) { this.status = status; }
+    public void setRead(Boolean read) { this.read = read; }
 
     @Override
     public boolean equals(Object o) {

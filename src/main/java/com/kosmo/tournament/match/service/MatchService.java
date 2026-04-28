@@ -3,6 +3,7 @@ package com.kosmo.tournament.match.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import com.kosmo.tournament.team.entity.TeamMember;
 import com.kosmo.tournament.team.repository.TeamMemberRepository;
 import com.kosmo.tournament.team.repository.TeamRepository;
 import com.kosmo.tournament.tournament.entity.Tournament;
+import com.kosmo.tournament.tournament.model.TournamentStatus;
 import com.kosmo.tournament.tournament.repository.TournamentRepository;
 import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
@@ -111,9 +113,8 @@ public class MatchService {
         }
 
         match.setWinnerPlayer(winner);
-        match.setStatus(dto.getStatus() != null && !dto.getStatus().isBlank()
-                ? dto.getStatus().toUpperCase()
-                : "FINISHED");
+        // Результат матча всегда завершает матч. Статус нельзя свободно менять из DTO.
+        match.setStatus("FINISHED");
         MatchSolo saved = matchSoloRepository.save(match);
 
         propagateSoloWinner(saved, winner);
@@ -142,9 +143,8 @@ public class MatchService {
         }
 
         match.setWinnerTeam(winner);
-        match.setStatus(dto.getStatus() != null && !dto.getStatus().isBlank()
-                ? dto.getStatus().toUpperCase()
-                : "FINISHED");
+        // Результат матча всегда завершает матч. Статус нельзя свободно менять из DTO.
+        match.setStatus("FINISHED");
         MatchTeam saved = matchTeamRepository.save(match);
 
         propagateTeamWinner(saved, winner);
@@ -152,16 +152,83 @@ public class MatchService {
 
         return toTeamDTO(saved, currentUsername);
     }
+    @Transactional
+    public MatchDTO startMatch(String matchType, Long matchId, String currentUsername) {
+        if ("TEAM".equalsIgnoreCase(matchType)) {
+            MatchTeam match = matchTeamRepository.findById(matchId)
+                    .orElseThrow(() -> new RuntimeException("Team match not found"));
+            validateCanManageMatch(match.getTournament(), currentUsername);
+            if (!"SCHEDULED".equalsIgnoreCase(match.getStatus())) {
+                throw new RuntimeException("Only SCHEDULED match can be started");
+            }
+            if (match.getTeam1() == null || match.getTeam2() == null) {
+                throw new RuntimeException("Match does not have two teams");
+            }
+            match.setStatus("IN_PROGRESS");
+            return toTeamDTO(matchTeamRepository.save(match), currentUsername);
+        }
+
+        MatchSolo match = matchSoloRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Solo match not found"));
+        validateCanManageMatch(match.getTournament(), currentUsername);
+        if (!"SCHEDULED".equalsIgnoreCase(match.getStatus())) {
+            throw new RuntimeException("Only SCHEDULED match can be started");
+        }
+        if (match.getPlayer1() == null || match.getPlayer2() == null) {
+            throw new RuntimeException("Match does not have two players");
+        }
+        match.setStatus("IN_PROGRESS");
+        return toSoloDTO(matchSoloRepository.save(match), currentUsername);
+    }
+
+    @Transactional
+    public MatchDTO cancelMatch(String matchType, Long matchId, String currentUsername) {
+        if ("TEAM".equalsIgnoreCase(matchType)) {
+            MatchTeam match = matchTeamRepository.findById(matchId)
+                    .orElseThrow(() -> new RuntimeException("Team match not found"));
+            validateCanManageMatch(match.getTournament(), currentUsername);
+            if ("FINISHED".equalsIgnoreCase(match.getStatus())) {
+                throw new RuntimeException("Finished match cannot be cancelled");
+            }
+            match.setStatus("CANCELLED");
+            return toTeamDTO(matchTeamRepository.save(match), currentUsername);
+        }
+
+        MatchSolo match = matchSoloRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Solo match not found"));
+        validateCanManageMatch(match.getTournament(), currentUsername);
+        if ("FINISHED".equalsIgnoreCase(match.getStatus())) {
+            throw new RuntimeException("Finished match cannot be cancelled");
+        }
+        match.setStatus("CANCELLED");
+        return toSoloDTO(matchSoloRepository.save(match), currentUsername);
+    }
+
+    @Transactional
+    public MatchDTO resetMatchResult(String matchType, Long matchId, String currentUsername) {
+        if ("TEAM".equalsIgnoreCase(matchType)) {
+            MatchTeam match = matchTeamRepository.findById(matchId)
+                    .orElseThrow(() -> new RuntimeException("Team match not found"));
+            validateCanManageMatch(match.getTournament(), currentUsername);
+            match.setWinnerTeam(null);
+            match.setStatus(match.getTeam1() != null && match.getTeam2() != null ? "IN_PROGRESS" : "SCHEDULED");
+            return toTeamDTO(matchTeamRepository.save(match), currentUsername);
+        }
+
+        MatchSolo match = matchSoloRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Solo match not found"));
+        validateCanManageMatch(match.getTournament(), currentUsername);
+        match.setWinnerPlayer(null);
+        match.setStatus(match.getPlayer1() != null && match.getPlayer2() != null ? "IN_PROGRESS" : "SCHEDULED");
+        return toSoloDTO(matchSoloRepository.save(match), currentUsername);
+    }
+
 
     private void validateMatchOwnershipAndState(Tournament tournament,
                                                 String currentUsername,
                                                 String matchStatus,
                                                 boolean hasTwoParticipants) {
-        if (currentUsername == null
-                || tournament.getOrganizer() == null
-                || !currentUsername.equals(tournament.getOrganizer().getUsername())) {
-            throw new RuntimeException("Only tournament organizer can update match result");
-        }
+        validateCanManageMatch(tournament, currentUsername);
 
         if (!"IN_PROGRESS".equalsIgnoreCase(tournament.getStatus())) {
             throw new RuntimeException("Tournament is not in progress");
@@ -175,6 +242,31 @@ public class MatchService {
             throw new RuntimeException("Match does not have two participants");
         }
     }
+    private void validateCanManageMatch(Tournament tournament, String currentUsername) {
+        User currentUser = getUserByUsername(currentUsername);
+        assertCanManageTournament(tournament, currentUser);
+    }
+
+    private User getUserByUsername(String currentUsername) {
+        if (currentUsername == null || currentUsername.isBlank()) {
+            throw new AccessDeniedException("Authentication required");
+        }
+
+        return userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new AccessDeniedException("Authentication required"));
+    }
+
+    private void assertCanManageTournament(Tournament tournament, User currentUser) {
+        boolean isAdmin = currentUser != null && "ADMIN".equalsIgnoreCase(currentUser.getRole());
+        boolean isOrganizer = tournament.getOrganizer() != null
+                && currentUser != null
+                && tournament.getOrganizer().getId().equals(currentUser.getId());
+
+        if (!isAdmin && !isOrganizer) {
+            throw new AccessDeniedException("Only organizer or admin can manage this tournament");
+        }
+    }
+
 
     private void propagateSoloWinner(MatchSolo finishedMatch, User winner) {
         MatchSolo next = finishedMatch.getNextMatch();
@@ -221,8 +313,8 @@ public class MatchService {
             boolean allFinished = matchSoloRepository.findByTournamentId(tournament.getId())
                     .stream()
                     .allMatch(match -> "FINISHED".equalsIgnoreCase(match.getStatus()));
-            if (allFinished) {
-                tournament.setStatus("FINISHED");
+            if (allFinished && TournamentStatus.IN_PROGRESS.value().equalsIgnoreCase(tournament.getStatus())) {
+                tournament.setStatus(TournamentStatus.FINISHED.value());
                 tournamentRepository.save(tournament);
             }
             return;
@@ -231,8 +323,8 @@ public class MatchService {
         boolean allFinished = matchTeamRepository.findByTournamentId(tournament.getId())
                 .stream()
                 .allMatch(match -> "FINISHED".equalsIgnoreCase(match.getStatus()));
-        if (allFinished) {
-            tournament.setStatus("FINISHED");
+        if (allFinished && TournamentStatus.IN_PROGRESS.value().equalsIgnoreCase(tournament.getStatus())) {
+            tournament.setStatus(TournamentStatus.FINISHED.value());
             tournamentRepository.save(tournament);
         }
     }
