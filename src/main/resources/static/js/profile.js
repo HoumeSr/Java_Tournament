@@ -47,7 +47,7 @@ $(function () {
                     const avatarUrl = resolveImageUrl(data.user.imageUrl);
                     $auth.html(`
                         <div class="profile-icon" id="profileIcon" title="Мой профиль">
-                            ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="Аватар">` : '<i class="fas fa-user-circle"></i>'}
+                            <i class="fas fa-user-circle"></i>
                         </div>
                     `);
                     $('#profileIcon').on('click', function () { window.location.href = '/profile'; });
@@ -227,8 +227,8 @@ $(function () {
     }
 
     function initLogout() {
-        $('#logoutBtn').on('click', function () {
-            $.post('/logout').always(function () { window.location.href = '/login'; });
+        $('#logoutBtn').on('click', async function () {
+            await auth.logout();
         });
     }
 
