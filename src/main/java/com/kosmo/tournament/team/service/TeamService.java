@@ -232,8 +232,10 @@ public class TeamService {
         User currentUser = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("Current user not found"));
 
-        if (team.getCaptain() == null || !team.getCaptain().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Only captain can invite users");
+        boolean canInvite = canInviteToTeam(teamId, team, currentUser);
+
+        if (!canInvite) {
+            throw new RuntimeException("Only team members or admin can invite users");
         }
 
         User invitedUser = userRepository.findById(invitedUserId)
@@ -310,6 +312,21 @@ public class TeamService {
         }
 
         notificationService.markDeclined(notification);
+    }
+
+    private boolean canInviteToTeam(Long teamId, Team team, User currentUser) {
+        if (currentUser == null) {
+            return false;
+        }
+
+        boolean isCaptain = team.getCaptain() != null
+                && team.getCaptain().getId().equals(currentUser.getId());
+
+        boolean isMember = teamMemberRepository.existsByTeamIdAndPlayerId(teamId, currentUser.getId());
+
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(currentUser.getRole());
+
+        return isCaptain || isMember || isAdmin;
     }
 
     private void validateTeamCapacity(Team team) {

@@ -28,7 +28,7 @@ import com.kosmo.tournament.tournament.dto.UpdateTournamentDTO;
 import com.kosmo.tournament.tournament.service.TournamentService;
 
 @RestController
-@RequestMapping("/api/tournaments")
+@RequestMapping({"/api/tournaments", "/api/tournament"})
 public class TournamentApiController {
 
     private final TournamentService tournamentService;

@@ -56,6 +56,8 @@ public class SecurityConfig {
                                 "/api/tournaments/*",
                                 "/api/tournaments/*/matches",
                                 "/api/tournaments/*/participants",
+                                "/api/tournaments/*/participants/count",
+                                "/api/tournament/*/participants/count",
                                 "/api/tournaments/status/*",
                                 "/api/tournaments/game/*",
                                 "/api/tournaments/search"

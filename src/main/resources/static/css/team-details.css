@@ -592,12 +592,15 @@ main.container {
     font-size: 0.9rem;
     font-weight: 500;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-    z-index: 1000;
+    z-index: 30000;
+    pointer-events: none;
     backdrop-filter: blur(8px);
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s;
-    white-space: nowrap;
+    white-space: normal;
+    max-width: min(90vw, 720px);
+    text-align: center;
 }
 
 /* ========== АДАПТИВ ========== */
