@@ -1711,3 +1711,9 @@ body {
     border-color: var(--danger);
     color: var(--danger);
 }
+
+/* ========== МИНИМАЛЬНОЕ ВЫДЕЛЕНИЕ ========== */
+.bracket .round:last-child .team.winner .team-name::before {
+    content: '🏆 ';
+    font-size: 0.9rem;
+}

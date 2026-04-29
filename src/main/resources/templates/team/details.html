@@ -4,15 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title th:text="${pageTitle} + ' — Бобры'">Команда — Бобры</title>
-    
+
     <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+
     <link th:href="@{/css/team-details.css}" rel="stylesheet">
-    <link th:href="@{/css/team-notifications.css}" rel="stylesheet">
     <link th:href="@{/css/team-modal.css}" rel="stylesheet">
-    <link th:href="@{/css/notifications.css}" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body>
@@ -42,23 +40,54 @@
 
     <div th:unless="${error}" th:if="${team != null}">
         <div class="team-info-card">
-            <div class="team-avatar team-avatar-placeholder">
-                <i class="fas fa-users"></i>
-            </div>
-            <div class="team-details">
-                <h1 th:text="${team.name}">Название команды</h1>
-                <div class="team-meta">
-                    <div class="meta-item">
-                        <i class="fas fa-crown"></i>
-                        <span>Капитан: <strong th:text="${team.captainUsername}">Captain</strong></span>
+            <div class="team-main-row">
+                <div class="team-avatar team-avatar-placeholder">
+                    <i class="fas fa-users"></i>
+                </div>
+
+                <div class="team-details">
+                    <div class="team-title-row">
+                        <div>
+                            <p class="team-label">Команда</p>
+                            <h1 th:text="${team.name}">Название команды</h1>
+                        </div>
+
+                        <div class="team-size-badge">
+                            <i class="fas fa-users"></i>
+                            <span th:text="${team.currentMembersCount} + ' / ' + ${team.maxMembersCount}">0/0</span>
+                        </div>
                     </div>
-                    <div class="meta-item">
-                        <i class="fas fa-calendar-alt"></i>
-                        <span>Создана: <strong th:text="${#temporals.format(team.createdAt, 'dd.MM.yyyy')}">01.01.2024</strong></span>
-                    </div>
-                    <div class="meta-item">
-                        <i class="fas fa-users"></i>
-                        <span>Участники: <strong th:text="${team.currentMembersCount} + ' / ' + ${team.maxMembersCount}">0/0</strong></span>
+
+                    <div class="team-meta-grid">
+                        <div class="meta-card">
+                            <div class="meta-icon">
+                                <i class="fas fa-crown"></i>
+                            </div>
+                            <div>
+                                <span class="meta-label">Капитан</span>
+                                <strong th:text="${team.captainUsername}">Captain</strong>
+                            </div>
+                        </div>
+
+                        <div class="meta-card">
+                            <div class="meta-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div>
+                                <span class="meta-label">Дата создания</span>
+                                <strong th:text="${#temporals.format(team.createdAt, 'dd.MM.yyyy')}">01.01.2024</strong>
+                            </div>
+                        </div>
+
+                        <div class="meta-card">
+                            <div class="meta-icon">
+                                <i class="fas fa-user-friends"></i>
+                            </div>
+                            <div>
+                                <span class="meta-label">Участники</span>
+                                <strong th:text="${team.currentMembersCount} + ' / ' + ${team.maxMembersCount}">0/0</strong>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -69,44 +98,66 @@
                 <h2><i class="fas fa-user-friends"></i> Участники команды</h2>
                 <span class="members-count" th:text="${team.currentMembersCount} + ' / ' + ${team.maxMembersCount}">0/0</span>
             </div>
-            
+
             <div class="members-grid">
                 <div th:each="member : ${team.members}" class="member-card">
-                    <div class="member-avatar">
-                        <img th:if="${member.imageUrl}" th:src="${member.imageUrl}" alt="avatar">
-                        <i th:unless="${member.imageUrl}" class="fas fa-user-circle"></i>
+                    <div class="member-main">
+                        <div class="member-avatar">
+                            <img th:if="${member.imageUrl}" th:src="${member.imageUrl}" alt="avatar">
+                            <i th:unless="${member.imageUrl}" class="fas fa-user-circle"></i>
+                        </div>
+
+                        <div class="member-info">
+                            <div class="member-top-row">
+                                <span class="member-name" th:text="${member.username}">Username</span>
+                                <span class="member-role"
+                                      th:classappend="'role-' + ${#strings.toLowerCase(member.role)}"
+                                      th:text="${member.role}">
+                                    MEMBER
+                                </span>
+                            </div>
+
+                            <div class="member-joined">
+                                <i class="fas fa-clock"></i>
+                                <span>В команде с</span>
+                                <strong th:text="${#temporals.format(member.joinedAt, 'dd.MM.yyyy')}">01.01.2024</strong>
+                            </div>
+                        </div>
                     </div>
-                    <div class="member-info">
-                        <span class="member-name" th:text="${member.username}">Username</span>
-                        <span class="member-role" th:classappend="'role-' + ${#strings.toLowerCase(member.role)}" th:text="${member.role}">MEMBER</span>
-                    </div>
-                    <div class="member-joined">
-                        <i class="fas fa-clock"></i>
-                        <span th:text="${#temporals.format(member.joinedAt, 'dd.MM.yyyy')}">01.01.2024</span>
-                    </div>
-                    <button th:if="${isCaptain and member.userId != team.captainId}" class="btn-kick" th:data-user-id="${member.userId}">
+
+                    <button th:if="${isCaptain and member.userId != team.captainId}"
+                            class="btn-kick"
+                            th:data-user-id="${member.userId}"
+                            title="Исключить участника">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
-                
+
                 <div th:if="${canInvite}" class="member-card add-member-card" id="addMemberCard">
-                    <div class="member-avatar add-avatar">
-                        <i class="fas fa-plus"></i>
+                    <div class="member-main">
+                        <div class="member-avatar add-avatar">
+                            <i class="fas fa-plus"></i>
+                        </div>
+
+                        <div class="member-info">
+                            <div class="member-top-row">
+                                <span class="member-name">Добавить участника</span>
+                                <span class="member-role add-role">INVITE</span>
+                            </div>
+
+                            <div class="member-joined">
+                                <i class="fas fa-envelope"></i>
+                                <span>Пригласить игрока в команду</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="member-info">
-                        <span class="member-name">Добавить участника</span>
-                        <span class="member-role">Пригласить в команду</span>
-                    </div>
-                    <div class="member-joined">
-                        <i class="fas fa-envelope"></i>
-                        <span>По ссылке</span>
-                    </div>
-                    <button class="btn-add" id="addMemberBtn">
+
+                    <button class="btn-add" id="addMemberBtn" title="Пригласить участника">
                         <i class="fas fa-user-plus"></i>
                     </button>
                 </div>
             </div>
-            
+
             <div class="empty-members" th:unless="${team.members != null and !team.members.isEmpty()}" th:if="not ${isCaptain}">
                 <i class="fas fa-user-friends"></i>
                 <p>В команде пока нет участников</p>
@@ -118,7 +169,7 @@
                 <i class="fas fa-sign-in-alt"></i> Вступить в команду
             </button>
         </div>
-        
+
         <div class="leave-section" th:if="${isMember and not isCaptain}">
             <button class="btn-leave" id="leaveTeamBtn">
                 <i class="fas fa-sign-out-alt"></i> Покинуть команду
@@ -142,7 +193,6 @@
     </div>
 </footer>
 
-<!-- Модальное окно приглашения -->
 <div id="inviteModal" class="modal" style="display: none;">
     <div class="modal-overlay"></div>
     <div class="modal-container">
@@ -155,7 +205,7 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        
+
         <div class="modal-body">
             <div class="form-group">
                 <label>
@@ -163,8 +213,8 @@
                     Поиск игрока
                     <span class="required">*</span>
                 </label>
-                <input type="text" 
-                       id="usernameOrEmail" 
+                <input type="text"
+                       id="usernameOrEmail"
                        placeholder="Введите имя пользователя"
                        autocomplete="off">
                 <span class="input-hint">
@@ -172,9 +222,9 @@
                     Введите минимум 2 символа для поиска
                 </span>
             </div>
-            
+
             <div id="searchResults" class="search-results" style="display: none;"></div>
-            
+
             <div id="selectedUserContainer" style="display: none;">
                 <div class="selected-user-header">
                     <i class="fas fa-user-check"></i>
@@ -211,10 +261,9 @@
     /*]]>*/
 </script>
 
+<script th:src="@{/js/team-details.js}"></script>
 <script th:src="@{/js/team-common.js}"></script>
-<script th:src="@{/js/team-notifications.js}"></script>
 <script th:src="@{/js/team-modal.js}"></script>
 <script th:src="@{/js/team-actions.js}"></script>
-<script th:src="@{/js/notifications.js}"></script>
 </body>
 </html>
