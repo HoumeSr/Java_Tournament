@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.kosmo.tournament.user.dto.ChangePasswordDTO;
 import com.kosmo.tournament.user.dto.CreateUserDTO;
@@ -117,8 +119,8 @@ public class UserApiController {
         }
     }
 
-    @PostMapping("/avatar")
-    public ResponseEntity<?> updateAvatar(@RequestBody UpdateUserDTO dto,
+    @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateAvatar(@RequestParam("file") MultipartFile file,
                                           Authentication authentication) {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -126,10 +128,17 @@ public class UserApiController {
         }
 
         try {
-            userService.updateAvatar(authentication.getName(), dto.getImageUrl());
-            return ResponseEntity.ok(Map.of("success", true, "message", "Аватар обновлён"));
+            String imageUrl = userService.updateAvatar(authentication.getName(), file);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Аватар обновлён",
+                    "imageUrl", imageUrl
+            ));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
         }
     }
 
