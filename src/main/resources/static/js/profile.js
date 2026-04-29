@@ -1,4 +1,3 @@
-/* profile.js — jQuery + AJAX, аккуратно работает только с UserProfileDTO */
 $(function () {
     let currentProfile = null;
     let currentAuthUser = null;
@@ -26,7 +25,7 @@ $(function () {
 
     function resolveImageUrl(imageUrl) {
         if (!imageUrl || imageUrl === 'null' || imageUrl === 'DEFAULT_USER_IMAGE.jpg') return null;
-        if (/^https?:\/\//.test(imageUrl) || imageUrl.startsWith('/') || imageUrl.startsWith('data:')) return imageUrl;
+        if (/^https?:\/\//.test(imageUrl) || imageUrl.startsWith('/')) return imageUrl;
         return '/images/' + imageUrl;
     }
 
@@ -168,29 +167,46 @@ $(function () {
     }
 
     function initAvatarChange() {
-        $('#changeAvatarBtn').on('click', function () { $('#avatarUpload').trigger('click'); });
+        $('#changeAvatarBtn').on('click', function () {
+            $('#avatarUpload').trigger('click');
+        });
+
         $('#avatarUpload').on('change', function (event) {
             const file = event.target.files && event.target.files[0];
             if (!file || !currentProfile || !currentProfile.owner) return;
-            if (file.size > 5 * 1024 * 1024) return showToast('❌ Файл должен быть до 5MB', true);
 
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const imageUrl = e.target.result;
-                $.ajax({
-                    url: '/api/users/avatar',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ imageUrl: imageUrl })
-                }).done(function () {
-                    setAvatar(imageUrl);
-                    updateHeaderAuth();
-                    showToast('✅ Аватар обновлён');
-                }).fail(function (xhr) {
-                    showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось обновить аватар'), true);
-                });
-            };
-            reader.readAsDataURL(file);
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('❌ Файл должен быть до 5MB', true);
+                $(this).val('');
+                return;
+            }
+
+            const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!allowed.includes(file.type)) {
+                showToast('❌ Разрешены только JPG, PNG и WEBP', true);
+                $(this).val('');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            $.ajax({
+                url: '/api/users/avatar',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false
+            }).done(function (response) {
+                const imageUrl = response.imageUrl;
+                setAvatar(imageUrl);
+                updateHeaderAuth();
+                showToast('✅ Аватар обновлён');
+            }).fail(function (xhr) {
+                showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось обновить аватар'), true);
+            }).always(() => {
+                $('#avatarUpload').val('');
+            });
         });
     }
 
@@ -228,7 +244,9 @@ $(function () {
 
     function initLogout() {
         $('#logoutBtn').on('click', function () {
-            $.post('/logout').always(function () { window.location.href = '/login'; });
+            $.post('/api/auth/logout').always(function () {
+                window.location.href = '/login';
+            });
         });
     }
 

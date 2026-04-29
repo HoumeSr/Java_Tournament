@@ -13,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.kosmo.tournament.storage.service.FileStorageService;
 
 @RestController
-@RequestMapping("/api/files")
+@RequestMapping
 public class FileUploadController {
 
     private final FileStorageService fileStorageService;
@@ -22,7 +22,7 @@ public class FileUploadController {
         this.fileStorageService = fileStorageService;
     }
 
-    @PostMapping("/upload")
+    @PostMapping({"/api/files/upload", "/api/images/upload"})
     public ResponseEntity<?> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam(defaultValue = "common") String folder,
@@ -39,7 +39,9 @@ public class FileUploadController {
             String imageUrl = fileStorageService.uploadImage(file, folder);
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "imageUrl", imageUrl
+                    "url", imageUrl,
+                    "imageUrl", imageUrl,
+                    "message", "Image uploaded successfully"
             ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of(

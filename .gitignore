@@ -31,3 +31,4 @@ build/
 
 ### VS Code ###
 .vscode/
+minio_data/.minio.sys/*

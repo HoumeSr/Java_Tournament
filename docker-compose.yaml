@@ -3,8 +3,8 @@ services:
     image: minio/minio:latest
     container_name: minio
     ports:
-      - "9000:9000"   # API
-      - "9001:9001"   # Web UI
+      - "9000:9000"
+      - "9001:9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
@@ -23,10 +23,14 @@ services:
         sleep 2;
       done;
 
-      echo 'Creating bucket...';
+      echo 'Creating bucket ${MINIO_BUCKET}...';
       mc mb local/${MINIO_BUCKET} || true;
 
-      echo 'Setting public read (optional)...';
+      echo 'Creating category prefixes...';
+      printf '' | mc pipe local/${MINIO_BUCKET}/profiles/.keep || true;
+      printf '' | mc pipe local/${MINIO_BUCKET}/games/.keep || true;
+
+      echo 'Setting public read policy...';
       mc anonymous set download local/${MINIO_BUCKET} || true;
 
       echo 'MinIO init done';

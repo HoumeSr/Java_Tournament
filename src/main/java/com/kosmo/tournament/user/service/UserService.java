@@ -1,13 +1,6 @@
 package com.kosmo.tournament.user.service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.kosmo.tournament.storage.service.FileStorageService;
 import com.kosmo.tournament.user.dto.ChangePasswordDTO;
 import com.kosmo.tournament.user.dto.CreateUserDTO;
 import com.kosmo.tournament.user.dto.ShortUserDTO;
@@ -16,20 +9,35 @@ import com.kosmo.tournament.user.dto.UserGameStatsDTO;
 import com.kosmo.tournament.user.dto.UserProfileDTO;
 import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 public class UserService {
 
+    private static final Pattern EMAIL_PATTERN =
+            Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+
     private final UserRepository userRepository;
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
+    private final FileStorageService fileStorageService;
 
     public UserService(UserRepository userRepository,
                        JdbcTemplate jdbcTemplate,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       FileStorageService fileStorageService) {
         this.userRepository = userRepository;
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
+        this.fileStorageService = fileStorageService;
     }
 
     public UserProfileDTO getUserProfile(Long requestedUserId, String currentUsername) {
@@ -167,16 +175,15 @@ public class UserService {
     }
 
     @Transactional
-    public void updateAvatar(String currentUsername, String imageUrl) {
+    public String updateAvatar(String currentUsername, MultipartFile file) {
         User user = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (imageUrl == null || imageUrl.isBlank()) {
-            throw new RuntimeException("Image url is required");
-        }
-
-        user.setImageUrl(imageUrl.trim());
+        String imageUrl = fileStorageService.uploadProfileImage(file, user.getId());
+        user.setImageUrl(imageUrl);
         userRepository.save(user);
+
+        return imageUrl;
     }
 
     @Transactional
@@ -265,17 +272,16 @@ public class UserService {
         );
     }
 
-    private boolean isValidEmail(String email) {
-        return email.matches("^[^\\s@]+@([^\\s@.,]+\\.)+[^\\s@.,]{2,}$");
-    }
-
     private ShortUserDTO toShortUserDTO(User user) {
         ShortUserDTO dto = new ShortUserDTO();
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());
-        dto.setRole(user.getRole());
         dto.setCountry(user.getCountry());
         dto.setImageUrl(user.getImageUrl());
         return dto;
+    }
+
+    private boolean isValidEmail(String email) {
+        return EMAIL_PATTERN.matcher(email).matches();
     }
 }
