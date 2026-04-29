@@ -30,30 +30,50 @@ $(function () {
         return '🏆';
     }
 
-    function updateAuthButtons() {
-        $.ajax({ url: '/api/auth/check', method: 'GET', dataType: 'json' })
-            .done(function (data) {
-                const $auth = $('#authButtons');
-                if (!$auth.length) return;
-                if (data.authenticated && data.user) {
-                    const imageUrl = resolveImageUrl(data.user.imageUrl);
-                    $auth.html(`
-                        <div class="profile-icon" id="profileIcon">
-                            ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
-                        </div>
-                    `);
-                    $('#profileIcon').on('click', function () { window.location.href = '/profile'; });
-                    $('#createTeamFab').show();
-                } else {
-                    $auth.html(`
-                        <button class="btn-outline" id="registerBtn">Регистрация</button>
-                        <button class="btn-primary" id="loginBtn">Вход</button>
-                    `);
-                    $('#registerBtn').on('click', function () { window.location.href = '/register'; });
-                    $('#loginBtn').on('click', function () { window.location.href = '/login'; });
-                    $('#createTeamFab').show();
-                }
+    async function updateAuthButtons() {
+        const $auth = $('#authButtons');
+        if (!$auth.length) return;
+        
+        // Используем auth.check() через api.get
+        try {
+            const data = await window.api.get('/api/auth/check');
+            
+            if (data && data.authenticated && data.user) {
+                const imageUrl = resolveImageUrl(data.user.imageUrl);
+                $auth.html(`
+                    <div class="profile-icon" id="profileIcon">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                `);
+                $('#profileIcon').off('click').on('click', function () { 
+                    window.location.href = '/profile'; 
+                });
+            } else {
+                $auth.html(`
+                    <button class="btn-outline" id="registerBtn">Регистрация</button>
+                    <button class="btn-primary" id="loginBtn">Вход</button>
+                `);
+                $('#registerBtn').off('click').on('click', function () { 
+                    window.location.href = '/register'; 
+                });
+                $('#loginBtn').off('click').on('click', function () { 
+                    window.location.href = '/login'; 
+                });
+            }
+        } catch (error) {
+            console.error('Auth check error:', error);
+            // Показываем кнопки входа в случае ошибки
+            $auth.html(`
+                <button class="btn-outline" id="registerBtn">Регистрация</button>
+                <button class="btn-primary" id="loginBtn">Вход</button>
+            `);
+            $('#registerBtn').off('click').on('click', function () { 
+                window.location.href = '/register'; 
             });
+            $('#loginBtn').off('click').on('click', function () { 
+                window.location.href = '/login'; 
+            });
+        }
     }
 
     function mergeTeams(openTeams, myTeams) {
@@ -63,22 +83,28 @@ $(function () {
         return Array.from(map.values());
     }
 
-    function loadTeams() {
+    async function loadTeams() {
         const $container = $('#teamsContainer');
         $container.html('<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><p>Загрузка команд...</p></div>');
 
-        $.when(
-            $.ajax({ url: '/api/teams/open', method: 'GET', dataType: 'json' }),
-            $.ajax({ url: '/api/teams/my', method: 'GET', dataType: 'json' })
-        ).done(function (openResponse, myResponse) {
-            renderTeams(mergeTeams(openResponse[0], myResponse[0]));
-        }).fail(function () {
-            $.ajax({ url: '/api/teams/open', method: 'GET', dataType: 'json' })
-                .done(renderTeams)
-                .fail(function () {
-                    $container.html('<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Не удалось загрузить команды</p></div>');
-                });
-        });
+        try {
+            // Используем api.get для параллельных запросов
+            const [openTeams, myTeams] = await Promise.all([
+                window.api.get('/api/teams/open'),
+                window.api.get('/api/teams/my')
+            ]);
+            renderTeams(mergeTeams(openTeams, myTeams));
+        } catch (error) {
+            console.error('Error loading teams:', error);
+            // Fallback: пробуем загрузить только открытые команды
+            try {
+                const openTeams = await window.api.get('/api/teams/open');
+                renderTeams(openTeams);
+            } catch (fallbackError) {
+                console.error('Fallback error:', fallbackError);
+                $container.html('<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Не удалось загрузить команды</p></div>');
+            }
+        }
     }
 
     function renderTeams(teams) {
@@ -111,25 +137,32 @@ $(function () {
         }).join('');
 
         $container.html(cards);
-        $('.team-card').on('click', function () { window.location.href = '/teams/' + $(this).data('team-id'); });
+        $('.team-card').off('click').on('click', function () { 
+            window.location.href = '/teams/' + $(this).data('team-id'); 
+        });
     }
 
-    function loadGamesForModal() {
+    async function loadGamesForModal() {
         const $select = $('#modalGameType');
-        $.ajax({ url: '/api/gametypes/active', method: 'GET', dataType: 'json' })
-            .done(function (games) {
-                availableGames = games || [];
-                $select.html('<option value="">— Выберите игру —</option>');
-                availableGames.forEach(function (game) {
-                    $select.append(`<option value="${game.id}">${gameIcon(game.name)} ${escapeHtml(game.name)}</option>`);
-                });
-            })
-            .fail(function () { $select.html('<option value="">— Ошибка загрузки игр —</option>'); });
+        try {
+            // Используем api.get для активных игр
+            const games = await window.api.get('/api/gametypes/active');
+            availableGames = games || [];
+            $select.html('<option value="">— Выберите игру —</option>');
+            availableGames.forEach(function (game) {
+                $select.append(`<option value="${game.id}">${gameIcon(game.name)} ${escapeHtml(game.name)}</option>`);
+            });
+        } catch (error) {
+            console.error('Error loading games:', error);
+            $select.html('<option value="">— Ошибка загрузки игр —</option>');
+        }
     }
 
-    function openCreateTeamModal() {
-        $.ajax({ url: '/api/auth/check', method: 'GET', dataType: 'json' }).done(function (data) {
-            if (!data.authenticated) {
+    async function openCreateTeamModal() {
+        try {
+            // Проверяем авторизацию через api.get
+            const data = await window.api.get('/api/auth/check');
+            if (!data || !data.authenticated) {
                 showToast('❌ Для создания команды нужно войти в аккаунт', true);
                 setTimeout(function () { window.location.href = '/login'; }, 1000);
                 return;
@@ -138,7 +171,10 @@ $(function () {
             $('#createTeamModal').css('display', 'flex');
             $('body').css('overflow', 'hidden');
             if (!availableGames.length) loadGamesForModal();
-        });
+        } catch (error) {
+            console.error('Auth check error:', error);
+            showToast('❌ Ошибка проверки авторизации', true);
+        }
     }
 
     function closeCreateTeamModal() {
@@ -148,11 +184,13 @@ $(function () {
 
     function initModal() {
         loadGamesForModal();
-        $('#createTeamFab').on('click', openCreateTeamModal);
-        $('#closeModalBtn, #cancelModalBtn, #createTeamModal .modal-overlay').on('click', closeCreateTeamModal);
-        $(document).on('keydown', function (event) { if (event.key === 'Escape') closeCreateTeamModal(); });
+        $('#createTeamFab').off('click').on('click', openCreateTeamModal);
+        $('#closeModalBtn, #cancelModalBtn, #createTeamModal .modal-overlay').off('click').on('click', closeCreateTeamModal);
+        $(document).off('keydown').on('keydown', function (event) { 
+            if (event.key === 'Escape') closeCreateTeamModal(); 
+        });
 
-        $('#modalCreateTeamForm').on('submit', function (event) {
+        $('#modalCreateTeamForm').off('submit').on('submit', async function (event) {
             event.preventDefault();
             const name = $.trim($('#modalTeamName').val());
             const gameTypeId = Number($('#modalGameType').val());
@@ -162,25 +200,28 @@ $(function () {
             const $button = $('.btn-submit-modal');
             $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Создание...');
 
-            $.ajax({
-                url: '/api/teams',
-                method: 'POST',
-                contentType: 'application/json',
-                dataType: 'json',
-                data: JSON.stringify({ name: name, gameTypeId: gameTypeId, imageUrl: null })
-            }).done(function (team) {
+            try {
+                // Используем api.post для создания команды
+                const team = await window.api.post('/api/teams', { 
+                    name: name, 
+                    gameTypeId: gameTypeId, 
+                    imageUrl: null 
+                });
                 showToast('✅ Команда успешно создана');
                 closeCreateTeamModal();
                 setTimeout(function () { window.location.href = '/teams/' + team.id; }, 800);
-            }).fail(function (xhr) {
-                showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось создать команду'), true);
-            }).always(function () {
+            } catch (error) {
+                showToast('❌ ' + (error.message || 'Не удалось создать команду'), true);
+            } finally {
                 $button.prop('disabled', false).html('<i class="fas fa-check"></i> Создать команду');
-            });
+            }
         });
     }
 
-    updateAuthButtons();
-    loadTeams();
-    initModal();
+    // Асинхронная инициализация
+    (async function init() {
+        await updateAuthButtons();
+        await loadTeams();
+        initModal();
+    })();
 });

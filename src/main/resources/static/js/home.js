@@ -1,3 +1,4 @@
+// home.js - адаптирован под базовый api.js
 $(document).ready(function() {
     let currentCategory = 'all';
     let tournaments = [];
@@ -45,55 +46,50 @@ $(document).ready(function() {
         return '🏆';
     }
 
-    function resolveImageUrl(imageUrl) {
-        if (!imageUrl) return '';
-        if (/^https?:\/\//.test(imageUrl) || imageUrl.startsWith('data:') || imageUrl.startsWith('/')) return imageUrl;
-        return '/images/' + imageUrl;
+    // Загрузка данных - используем прямые GET запросы через api
+    async function loadCategories() {
+        try {
+            // Используем api.get для /api/gametypes
+            const gameTypes = await window.api.get('/api/gametypes');
+            categories = [{ id: 'all', label: 'Все', icon: '🌍' }].concat(
+                (gameTypes || [])
+                    .filter(game => game.isActive === true)
+                    .map(game => ({
+                        id: String(game.id),
+                        label: game.name,
+                        icon: getGameIcon(game.name),
+                        gameId: game.id
+                    }))
+            );
+            renderCategories();
+        } catch (error) {
+            console.error('Error loading categories:', error);
+            renderCategories();
+        }
     }
 
-    // Загрузка данных
-    function loadCategories() {
-        $.get('/api/gametypes')
-            .done(function(gameTypes) {
-                categories = [{ id: 'all', label: 'Все', icon: '🌍' }].concat(
-                    (gameTypes || [])
-                        .filter(game => game.isActive === true)
-                        .map(game => ({
-                            id: String(game.id),
-                            label: game.name,
-                            icon: getGameIcon(game.name),
-                            gameId: game.id
-                        }))
-                );
-                renderCategories();
-            })
-            .fail(function() {
-                renderCategories();
-            });
-    }
-
-    function loadTournaments() {
-        $.get('/api/tournaments')
-            .done(function(data) {
-                tournaments = (data || []).map(t => ({
-                    id: t.id,
-                    title: t.title,
-                    status: t.status,
-                    participantType: t.participantType,
-                    gameName: t.gameName,
-                    organizerUsername: t.organizerUsername,
-                    imageUrl: null
-                }));
-                renderTournaments();
-                updateTournamentCount();
-                renderCategories();
-            })
-            .fail(function() {
-                tournaments = [];
-                renderTournaments();
-                updateTournamentCount();
-                showToast('❌ Не удалось загрузить турниры', true);
-            });
+    async function loadTournaments() {
+        try {
+            // Используем api.get для /api/tournaments
+            const data = await window.api.get('/api/tournaments');
+            tournaments = (data || []).map(t => ({
+                id: t.id,
+                title: t.title,
+                status: t.status,
+                participantType: t.participantType,
+                gameName: t.gameName,
+                organizerUsername: t.organizerUsername,
+            }));
+            renderTournaments();
+            updateTournamentCount();
+            renderCategories();
+        } catch (error) {
+            console.error('Error loading tournaments:', error);
+            tournaments = [];
+            renderTournaments();
+            updateTournamentCount();
+            showToast('❌ Не удалось загрузить турниры', true);
+        }
     }
 
     // Рендер UI
@@ -194,68 +190,74 @@ $(document).ready(function() {
         });
     }
 
-    // Авторизация
-    function updateAuthButtons() {
-        $.get('/api/auth/check')
-            .done(function(data) {
-                const $auth = $('#authButtons');
-                if (!$auth.length) return;
+    // Авторизация - используем api.get напрямую
+    async function updateAuthButtons() {
+        const $auth = $('#authButtons');
+        if (!$auth.length) return;
+        
+        try {
+            // Используем api.get для проверки авторизации
+            const data = await window.api.get('/api/auth/check');
+            
+            if (data && data.authenticated && data.user) {
+                $auth.html(`
+                    <div class="notification-wrapper">
+                        <div class="notification-bell" id="notificationBell">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                    </div>
+                    <div class="profile-icon" id="profileIcon">
+                        <i class="fas fa-user-circle" style="font-size: 1.2rem; width: 19px; height: 19px;"></i>
+                    </div>
+                `);
                 
-                if (data.authenticated) {
-                    const imageUrl = data.user?.imageUrl ? resolveImageUrl(data.user.imageUrl) : null;
-                    $auth.html(`
-                        <div class="notification-wrapper">
-                            <div class="notification-bell" id="notificationBell">
-                                <i class="fas fa-bell"></i>
-                            </div>
-                        </div>
-                        <div class="profile-icon" id="profileIcon">
-                            ${imageUrl ? `<img src="${imageUrl}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
-                        </div>
-                    `);
-                    
-                    $('#profileIcon').on('click', () => window.location.href = '/profile');
-                    
-                    // Инициализируем модуль уведомлений
-                    if (window.NotificationsModule) {
-                        window.NotificationsModule.init();
-                        window.NotificationsModule.loadNotifications();
-                    }
-                } else {
-                    $auth.html(`
-                        <button class="btn-outline" id="registerBtn">Регистрация</button>
-                        <button class="btn-primary" id="loginBtn">Вход</button>
-                    `);
-                    $('#registerBtn').on('click', () => window.location.href = '/register');
-                    $('#loginBtn').on('click', () => window.location.href = '/login');
-                    
-                    // Очищаем уведомления для неавторизованных
-                    if (window.NotificationsModule) {
-                        window.NotificationsModule.destroy();
-                    }
+                $('#profileIcon').off('click').on('click', () => window.location.href = '/profile');
+                
+                // Инициализируем модуль уведомлений
+                if (window.NotificationsModule) {
+                    window.NotificationsModule.init();
+                    window.NotificationsModule.loadNotifications();
                 }
-            })
-            .fail(function() {
-                $('#authButtons').html(`
+            } else {
+                $auth.html(`
                     <button class="btn-outline" id="registerBtn">Регистрация</button>
                     <button class="btn-primary" id="loginBtn">Вход</button>
                 `);
-                $('#registerBtn').on('click', () => window.location.href = '/register');
-                $('#loginBtn').on('click', () => window.location.href = '/login');
-            });
+                $('#registerBtn').off('click').on('click', () => window.location.href = '/register');
+                $('#loginBtn').off('click').on('click', () => window.location.href = '/login');
+                
+                // Очищаем уведомления для неавторизованных
+                if (window.NotificationsModule) {
+                    window.NotificationsModule.destroy();
+                }
+            }
+        } catch (error) {
+            console.error('Auth check error:', error);
+            // Показываем кнопки входа в случае ошибки
+            $auth.html(`
+                <button class="btn-outline" id="registerBtn">Регистрация</button>
+                <button class="btn-primary" id="loginBtn">Вход</button>
+            `);
+            $('#registerBtn').off('click').on('click', () => window.location.href = '/register');
+            $('#loginBtn').off('click').on('click', () => window.location.href = '/login');
+        }
     }
 
-    function updateCreateTournamentButton() {
-        $.get('/api/auth/check')
-            .done(data => $('#createTournamentBtn').css('display', data.authenticated ? 'flex' : 'none'))
-            .fail(() => $('#createTournamentBtn').hide());
+    async function updateCreateTournamentButton() {
+        try {
+            const data = await window.api.get('/api/auth/check');
+            const isAuthenticated = data && data.authenticated;
+            $('#createTournamentBtn').css('display', isAuthenticated ? 'flex' : 'none');
+        } catch (error) {
+            $('#createTournamentBtn').hide();
+        }
     }
 
     function initNavBar() {
         $('.nav-item').each(function() {
             const $item = $(this);
             if ($item.attr('href') && $item.attr('href') !== '#') return;
-            $item.on('click', function() {
+            $item.off('click').on('click', function() {
                 const page = $(this).text().trim().toLowerCase();
                 if (page === 'матчи') showToast('⚡ Раздел матчей пока не завершён');
                 else if (page === 'рейтинг') window.location.href = '/rating';
@@ -263,12 +265,14 @@ $(document).ready(function() {
         });
     }
 
-    // Старт
-    loadCategories();
-    loadTournaments();
-    updateAuthButtons();
-    updateCreateTournamentButton();
-    initNavBar();
+    // Старт - асинхронная инициализация
+    (async function init() {
+        await loadCategories();
+        await loadTournaments();
+        await updateAuthButtons();
+        await updateCreateTournamentButton();
+        initNavBar();
+    })();
 
     // Очистка при выгрузке
     $(window).on('beforeunload', function() {

@@ -124,25 +124,7 @@
                     </div>
                 </div>
                 <!-- Кнопки для участников (не организаторов) -->
-                <div class="participant-actions" th:if="${!isOwner && tournament.status == 'REGISTRATION_OPEN'}">
-                    <div th:if="${tournament.participantType == 'SOLO'}">
-                        <button class="register-btn" id="registerSoloBtn">
-                            <i class="fas fa-user-plus"></i> Зарегистрироваться на турнир
-                        </button>
-                    </div>
-                    <div th:if="${tournament.participantType == 'TEAM'}">
-                        <div class="team-selection-container">
-                            <select id="teamSelect" class="team-select">
-                                <option value="">Выберите команду...</option>
-                            </select>
-                            <button class="register-btn" id="registerTeamBtn" disabled>
-                                <i class="fas fa-users"></i> Зарегистрировать команду
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Сообщение о статусе регистрации -->
+                
                 <div class="registration-status" th:if="${!isOwner && tournament.status != 'REGISTRATION_OPEN'}">
                     <div th:if="${tournament.status == 'DRAFT'}" class="info-message">
                         <i class="fas fa-info-circle"></i> Регистрация ещё не открыта
@@ -176,6 +158,12 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Плавающая кнопка регистрации -->
+    <div id="floatingRegisterBtn" class="floating-register-btn" style="display: none;">
+        <i class="fas fa-user-plus"></i>
+        <span>Зарегистрироваться</span>
     </div>
 </main>
 

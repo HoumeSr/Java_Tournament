@@ -95,41 +95,118 @@
         intervalId = setInterval(nextSlide, 7000);
     }
 
+    async function registerUser(userData) {
+        const submitBtn = document.querySelector('#registrationForm button[type="submit"]');
+        const originalText = submitBtn?.textContent;
+        
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Регистрация...';
+        }
+
+        try {
+            // Создаем FormData для отправки как @RequestParam
+            const formData = new FormData();
+            formData.append('username', userData.username);
+            formData.append('email', userData.email);
+            formData.append('password', userData.password);
+            formData.append('confirmPassword', userData.confirmPassword);
+            
+            // Отправляем на AJAX endpoint
+            const response = await window.api.post('/api/auth/register', formData);
+            
+            // Проверяем успешность ответа
+            if (response && response.success) {
+                showToast('✅ ' + (response.message || 'Регистрация успешна! Перенаправление...'));
+                
+                // Проверяем, есть ли параметр success в URL (для стандартной формы)
+                // и очищаем его при успешной AJAX регистрации
+                if (window.location.search.includes('success=true')) {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+                
+                // Перенаправление через 1.5 секунды
+                setTimeout(() => {
+                    window.location.href = response.redirectUrl || '/login?registered=true';
+                }, 1500);
+            } else {
+                showToast(response?.message || 'Ошибка регистрации', true);
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            
+            // Обработка ошибок с бэкенда
+            let errorMessage = '❌ Ошибка сервера';
+            
+            if (error.message) {
+                // Парсим возможные ошибки от бэкенда
+                if (error.message.includes('никнейм') || error.message.includes('username')) {
+                    errorMessage = '❌ ' + error.message;
+                } else if (error.message.includes('Email') || error.message.includes('email')) {
+                    errorMessage = '❌ ' + error.message;
+                } else if (error.message.includes('пароли') || error.message.includes('Пароли')) {
+                    errorMessage = '❌ ' + error.message;
+                } else if (error.message.includes('already')) {
+                    errorMessage = '❌ Пользователь с таким именем или email уже существует';
+                } else {
+                    errorMessage = '❌ ' + error.message;
+                }
+            }
+            
+            showToast(errorMessage, true);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        }
+    }
+
     function initFormValidation() {
         const form = document.getElementById('registrationForm');
         if (!form) return;
 
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Получаем значения полей
             const username = document.getElementById('username')?.value.trim();
             const email = document.getElementById('email')?.value.trim();
             const password = document.getElementById('password')?.value;
-            const confirm = document.getElementById('confirmPassword')?.value;
+            const confirmPassword = document.getElementById('confirmPassword')?.value;
 
+            // Валидация перед отправкой
             if (!username) {
-                e.preventDefault();
                 showToast('⚠️ Укажите никнейм', true);
                 return;
             }
             if (username.length < 3) {
-                e.preventDefault();
                 showToast('⚠️ Никнейм должен содержать минимум 3 символа', true);
                 return;
             }
+            if (username.length > 50) {
+                showToast('⚠️ Никнейм не должен превышать 50 символов', true);
+                return;
+            }
             if (!isValidEmail(email)) {
-                e.preventDefault();
                 showToast('❌ Укажите корректный email', true);
                 return;
             }
-            if (password.length < 6) {
-                e.preventDefault();
+            if (!password || password.length < 6) {
                 showToast('❌ Пароль должен содержать минимум 6 символов', true);
                 return;
             }
-            if (password !== confirm) {
-                e.preventDefault();
+            if (password.length > 100) {
+                showToast('❌ Пароль не должен превышать 100 символов', true);
+                return;
+            }
+            if (password !== confirmPassword) {
                 showToast('❌ Пароли не совпадают', true);
                 return;
             }
+
+            // Отправка через API хелпер
+            await registerUser({ username, email, password, confirmPassword });
         });
     }
 
@@ -137,6 +214,7 @@
         const pwdField = document.getElementById('password');
         const confirmField = document.getElementById('confirmPassword');
         const emailInput = document.getElementById('email');
+        const usernameInput = document.getElementById('username');
 
         const updateConfirmStyle = () => {
             if (!confirmField || !pwdField) return;
@@ -148,34 +226,80 @@
                 confirmField.style.borderColor = '#10b981';
                 confirmField.style.backgroundColor = '#3d3d3d';
             } else {
-                confirmField.style.borderColor = '#374151';
-                confirmField.style.backgroundColor = '#2d2d2d';
+                resetFieldStyle(confirmField);
+            }
+        };
+
+        const resetFieldStyle = (field) => {
+            field.style.borderColor = '#374151';
+            field.style.backgroundColor = '#2d2d2d';
+        };
+
+        const validateEmailLive = () => {
+            if (!emailInput) return;
+            const val = emailInput.value.trim();
+            if (val && !isValidEmail(val)) {
+                emailInput.style.borderColor = '#ef4444';
+                emailInput.style.backgroundColor = '#3d3d3d';
+            } else if (val && isValidEmail(val)) {
+                emailInput.style.borderColor = '#10b981';
+                emailInput.style.backgroundColor = '#3d3d3d';
+            } else {
+                resetFieldStyle(emailInput);
+            }
+        };
+
+        const validateUsernameLive = () => {
+            if (!usernameInput) return;
+            const val = usernameInput.value.trim();
+            if (val && val.length < 3) {
+                usernameInput.style.borderColor = '#ef4444';
+                usernameInput.style.backgroundColor = '#3d3d3d';
+            } else if (val && val.length >= 3) {
+                usernameInput.style.borderColor = '#10b981';
+                usernameInput.style.backgroundColor = '#3d3d3d';
+            } else {
+                resetFieldStyle(usernameInput);
             }
         };
 
         pwdField?.addEventListener('input', updateConfirmStyle);
         confirmField?.addEventListener('input', updateConfirmStyle);
-
-        emailInput?.addEventListener('blur', function() {
-            const val = this.value.trim();
-            if (val && !isValidEmail(val)) {
-                this.style.borderColor = '#ef4444';
-                this.style.backgroundColor = '#3d3d3d';
-            } else if (val && isValidEmail(val)) {
-                this.style.borderColor = '#10b981';
-                this.style.backgroundColor = '#3d3d3d';
-            } else {
-                this.style.borderColor = '#374151';
-                this.style.backgroundColor = '#2d2d2d';
-            }
-        });
+        emailInput?.addEventListener('input', validateEmailLive);
+        emailInput?.addEventListener('blur', validateEmailLive);
+        usernameInput?.addEventListener('input', validateUsernameLive);
+        usernameInput?.addEventListener('blur', validateUsernameLive);
     }
 
+    // Показываем сообщение об успешной регистрации, если есть параметр в URL
+    function checkUrlParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success') === 'true') {
+            showToast('✅ Регистрация успешна! Теперь войдите в аккаунт.');
+            // Очищаем параметр из URL для обновления страницы
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (urlParams.get('registered') === 'true') {
+            showToast('✅ Аккаунт создан! Пожалуйста, войдите.');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+
+    // Проверяем, что API хелпер загружен
+    if (typeof window.api === 'undefined') {
+        console.error('API helper not loaded!');
+        showToast('Ошибка загрузки API', true);
+    } else {
+        console.log('API helper loaded successfully');
+    }
+
+    // Инициализация
     initSlideshow();
     resetInterval();
     initFormValidation();
     initLiveValidation();
+    checkUrlParams(); // Проверяем параметры URL
 
+    // Пауза слайдшоу при наведении
     const heroPanel = document.querySelector('.hero-panel');
     heroPanel?.addEventListener('mouseenter', () => {
         if (intervalId) clearInterval(intervalId);
@@ -183,6 +307,7 @@
     });
     heroPanel?.addEventListener('mouseleave', resetInterval);
 
+    // Очистка интервала при уходе со страницы
     window.addEventListener('beforeunload', () => {
         if (intervalId) clearInterval(intervalId);
     });
