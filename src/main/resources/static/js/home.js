@@ -200,6 +200,11 @@ $(document).ready(function() {
             const data = await window.api.get('/api/auth/check');
             
             if (data && data.authenticated && data.user) {
+                const avatarUrl = data.user.imageUrl 
+                    ? (data.user.imageUrl.startsWith('/') || data.user.imageUrl.startsWith('http') 
+                        ? data.user.imageUrl 
+                        : '/images/' + data.user.imageUrl)
+                    : null;
                 $auth.html(`
                     <div class="notification-wrapper">
                         <div class="notification-bell" id="notificationBell">
@@ -207,7 +212,7 @@ $(document).ready(function() {
                         </div>
                     </div>
                     <div class="profile-icon" id="profileIcon">
-                        <i class="fas fa-user-circle" style="font-size: 1.2rem; width: 19px; height: 19px;"></i>
+                        ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="Аватар">` : '<i class="fas fa-user-circle"></i>'}
                     </div>
                 `);
                 

@@ -1,5 +1,15 @@
 package com.kosmo.tournament.user.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.regex.Pattern;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.kosmo.tournament.storage.service.FileStorageService;
 import com.kosmo.tournament.user.dto.ChangePasswordDTO;
 import com.kosmo.tournament.user.dto.CreateUserDTO;
@@ -9,15 +19,6 @@ import com.kosmo.tournament.user.dto.UserGameStatsDTO;
 import com.kosmo.tournament.user.dto.UserProfileDTO;
 import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.regex.Pattern;
 
 @Service
 public class UserService {
@@ -29,6 +30,8 @@ public class UserService {
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
+
+    private static final String DEFAULT_IMAGE_URL = "http://localhost:9000/images/profiles/DEFAULT_IMAGE.png";
 
     public UserService(UserRepository userRepository,
                        JdbcTemplate jdbcTemplate,
@@ -101,7 +104,7 @@ public class UserService {
         user.setCreatedAt(LocalDateTime.now());
         user.setImageUrl(dto.getImageUrl() != null && !dto.getImageUrl().trim().isBlank()
                 ? dto.getImageUrl().trim()
-                : "DEFAULT_USER_IMAGE.jpg");
+                : DEFAULT_IMAGE_URL);
 
         User saved = userRepository.save(user);
         return buildUserProfileDTO(saved, true);
@@ -191,7 +194,7 @@ public class UserService {
         User user = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.setImageUrl("DEFAULT_USER_IMAGE.jpg");
+        user.setImageUrl(DEFAULT_IMAGE_URL);
         userRepository.save(user);
     }
 
