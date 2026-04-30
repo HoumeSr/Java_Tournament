@@ -2,6 +2,8 @@ $(function () {
     let currentProfile = null;
     let currentAuthUser = null;
 
+    const DEFAULT_IMAGE_URL = 'http://localhost:9000/images/profiles/DEFAULT_IMAGE.png';
+
     function showToast(message, isError = false) {
         let $toast = $('#demoToast');
         if (!$toast.length) {
@@ -206,10 +208,65 @@ $(function () {
             });
     }
 
+    // ✅ Функция для сброса аватара
+    function resetAvatar() {
+        if (!currentProfile || !currentProfile.owner) {
+            showToast('❌ Нет прав для изменения аватара', true);
+            return;
+        }
+
+        showToast('⏳ Сброс аватара...');
+        
+        $.ajax({
+            url: '/api/users/avatar',
+            method: 'DELETE',
+            contentType: 'application/json'
+        })
+        .done(function () {
+            // Обновляем currentProfile
+            if (currentProfile) {
+                currentProfile.imageUrl = DEFAULT_IMAGE_URL;
+            }
+            
+            // Принудительно обновляем аватар с дефолтной картинкой
+            forceRefreshAvatar(DEFAULT_IMAGE_URL);
+            
+            // Обновляем хедер
+            updateHeaderAuth();
+            
+            showToast('✅ Аватар сброшен на стандартный');
+        })
+        .fail(function (xhr) {
+            let errorMsg = 'Не удалось сбросить аватар';
+            if (xhr.responseJSON?.message) {
+                errorMsg = xhr.responseJSON.message;
+            } else if (xhr.status === 403) {
+                errorMsg = 'Нет прав для сброса аватара';
+            }
+            showToast('❌ ' + errorMsg, true);
+        });
+    }
+
     // ✅ Улучшенная функция изменения аватара с принудительным обновлением
     function initAvatarChange() {
         $('#changeAvatarBtn').on('click', function () {
             $('#avatarUpload').trigger('click');
+        });
+
+        // ✅ Двойной клик для сброса аватара
+        $('#avatarPreview').on('dblclick', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (!currentProfile || !currentProfile.owner) {
+                showToast('❌ Нет прав для изменения аватара', true);
+                return;
+            }
+            
+            // Подтверждение сброса
+            if (confirm('Вы уверены, что хотите сбросить аватар на стандартный?')) {
+                resetAvatar();
+            }
         });
 
         $('#avatarUpload').on('change', function (event) {
@@ -280,8 +337,6 @@ $(function () {
 
     // ✅ Новая функция для принудительного обновления аватара
     function forceRefreshAvatar(imageUrl) {
-        if (!imageUrl) return;
-        
         // Получаем все элементы с аватарами на странице
         const avatarElements = [
             $('#avatarPreview'),
@@ -289,6 +344,20 @@ $(function () {
             $('.profile-icon img'),
             $('.user-avatar')
         ].filter($el => $el && $el.length);
+        
+        if (!imageUrl || imageUrl === 'null' || imageUrl === 'DEFAULT_USER_IMAGE.jpg') {
+            // Сбрасываем на иконку по умолчанию
+            avatarElements.forEach($el => {
+                if ($el.is('img')) {
+                    $el.replaceWith('<i class="fas fa-user-circle"></i>');
+                } else if ($el.find('img').length) {
+                    $el.html('<i class="fas fa-user-circle"></i>');
+                } else if ($el.hasClass('avatar-preview') || $el.attr('id') === 'avatarPreview') {
+                    $el.html('<i class="fas fa-user-circle"></i>');
+                }
+            });
+            return;
+        }
         
         // Создаем новый Image объект для принудительной загрузки
         const cacheBustUrl = getAvatarUrlWithCacheBust(imageUrl);
@@ -337,34 +406,129 @@ $(function () {
     }
 
     function initPasswordModal() {
+        // Открытие модального окна
         $('#changePasswordBtn').on('click', function () {
             if (!currentProfile?.owner) return;
             $('#passwordModal').css('display', 'flex');
             $('#currentPasswordInput, #newPasswordInput, #confirmPasswordInput').val('');
+            $('#newPasswordHint, #confirmPasswordHint').text(''); // Очищаем подсказки
         });
-        $('#closeModalBtn, #cancelPasswordBtn').on('click', function () { $('#passwordModal').hide(); });
-        $('#passwordModal').on('click', function (e) { if (e.target === this) $('#passwordModal').hide(); });
+        
+        // Закрытие модального окна
+        $('#closeModalBtn, #cancelPasswordBtn').on('click', function () { 
+            $('#passwordModal').hide(); 
+        });
+        
+        // Закрытие по клику на фон
+        $('#passwordModal').on('click', function (e) { 
+            if (e.target === this) $('#passwordModal').hide(); 
+        });
 
-        $('#savePasswordBtn').on('click', function () {
+        // ✅ ИСПРАВЛЕНО: правильный ID кнопки - submitPasswordBtn
+        $('#submitPasswordBtn').on('click', function () {
+            const $btn = $(this);
             const currentPassword = $('#currentPasswordInput').val();
             const newPassword = $('#newPasswordInput').val();
             const confirmPassword = $('#confirmPasswordInput').val();
 
-            if (!currentPassword) return showToast('❌ Введите текущий пароль', true);
-            if (!newPassword || newPassword.length < 6) return showToast('❌ Новый пароль должен быть минимум 6 символов', true);
-            if (newPassword !== confirmPassword) return showToast('❌ Пароли не совпадают', true);
+            // Валидация
+            if (!currentPassword) {
+                showToast('❌ Введите текущий пароль', true);
+                $('#currentPasswordInput').focus();
+                return;
+            }
+            
+            if (!newPassword || newPassword.length < 6) {
+                showToast('❌ Новый пароль должен быть минимум 6 символов', true);
+                $('#newPasswordInput').focus();
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showToast('❌ Пароли не совпадают', true);
+                $('#confirmPasswordInput').focus();
+                return;
+            }
+
+            // Блокируем кнопку
+            const originalText = $btn.text();
+            $btn.prop('disabled', true).text('Сохранение...');
 
             $.ajax({
                 url: '/api/users/change-password',
                 method: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({ currentPassword: currentPassword, newPassword: newPassword })
-            }).done(function () {
+                data: JSON.stringify({ 
+                    currentPassword: currentPassword, 
+                    newPassword: newPassword 
+                })
+            })
+            .done(function () {
                 $('#passwordModal').hide();
                 showToast('✅ Пароль успешно изменён');
-            }).fail(function (xhr) {
-                showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось сменить пароль'), true);
+                // Очищаем поля
+                $('#currentPasswordInput, #newPasswordInput, #confirmPasswordInput').val('');
+            })
+            .fail(function (xhr) {
+                let errorMsg = 'Не удалось сменить пароль';
+                
+                if (xhr.status === 400) {
+                    errorMsg = xhr.responseJSON?.message || 'Неверный текущий пароль';
+                } else if (xhr.status === 401) {
+                    errorMsg = 'Сессия истекла, войдите заново';
+                    setTimeout(function () { 
+                        window.location.href = '/login'; 
+                    }, 2000);
+                } else if (xhr.responseJSON?.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                
+                showToast('❌ ' + errorMsg, true);
+            })
+            .always(function () {
+                $btn.prop('disabled', false).text(originalText);
             });
+        });
+
+        // Валидация на лету (опционально)
+        $('#newPasswordInput').on('input', function () {
+            const val = $(this).val();
+            const $hint = $('#newPasswordHint');
+            if (val.length === 0) {
+                $hint.text('');
+            } else if (val.length < 6) {
+                $hint.html('❌ <small>Минимум 6 символов</small>').css('color', '#ef4444');
+            } else {
+                $hint.html('✅ <small>Хороший пароль</small>').css('color', '#10b981');
+            }
+            
+            // Проверяем подтверждение
+            const confirmVal = $('#confirmPasswordInput').val();
+            if (confirmVal) {
+                $('#confirmPasswordInput').trigger('input');
+            }
+        });
+
+        $('#confirmPasswordInput').on('input', function () {
+            const newPass = $('#newPasswordInput').val();
+            const confirmPass = $(this).val();
+            const $hint = $('#confirmPasswordHint');
+            
+            if (confirmPass.length === 0) {
+                $hint.text('');
+            } else if (newPass !== confirmPass) {
+                $hint.html('❌ <small>Пароли не совпадают</small>').css('color', '#ef4444');
+            } else {
+                $hint.html('✅ <small>Пароли совпадают</small>').css('color', '#10b981');
+            }
+        });
+
+        // Отправка по Enter
+        $('#passwordModal input').on('keypress', function (e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                $('#submitPasswordBtn').click();
+            }
         });
     }
 
