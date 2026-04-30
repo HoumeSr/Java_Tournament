@@ -23,6 +23,23 @@ $(function () {
         });
     }
 
+    // ✅ Функция для получения URL с anti-cache параметром
+    function getAvatarUrlWithCacheBust(imageUrl) {
+        if (!imageUrl || imageUrl === 'null' || imageUrl === 'DEFAULT_USER_IMAGE.jpg') return null;
+        
+        let baseUrl;
+        if (/^https?:\/\//.test(imageUrl) || imageUrl.startsWith('/')) {
+            baseUrl = imageUrl;
+        } else {
+            baseUrl = '/images/' + imageUrl;
+        }
+        
+        // Добавляем timestamp для обхода кэша браузера
+        const separator = baseUrl.includes('?') ? '&' : '?';
+        return `${baseUrl}${separator}_t=${Date.now()}`;
+    }
+
+    // Оригинальная функция для совместимости (без cache-bust)
     function resolveImageUrl(imageUrl) {
         if (!imageUrl || imageUrl === 'null' || imageUrl === 'DEFAULT_USER_IMAGE.jpg') return null;
         if (/^https?:\/\//.test(imageUrl) || imageUrl.startsWith('/')) return imageUrl;
@@ -43,10 +60,11 @@ $(function () {
 
                 if (data.authenticated && data.user) {
                     currentAuthUser = data.user;
-                    const avatarUrl = resolveImageUrl(data.user.imageUrl);
+                    // ✅ Используем cache-bust URL
+                    const avatarUrl = getAvatarUrlWithCacheBust(data.user.imageUrl);
                     $auth.html(`
                         <div class="profile-icon" id="profileIcon" title="Мой профиль">
-                            <i class="fas fa-user-circle"></i>
+                            ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="Аватар">` : '<i class="fas fa-user-circle"></i>'}
                         </div>
                     `);
                     $('#profileIcon').on('click', function () { window.location.href = '/profile'; });
@@ -75,16 +93,38 @@ $(function () {
         });
     }
 
+    // ✅ Улучшенная функция setAvatar с принудительной перезагрузкой
     function setAvatar(imageUrl) {
-        const avatarUrl = resolveImageUrl(imageUrl);
         const $avatar = $('#avatarPreview');
         if (!$avatar.length) return;
 
-        if (avatarUrl) {
-            $avatar.html(`<img src="${escapeHtml(avatarUrl)}" alt="Аватар">`);
-        } else {
+        if (!imageUrl || imageUrl === 'null' || imageUrl === 'DEFAULT_USER_IMAGE.jpg') {
             $avatar.html('<i class="fas fa-user-circle"></i>');
+            return;
         }
+
+        // Получаем URL с cache-bust параметром
+        const avatarUrl = getAvatarUrlWithCacheBust(imageUrl);
+        
+        // ✅ Принудительно перезагружаем изображение
+        const img = new Image();
+        const $avatarContainer = $avatar;
+        
+        img.onload = function() {
+            $avatarContainer.html(`<img src="${escapeHtml(avatarUrl)}" alt="Аватар" class="avatar-image">`);
+        };
+        
+        img.onerror = function() {
+            // Если загрузка не удалась, пробуем без cache-bust
+            const fallbackUrl = resolveImageUrl(imageUrl);
+            if (fallbackUrl) {
+                $avatarContainer.html(`<img src="${escapeHtml(fallbackUrl)}" alt="Аватар">`);
+            } else {
+                $avatarContainer.html('<i class="fas fa-user-circle"></i>');
+            }
+        };
+        
+        img.src = avatarUrl;
     }
 
     function renderStats(games) {
@@ -166,6 +206,7 @@ $(function () {
             });
     }
 
+    // ✅ Улучшенная функция изменения аватара с принудительным обновлением
     function initAvatarChange() {
         $('#changeAvatarBtn').on('click', function () {
             $('#avatarUpload').trigger('click');
@@ -188,6 +229,16 @@ $(function () {
                 return;
             }
 
+            // Показываем превью загружаемого файла
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const $avatar = $('#avatarPreview');
+                if ($avatar.length) {
+                    $avatar.html(`<img src="${e.target.result}" style="opacity: 0.6;" alt="Загрузка...">`);
+                }
+            };
+            reader.readAsDataURL(file);
+
             const formData = new FormData();
             formData.append('file', file);
 
@@ -197,17 +248,92 @@ $(function () {
                 data: formData,
                 processData: false,
                 contentType: false
-            }).done(function (response) {
+            })
+            .done(function (response) {
                 const imageUrl = response.imageUrl;
-                setAvatar(imageUrl);
+                
+                // ✅ Обновляем currentProfile
+                if (currentProfile) {
+                    currentProfile.imageUrl = imageUrl;
+                }
+                
+                // ✅ Принудительно обновляем аватар с очисткой кэша
+                forceRefreshAvatar(imageUrl);
+                
+                // ✅ Обновляем хедер
                 updateHeaderAuth();
+                
                 showToast('✅ Аватар обновлён');
-            }).fail(function (xhr) {
+            })
+            .fail(function (xhr) {
                 showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось обновить аватар'), true);
-            }).always(() => {
+                // Восстанавливаем старый аватар
+                if (currentProfile) {
+                    setAvatar(currentProfile.imageUrl);
+                }
+            })
+            .always(() => {
                 $('#avatarUpload').val('');
             });
         });
+    }
+
+    // ✅ Новая функция для принудительного обновления аватара
+    function forceRefreshAvatar(imageUrl) {
+        if (!imageUrl) return;
+        
+        // Получаем все элементы с аватарами на странице
+        const avatarElements = [
+            $('#avatarPreview'),
+            $('#profileIcon img'),
+            $('.profile-icon img'),
+            $('.user-avatar')
+        ].filter($el => $el && $el.length);
+        
+        // Создаем новый Image объект для принудительной загрузки
+        const cacheBustUrl = getAvatarUrlWithCacheBust(imageUrl);
+        
+        // Загружаем новое изображение
+        const img = new Image();
+        img.onload = function() {
+            // Обновляем все avatar элементы
+            avatarElements.forEach($el => {
+                if ($el.is('img')) {
+                    $el.attr('src', cacheBustUrl);
+                } else if ($el.find('img').length) {
+                    $el.find('img').attr('src', cacheBustUrl);
+                } else if ($el.hasClass('avatar-preview') || $el.attr('id') === 'avatarPreview') {
+                    $el.html(`<img src="${escapeHtml(cacheBustUrl)}" alt="Аватар" class="avatar-image">`);
+                }
+            });
+            
+            // Обновляем стили если используются background-image
+            $('[style*="background-image"]').each(function() {
+                const $this = $(this);
+                const style = $this.attr('style');
+                if (style && (style.includes('avatar') || style.includes('profile-icon'))) {
+                    $this.css('background-image', `url(${cacheBustUrl})`);
+                }
+            });
+        };
+        
+        img.onerror = function() {
+            // Если не загрузилось, пробуем обычный URL
+            const fallbackUrl = resolveImageUrl(imageUrl);
+            if (fallbackUrl) {
+                avatarElements.forEach($el => {
+                    if ($el.is('img')) {
+                        $el.attr('src', fallbackUrl);
+                    } else if ($el.find('img').length) {
+                        $el.find('img').attr('src', fallbackUrl);
+                    } else if ($el.hasClass('avatar-preview') || $el.attr('id') === 'avatarPreview') {
+                        $el.html(`<img src="${escapeHtml(fallbackUrl)}" alt="Аватар">`);
+                    }
+                });
+            }
+        };
+        
+        img.src = cacheBustUrl;
     }
 
     function initPasswordModal() {
