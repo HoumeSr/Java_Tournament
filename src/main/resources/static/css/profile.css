@@ -981,3 +981,181 @@ body {
     cursor: not-allowed;
     transform: none;
 }
+
+/* Редактирование страны */
+.edit-country-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    margin-left: 10px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.edit-country-btn:hover {
+    background: #374151;
+    color: white;
+}
+
+.country-selector {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.country-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    color: #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+.country-option:hover {
+    background: #374151;
+    border-color: #6366f1;
+}
+
+.country-option.selected {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: white;
+}
+
+.country-edit-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btn-save-country, .btn-cancel-country {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-save-country {
+    background: #6366f1;
+    border: none;
+    color: white;
+}
+
+.btn-save-country:hover {
+    background: #4f46e5;
+}
+
+.btn-cancel-country {
+    background: #374151;
+    border: none;
+    color: #e5e7eb;
+}
+
+.btn-cancel-country:hover {
+    background: #4b5563;
+}
+
+#displayCountry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ========== РЕДАКТИРОВАНИЕ СТРАНЫ ========== */
+.edit-country-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    margin-left: 10px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-flex !important; 
+    transition: all 0.2s;
+}
+
+.edit-country-btn:hover {
+    background: #374151;
+    color: white;
+}
+
+.country-selector {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.country-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    color: #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+.country-option:hover {
+    background: #374151;
+    border-color: #6366f1;
+}
+
+.country-option.selected {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: white;
+}
+
+.country-edit-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.btn-save-country, .btn-cancel-country {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.btn-save-country {
+    background: #6366f1;
+    color: white;
+}
+
+.btn-save-country:hover {
+    background: #4f46e5;
+}
+
+.btn-cancel-country {
+    background: #374151;
+    color: #e5e7eb;
+}
+
+.btn-cancel-country:hover {
+    background: #4b5563;
+}
+
+#displayCountry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}

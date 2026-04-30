@@ -129,6 +129,90 @@ $(function () {
         img.src = avatarUrl;
     }
 
+    function initCountryEdit() {
+        const isOwner = currentProfile?.owner;
+        
+        // Показываем/скрываем кнопку редактирования
+        if (isOwner) {
+            $('#editCountryBtn').show();
+        } else {
+            $('#editCountryBtn').hide();
+        }
+        
+        // Обработчик клика по кнопке редактирования
+        $('#editCountryBtn').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const currentCountry = $('#countryText').text();
+            
+            // Скрываем режим просмотра, показываем режим редактирования
+            $('#displayCountry').hide();
+            $('#countryEditRow').show();
+            
+            // Сбрасываем выделение
+            $('.country-option').removeClass('selected');
+            
+            // Подсвечиваем выбранную страну
+            if (currentCountry === 'Россия') {
+                $('.country-option[data-country="Россия"]').addClass('selected');
+            } else if (currentCountry === 'Другое') {
+                $('.country-option[data-country="Другое"]').addClass('selected');
+            }
+        });
+        
+        // Выбор страны
+        $('.country-option').off('click').on('click', function() {
+            $('.country-option').removeClass('selected');
+            $(this).addClass('selected');
+        });
+        
+        // Сохранение страны
+        $('#saveCountryBtn').off('click').on('click', function() {
+            const selectedCountry = $('.country-option.selected').data('country');
+            
+            if (!selectedCountry) {
+                showToast('❌ Выберите страну', true);
+                return;
+            }
+            
+            // Отправляем запрос на обновление
+            $.ajax({
+                url: '/api/users/update',
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    country: selectedCountry
+                })
+            })
+            .done(function(response) {
+                // Обновляем отображение - ОБА элемента!
+                $('#countryText').text(selectedCountry);
+                $('#displayCountry').text(selectedCountry); // ✅ Важно!
+                $('#displayCountry').show();
+                $('#countryEditRow').hide();
+                
+                // Обновляем currentProfile
+                if (currentProfile) {
+                    currentProfile.country = selectedCountry;
+                }
+                
+                showToast('✅ Страна обновлена');
+            })
+            .fail(function(xhr) {
+                const errorMsg = xhr.responseJSON?.message || 'Не удалось обновить страну';
+                showToast('❌ ' + errorMsg, true);
+            });
+        });
+        
+        // Отмена редактирования
+        $('#cancelCountryBtn').off('click').on('click', function() {
+            $('#displayCountry').show();
+            $('#countryEditRow').hide();
+            $('.country-option').removeClass('selected');
+        });
+    }
+
     function renderStats(games) {
         const safeGames = Array.isArray(games) ? games : [];
         const totalMatches = safeGames.reduce((sum, game) => sum + Number(game.matchCount || game.totalMatches || 0), 0);
@@ -177,7 +261,11 @@ $(function () {
 
         $('#userId').text(userDTO.userId || '--');
         $('#displayUsername').text(userDTO.username || '--');
-        $('#displayCountry').text(userDTO.country || 'Не указана');
+        
+        // ✅ ИСПРАВЛЕНО: обновляем оба элемента - и displayCountry, и countryText
+        const countryValue = userDTO.country || 'Не указана';
+        $('#displayCountry').text(countryValue);
+        $('#countryText').text(countryValue);
 
         if (isOwner && userDTO.email) {
             $('#displayEmail').text(userDTO.email);
@@ -191,6 +279,7 @@ $(function () {
         $('#changeAvatarBtn').toggle(isOwner);
         setAvatar(userDTO.imageUrl);
         renderStats(userDTO.games || userDTO.gameStats || []);
+        initCountryEdit();
     }
 
     function loadProfile() {
