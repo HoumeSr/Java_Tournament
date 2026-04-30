@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Бобры — Мой профиль</title>
-    
+
     <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -30,7 +30,6 @@
 
 <main class="container">
     <div class="profile-grid">
-        <!-- Левая колонка - аватар и статистика -->
         <div class="profile-sidebar">
             <div class="avatar-section">
                 <div class="avatar-wrapper">
@@ -46,7 +45,7 @@
             </div>
 
             <input type="file" id="avatarUpload" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
-            
+
             <div class="stats-card">
                 <h3>📊 Статистика</h3>
                 <div class="stat-item">
@@ -62,45 +61,58 @@
                     <span class="stat-value" id="rating">1200</span>
                 </div>
             </div>
-            
-            <!-- Список игр пользователя -->
+
             <div class="games-card" id="gamesCard" style="display: none;">
                 <h3>🎮 Любимые игры</h3>
                 <div class="games-list" id="gamesList"></div>
             </div>
         </div>
 
-        <!-- Правая колонка -->
         <div class="profile-main">
-            <!-- Режим просмотра -->
             <div class="info-card" id="viewMode">
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-id-card"></i> ID пользователя</div>
                     <div class="info-value" id="userId">--</div>
                 </div>
+
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-user"></i> Имя пользователя</div>
                     <div class="info-value" id="displayUsername">--</div>
                 </div>
+
                 <div class="info-row" id="emailRow" style="display: none;">
                     <div class="info-label"><i class="fas fa-envelope"></i> Email</div>
                     <div class="info-value" id="displayEmail">--</div>
                 </div>
+
                 <div class="info-row" id="countryRow">
                     <div class="info-label"><i class="fas fa-globe"></i> Страна</div>
+
                     <div class="info-value" id="displayCountry">
                         <span id="countryText">Не указана</span>
-                        <button class="edit-country-btn" id="editCountryBtn">
+                        <button type="button" class="edit-country-btn" id="editCountryBtn" title="Изменить страну" style="display: none;">
                             <i class="fas fa-pen"></i>
                         </button>
                     </div>
+
+                    <div class="info-value" id="countryEditRow" style="display: none;">
+                        <div class="country-options">
+                            <button type="button" class="country-option" data-country="Россия">Россия</button>
+                            <button type="button" class="country-option" data-country="Другое">Другое</button>
+                        </div>
+                        <div class="country-actions" style="margin-top: 10px; display: flex; gap: 8px;">
+                            <button type="button" class="btn-primary" id="saveCountryBtn">Сохранить</button>
+                            <button type="button" class="btn-outline" id="cancelCountryBtn">Отмена</button>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="info-row">
                     <div class="info-label"><i class="fas fa-calendar-alt"></i> Дата регистрации</div>
                     <div class="info-value" id="displayCreatedAt">--</div>
                 </div>
             </div>
-            <!-- Кнопка смены пароля -->
+
             <div class="password-card" id="passwordCard" style="display: none;">
                 <div class="password-info">
                     <i class="fas fa-lock"></i>
@@ -114,7 +126,6 @@
                 </button>
             </div>
 
-            <!-- Кнопка выхода -->
             <div class="logout-card" id="logoutCard" style="display: none;">
                 <button class="btn-logout" id="logoutBtn">
                     <i class="fas fa-sign-out-alt"></i> Выйти из аккаунта
@@ -124,7 +135,6 @@
     </div>
 </main>
 
-<!-- ПОДВАЛ -->
 <footer class="modern-footer">
     <div class="footer-content">
         <div class="footer-info">
@@ -145,10 +155,10 @@
     window.profileUserIdFromServer = /*[[${profileUserId != null ? profileUserId : null}]]*/ null;
     /*]]>*/
 </script>
+
 <script th:src="@{/js/profile.js}"></script>
 <div id="demoToast" class="demo-toast"></div>
 
-<!-- Модальное окно смены пароля -->
 <div id="passwordModal" class="modal" style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
