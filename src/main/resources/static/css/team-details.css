@@ -69,6 +69,12 @@ main.container {
     color: transparent;
 }
 
+.logo-area a:hover .site-title {
+    background: linear-gradient(135deg, #a855f7, #818cf8);
+    background-clip: text;
+    -webkit-background-clip: text;
+}
+
 .nav-links {
     display: flex;
     gap: 1.8rem;
