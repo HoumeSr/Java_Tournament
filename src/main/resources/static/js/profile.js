@@ -128,11 +128,18 @@ $(function () {
             $('#editCountryBtn').show();
         } else {
             $('#editCountryBtn').hide();
+            return;
         }
 
         $('#editCountryBtn').off('click').on('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
+
+            if (!currentProfile || !currentProfile.owner) {
+                showToast('❌ Нет прав для редактирования', true);
+                $('#editCountryBtn').hide();
+                return;
+            }
 
             const currentCountry = $('#countryText').text().trim();
 
@@ -154,6 +161,14 @@ $(function () {
         });
 
         $('#saveCountryBtn').off('click').on('click', function () {
+            if (!currentProfile || !currentProfile.owner) {
+                showToast('❌ Нет прав для изменения страны', true);
+                $('#editCountryBtn').hide();
+                $('#countryEditRow').hide();
+                $('#displayCountry').show();
+                return;
+            }
+            
             const selectedCountry = $('.country-option.selected').data('country');
 
             if (!selectedCountry) {
