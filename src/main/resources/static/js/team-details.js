@@ -1,110 +1,141 @@
 function showToast(message, isError = false) {
-    const toast = document.getElementById('demoToast');
-    if (!toast) return;
-
-    toast.textContent = message;
-    toast.style.background = isError ? '#b91c1c' : '#1f2937';
-    toast.style.opacity = '1';
-    toast.style.visibility = 'visible';
-
+    const $toast = $('#demoToast');
+    if (!$toast.length) return;
+    
+    $toast.text(message).css({
+        background: isError ? '#b91c1c' : '#1f2937',
+        opacity: '1',
+        visibility: 'visible'
+    });
+    
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.visibility = 'hidden';
+        $toast.css({ opacity: '0', visibility: 'hidden' });
     }, 3000);
 }
 
 // ========== АВТОРИЗАЦИЯ ==========
-function updateAuthButtons() {
-    const authContainer = document.getElementById('authButtons');
-    if (!authContainer) return;
-
-    fetch('/api/auth/check')
-        .then(response => response.json())
-        .then(data => {
-            if (data.authenticated) {
-                const imageUrl = data.user?.imageUrl;
-
-                if (imageUrl) {
-                    authContainer.innerHTML = `
-                        <div class="profile-icon" id="profileIcon">
-                            <img src="${imageUrl}" alt="avatar">
-    if (!modal) return;
-
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-
-    const searchInput = document.getElementById('usernameOrEmail');
-    const searchResults = document.getElementById('searchResults');
-    const selectedUserContainer = document.getElementById('selectedUserContainer');
-    const sendInviteBtn = document.getElementById('sendInviteBtn');
-
-    if (searchInput) searchInput.value = '';
-    if (searchResults) {
-        searchResults.style.display = 'none';
-        searchResults.innerHTML = '';
+async function updateAuthButtons() {
+    const $auth = $('#authButtons');
+    if (!$auth.length) return;
+    
+    try {
+        // Используем api.get для проверки авторизации
+        const data = await window.api.get('/api/auth/check');
+        
+        if (data && data.authenticated && data.user) {
+            const avatarUrl = data.user.imageUrl 
+                ? (data.user.imageUrl.startsWith('/') || data.user.imageUrl.startsWith('http') 
+                    ? data.user.imageUrl 
+                    : '/images/' + data.user.imageUrl)
+                : null;
+            $auth.html(`
+                <div class="profile-icon" id="profileIcon">
+                    ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="Аватар">` : '<i class="fas fa-user-circle"></i>'}
+                </div>
+            `);
+            
+            $('#profileIcon').off('click').on('click', () => window.location.href = '/profile');
+        } else {
+            $auth.html(`
+                <button class="btn-outline" id="registerBtn">Регистрация</button>
+                <button class="btn-primary" id="loginBtn">Вход</button>
+            `);
+            $('#registerBtn').off('click').on('click', () => window.location.href = '/register');
+            $('#loginBtn').off('click').on('click', () => window.location.href = '/login');
+            
+            // Очищаем уведомления для неавторизованных
+            if (window.NotificationsModule) {
+                window.NotificationsModule.destroy();
+            }
+        }
+    } catch (error) {
+        console.error('Auth check error:', error);
+        // Показываем кнопки входа в случае ошибки
+        $auth.html(`
+            <button class="btn-outline" id="registerBtn">Регистрация</button>
+            <button class="btn-primary" id="loginBtn">Вход</button>
+        `);
+        $('#registerBtn').off('click').on('click', () => window.location.href = '/register');
+        $('#loginBtn').off('click').on('click', () => window.location.href = '/login');
     }
-    if (selectedUserContainer) selectedUserContainer.style.display = 'none';
-    if (sendInviteBtn) sendInviteBtn.disabled = true;
+}
+
+let selectedUserId = null;
+let selectedUserData = null;
+let searchTimeout = null;
+
+// ========== ОТКРЫТИЕ МОДАЛЬНОГО ОКНА ==========
+function openInviteModal() {
+    const $modal = $('#inviteModal');
+    if (!$modal.length) return;
+
+    $modal.css('display', 'flex');
+    $('body').css('overflow', 'hidden');
+
+    const $searchInput = $('#usernameOrEmail');
+    const $searchResults = $('#searchResults');
+    const $selectedUserContainer = $('#selectedUserContainer');
+    const $sendInviteBtn = $('#sendInviteBtn');
+
+    if ($searchInput.length) $searchInput.val('');
+    if ($searchResults.length) {
+        $searchResults.css('display', 'none').empty();
+    }
+    if ($selectedUserContainer.length) $selectedUserContainer.css('display', 'none');
+    if ($sendInviteBtn.length) $sendInviteBtn.prop('disabled', true);
 
     selectedUserId = null;
     selectedUserData = null;
 
-    setTimeout(() => searchInput?.focus(), 50);
+    setTimeout(() => $searchInput.trigger('focus'), 50);
 }
 
 function closeInviteModal() {
-    const modal = document.getElementById('inviteModal');
-    if (!modal) return;
+    const $modal = $('#inviteModal');
+    if (!$modal.length) return;
 
-    modal.style.display = 'none';
-    document.body.style.overflow = '';
+    $modal.css('display', 'none');
+    $('body').css('overflow', '');
     selectedUserId = null;
     selectedUserData = null;
 }
 
 // ========== ПОИСК ПОЛЬЗОВАТЕЛЕЙ ==========
 async function searchUsers(query) {
-    const resultsDiv = document.getElementById('searchResults');
-    if (!resultsDiv) return;
+    const $resultsDiv = $('#searchResults');
+    if (!$resultsDiv.length) return;
 
     if (!query || query.length < 2) {
-        resultsDiv.style.display = 'none';
+        $resultsDiv.css('display', 'none');
         return;
     }
 
-    resultsDiv.style.display = 'block';
-    resultsDiv.innerHTML = '<div class="loading-users"><i class="fas fa-spinner fa-spin"></i> Поиск...</div>';
+    $resultsDiv.css('display', 'block').html('<div class="loading-users"><i class="fas fa-spinner fa-spin"></i> Поиск...</div>');
 
     try {
-        const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
-
-        if (!response.ok) {
-            throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
-        }
-
-        const users = await response.json();
+        const users = await window.api.get(`/api/users/search?q=${encodeURIComponent(query)}`);
 
         if (!users || users.length === 0) {
-            resultsDiv.innerHTML = '<div class="no-results">👤 Пользователь не найден</div>';
+            $resultsDiv.html('<div class="no-results">👤 Пользователь не найден</div>');
             return;
         }
 
-        resultsDiv.innerHTML = '';
+        $resultsDiv.empty();
 
         users.forEach(user => {
-            const userDiv = document.createElement('div');
-            userDiv.className = 'search-result-item';
-            userDiv.innerHTML = `
-                <div class="search-result-info">
-                    <span class="search-result-username">${escapeHtml(user.username)}</span>
-                    <span class="search-result-email">${escapeHtml(user.country || '')}</span>
+            const $userDiv = $(`
+                <div class="search-result-item" data-user-id="${user.id}">
+                    <div class="search-result-info">
+                        <span class="search-result-username">${escapeHtml(user.username)}</span>
+                        <span class="search-result-email">${escapeHtml(user.country || '')}</span>
+                    </div>
+                    <button class="search-result-select" type="button">
+                        Выбрать
+                    </button>
                 </div>
-                <button class="search-result-select" type="button">
-                    Выбрать
-                </button>
-            `;
+            `);
 
-            userDiv.querySelector('.search-result-select').addEventListener('click', (e) => {
+            $userDiv.find('.search-result-select').on('click', (e) => {
                 e.stopPropagation();
                 selectUser({
                     id: user.id,
@@ -114,7 +145,7 @@ async function searchUsers(query) {
                 });
             });
 
-            userDiv.addEventListener('click', () => {
+            $userDiv.on('click', () => {
                 selectUser({
                     id: user.id,
                     username: user.username,
@@ -123,11 +154,11 @@ async function searchUsers(query) {
                 });
             });
 
-            resultsDiv.appendChild(userDiv);
+            $resultsDiv.append($userDiv);
         });
     } catch (error) {
         console.error('Search error:', error);
-        resultsDiv.innerHTML = `<div class="no-results">❌ ${escapeHtml(error.message)}</div>`;
+        $resultsDiv.html(`<div class="no-results">❌ ${escapeHtml(error.message)}</div>`);
     }
 }
 
@@ -136,25 +167,25 @@ function selectUser(user) {
     selectedUserId = user.id;
     selectedUserData = user;
 
-    const searchResults = document.getElementById('searchResults');
-    const searchInput = document.getElementById('usernameOrEmail');
-    const selectedContainer = document.getElementById('selectedUserContainer');
-    const selectedCard = document.getElementById('selectedUserCard');
-    const sendInviteBtn = document.getElementById('sendInviteBtn');
+    const $searchResults = $('#searchResults');
+    const $searchInput = $('#usernameOrEmail');
+    const $selectedContainer = $('#selectedUserContainer');
+    const $selectedCard = $('#selectedUserCard');
+    const $sendInviteBtn = $('#sendInviteBtn');
 
-    if (searchResults) searchResults.style.display = 'none';
-    if (searchInput) searchInput.value = user.username;
+    if ($searchResults.length) $searchResults.css('display', 'none');
+    if ($searchInput.length) $searchInput.val(user.username);
 
-    if (!selectedContainer || !selectedCard) return;
+    if (!$selectedContainer.length || !$selectedCard.length) return;
 
-    selectedCard.innerHTML = `
+    const avatarHtml = user.imageUrl
+        ? `<img src="${user.imageUrl}" alt="avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+           <i class="fas fa-user-circle" style="display: none;"></i>`
+        : `<i class="fas fa-user-circle"></i>`;
+
+    $selectedCard.html(`
         <div class="selected-user-avatar">
-            ${
-                user.imageUrl
-                    ? `<img src="${user.imageUrl}" alt="avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                       <i class="fas fa-user-circle" style="display: none;"></i>`
-                    : `<i class="fas fa-user-circle"></i>`
-            }
+            ${avatarHtml}
         </div>
         <div class="selected-user-info">
             <span class="selected-user-name">${escapeHtml(user.username)}</span>
@@ -163,17 +194,16 @@ function selectUser(user) {
         <button class="change-user-btn" id="changeUserBtn" type="button" title="Изменить">
             <i class="fas fa-pen"></i>
         </button>
-    `;
+    `);
 
-    selectedContainer.style.display = 'block';
-    if (sendInviteBtn) sendInviteBtn.disabled = false;
+    $selectedContainer.css('display', 'block');
+    if ($sendInviteBtn.length) $sendInviteBtn.prop('disabled', false);
 
-    document.getElementById('changeUserBtn')?.addEventListener('click', () => {
-        selectedContainer.style.display = 'none';
-        if (sendInviteBtn) sendInviteBtn.disabled = true;
-        if (searchInput) {
-            searchInput.value = '';
-            searchInput.focus();
+    $('#changeUserBtn').off('click').on('click', () => {
+        $selectedContainer.css('display', 'none');
+        if ($sendInviteBtn.length) $sendInviteBtn.prop('disabled', true);
+        if ($searchInput.length) {
+            $searchInput.val('').trigger('focus');
         }
         selectedUserId = null;
         selectedUserData = null;
@@ -193,76 +223,66 @@ async function sendInvite() {
         return;
     }
 
-    const sendBtn = document.getElementById('sendInviteBtn');
-    const originalText = sendBtn ? sendBtn.innerHTML : '';
+    const $sendBtn = $('#sendInviteBtn');
+    const originalText = $sendBtn.length ? $sendBtn.html() : '';
 
-    if (sendBtn) {
-        sendBtn.disabled = true;
-        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+    if ($sendBtn.length) {
+        $sendBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Отправка...');
     }
 
     try {
-        const currentUserResponse = await fetch('/api/auth/check');
-        const currentUser = await currentUserResponse.json();
+        const currentUser = await window.api.get('/api/auth/check');
 
         if (currentUser.user?.id === selectedUserId) {
             showToast('❌ Нельзя пригласить самого себя', true);
             return;
         }
 
-        const response = await fetch(`/api/teams/${window.teamData.id}/invite`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: selectedUserId })
+        await window.api.post(`/api/teams/${window.teamData.id}/invite`, {
+            userId: selectedUserId
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Не удалось отправить приглашение');
-        }
 
         showToast(`✅ Приглашение отправлено игроку ${selectedUserData.username}!`);
         closeInviteModal();
     } catch (error) {
         showToast(`❌ ${error.message}`, true);
     } finally {
-        if (sendBtn) {
-            sendBtn.disabled = false;
-            sendBtn.innerHTML = originalText;
+        if ($sendBtn.length) {
+            $sendBtn.prop('disabled', false).html(originalText);
         }
     }
 }
 
 // ========== ИНИЦИАЛИЗАЦИЯ МОДАЛЬНОГО ОКНА ==========
 function initInviteModal() {
-    const searchInput = document.getElementById('usernameOrEmail');
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
+    const $searchInput = $('#usernameOrEmail');
+    if ($searchInput.length) {
+        $searchInput.on('input', (e) => {
             if (searchTimeout) clearTimeout(searchTimeout);
 
             searchTimeout = setTimeout(() => {
-                searchUsers(e.target.value.trim());
+                searchUsers($(e.target).val().trim());
             }, 300);
         });
 
-        searchInput.addEventListener('focus', () => {
-            if (searchInput.value.trim().length >= 2 && !selectedUserId) {
-                searchUsers(searchInput.value.trim());
+        $searchInput.on('focus', () => {
+            const val = $searchInput.val().trim();
+            if (val.length >= 2 && !selectedUserId) {
+                searchUsers(val);
             }
         });
     }
 
-    document.getElementById('sendInviteBtn')?.addEventListener('click', sendInvite);
-    document.getElementById('closeInviteModalBtn')?.addEventListener('click', closeInviteModal);
-    document.getElementById('cancelInviteBtn')?.addEventListener('click', closeInviteModal);
-    document.querySelector('#inviteModal .modal-overlay')?.addEventListener('click', closeInviteModal);
+    $('#sendInviteBtn').off('click').on('click', sendInvite);
+    $('#closeInviteModalBtn, #cancelInviteBtn').off('click').on('click', closeInviteModal);
+    $('#inviteModal .modal-overlay').off('click').on('click', closeInviteModal);
 }
 
 // ========== КНОПКИ ДЕЙСТВИЙ ==========
 function initActionButtons() {
-    const addMemberBtn = document.getElementById('addMemberBtn');
-    if (addMemberBtn) {
-        addMemberBtn.addEventListener('click', (e) => {
+    const $addMemberBtn = $('#addMemberBtn');
+    if ($addMemberBtn.length) {
+        $addMemberBtn.on('click', (e) => {
             e.stopPropagation();
 
             if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
@@ -274,10 +294,10 @@ function initActionButtons() {
         });
     }
 
-    const addMemberCard = document.getElementById('addMemberCard');
-    if (addMemberCard) {
-        addMemberCard.addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-add') || e.target.closest('.btn-add')) return;
+    const $addMemberCard = $('#addMemberCard');
+    if ($addMemberCard.length) {
+        $addMemberCard.on('click', (e) => {
+            if ($(e.target).hasClass('btn-add') || $(e.target).closest('.btn-add').length) return;
 
             if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
                 showToast('❌ Команда уже заполнена', true);
@@ -288,8 +308,8 @@ function initActionButtons() {
         });
     }
 
-    document.querySelectorAll('.btn-kick').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
+    $('.btn-kick').each(function() {
+        $(this).on('click', async (e) => {
             e.stopPropagation();
 
             if (confirm('Вы уверены, что хотите исключить этого участника?')) {
@@ -298,9 +318,9 @@ function initActionButtons() {
         });
     });
 
-    const joinBtn = document.getElementById('joinTeamBtn');
-    if (joinBtn) {
-        joinBtn.addEventListener('click', async () => {
+    const $joinBtn = $('#joinTeamBtn');
+    if ($joinBtn.length) {
+        $joinBtn.on('click', async () => {
             if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
                 showToast('❌ Команда уже заполнена', true);
                 return;
@@ -310,20 +330,20 @@ function initActionButtons() {
         });
     }
 
-    const leaveBtn = document.getElementById('leaveTeamBtn');
-    if (leaveBtn) {
-        leaveBtn.addEventListener('click', async () => {
+    const $leaveBtn = $('#leaveTeamBtn');
+    if ($leaveBtn.length) {
+        $leaveBtn.on('click', async () => {
             if (confirm('Вы уверены, что хотите покинуть команду?')) {
                 showToast('❌ Не удалось покинуть команду (в разработке)', true);
             }
         });
-    });
+    }
 
-    document.addEventListener('keydown', (e) => {
+    $(document).on('keydown', (e) => {
         if (e.key !== 'Escape') return;
 
-        const modal = document.getElementById('inviteModal');
-        if (modal && modal.style.display === 'flex') {
+        const $modal = $('#inviteModal');
+        if ($modal.length && $modal.css('display') === 'flex') {
             closeInviteModal();
         }
     });
@@ -332,7 +352,6 @@ function initActionButtons() {
 // ========== ESCAPE HTML ==========
 function escapeHtml(str) {
     if (!str) return '';
-
     return String(str).replace(/[&<>"']/g, function(m) {
         if (m === '&') return '&amp;';
         if (m === '<') return '&lt;';
@@ -344,7 +363,7 @@ function escapeHtml(str) {
 }
 
 // ========== ЗАПУСК ==========
-document.addEventListener('DOMContentLoaded', () => {
+$(document).ready(() => {
     updateAuthButtons();
     initInviteModal();
     initActionButtons();

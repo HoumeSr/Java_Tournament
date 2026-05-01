@@ -1,30 +1,33 @@
 // ========== ОБЩИЕ ФУНКЦИИ ==========
 
 function showToast(message, isError = false) {
-    const toast = document.getElementById('demoToast');
-    if (!toast) return;
+    let $toast = $('#demoToast');
+    
+    if (!$toast.length) {
+        $toast = $('<div id="demoToast" class="demo-toast"></div>').appendTo('body');
+    }
 
     // Toast должен быть выше модальных затемнений и выпадающих уведомлений.
     // Перенос в body защищает от локальных stacking context внутри страницы.
-    if (toast.parentElement !== document.body) {
-        document.body.appendChild(toast);
+    if ($toast.parent().get(0) !== document.body) {
+        $('body').append($toast);
     }
 
-    toast.textContent = message;
-    toast.style.background = isError ? '#b91c1c' : '#1f2937';
-    toast.style.zIndex = '30000';
-    toast.style.opacity = '1';
-    toast.style.visibility = 'visible';
+    $toast.text(message).css({
+        background: isError ? '#b91c1c' : '#1f2937',
+        zIndex: '30000',
+        opacity: '1',
+        visibility: 'visible'
+    });
 
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.visibility = 'hidden';
+        $toast.css({ opacity: '0', visibility: 'hidden' });
     }, 3000);
 }
 
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
+    return String(str).replace(/[&<>]/g, function(m) {
         if (m === '&') return '&amp;';
         if (m === '<') return '&lt;';
         if (m === '>') return '&gt;';
@@ -62,8 +65,9 @@ let currentUser = null;
 
 async function getCurrentUser() {
     try {
-        const response = await fetch('/api/auth/check');
-        const data = await response.json();
+        // Используем api.get вместо fetch
+        const data = await window.api.get('/api/auth/check');
+        
         if (data.authenticated && data.user) {
             currentUser = data.user;
         }
@@ -73,3 +77,92 @@ async function getCurrentUser() {
         return null;
     }
 }
+
+// Дополнительная функция для обновления аватара в шапке
+async function updateAuthButtons() {
+    const $auth = $('#authButtons');
+    if (!$auth.length) return;
+    
+    try {
+        const data = await window.api.get('/api/auth/check');
+        
+        if (data.authenticated && data.user) {
+            currentUser = data.user;
+            const imageUrl = data.user.imageUrl;
+            
+            if (imageUrl) {
+                $auth.html(`
+                    <div class="profile-icon" id="profileIcon">
+                        <img src="${escapeHtml(imageUrl)}" alt="avatar">
+                    </div>
+                `);
+            } else {
+                $auth.html(`
+                    <div class="profile-icon" id="profileIcon">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                `);
+            }
+            
+            $('#profileIcon').off('click').on('click', () => {
+                window.location.href = '/profile';
+            });
+        } else {
+            $auth.html(`
+                <button class="btn-outline" id="registerBtn">Регистрация</button>
+                <button class="btn-primary" id="loginBtn">Вход</button>
+            `);
+            
+            $('#registerBtn').off('click').on('click', () => {
+                window.location.href = '/register';
+            });
+            
+            $('#loginBtn').off('click').on('click', () => {
+                window.location.href = '/login';
+            });
+        }
+    } catch (error) {
+        console.error('Auth check error:', error);
+        $auth.html(`
+            <button class="btn-outline" id="registerBtn">Регистрация</button>
+            <button class="btn-primary" id="loginBtn">Вход</button>
+        `);
+        
+        $('#registerBtn').off('click').on('click', () => {
+            window.location.href = '/register';
+        });
+        
+        $('#loginBtn').off('click').on('click', () => {
+            window.location.href = '/login';
+        });
+    }
+}
+
+// Функция для проверки авторизации с редиректом
+async function requireAuth() {
+    const user = await getCurrentUser();
+    if (!user) {
+        window.location.href = '/login';
+        return null;
+    }
+    return user;
+}
+
+// Функция для выхода
+async function logout() {
+    try {
+        await window.api.post('/api/auth/logout', {});
+    } finally {
+        window.location.href = '/login';
+    }
+}
+
+// ========== ЭКСПОРТ ФУНКЦИЙ (если используете модули) ==========
+window.showToast = showToast;
+window.escapeHtml = escapeHtml;
+window.formatDate = formatDate;
+window.getStatusBadge = getStatusBadge;
+window.getCurrentUser = getCurrentUser;
+window.updateAuthButtons = updateAuthButtons;
+window.requireAuth = requireAuth;
+window.logout = logout;

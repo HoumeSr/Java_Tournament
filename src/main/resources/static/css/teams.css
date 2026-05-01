@@ -65,6 +65,16 @@ main.container {
     color: transparent;
 }
 
+.logo-area a {
+    text-decoration: none;
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+.logo-area a:hover {
+    transform: scale(1.02);
+}
+
 .logo-area a:hover .site-title {
     background: linear-gradient(135deg, #a855f7, #818cf8);
     background-clip: text;
@@ -1286,4 +1296,81 @@ main.container {
     margin: 0 auto;
     width: 100%;
     grid-column: 1 / -1; /* Растягиваем на всю ширину сетки */
+}
+
+/* Стили для фильтров */
+.filters-section {
+    margin-bottom: 2rem;
+}
+
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.filters-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.teams-count {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.game-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-btn {
+    padding: 0.5rem 1.2rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 40px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.filter-btn:hover {
+    background: rgba(124, 58, 237, 0.1);
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.filter-btn.active-filter {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.filter-count {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 6px;
+    background: rgba(124, 58, 237, 0.2);
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.active-filter .filter-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.team-pill.closed {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.15);
 }

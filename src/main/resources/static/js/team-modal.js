@@ -1,260 +1,241 @@
-// ========== МОДАЛЬНОЕ ОКНО ПРИГЛАШЕНИЯ ==========
+// team-modal.js
+(function() {
+    let selectedUserId = null;
+    let selectedUserData = null;
+    let searchTimeout = null;
 
-let selectedUserId = null;
-let selectedUserData = null;
-let searchTimeout = null;
+    function showToast(message, isError = false) {
+        const $toast = $('#demoToast');
+        if (!$toast.length) return;
+        $toast.text(message).css({ background: isError ? '#b91c1c' : '#1f2937', opacity: '1', visibility: 'visible' });
+        setTimeout(function () { $toast.css({ opacity: '0', visibility: 'hidden' }); }, 3000);
+    }
 
-function openInviteModal() {
-    const modal = document.getElementById('inviteModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            if (m === '"') return '&quot;';
+            if (m === "'") return '&#039;';
+            return m;
+        });
+    }
 
-        document.getElementById('usernameOrEmail').value = '';
-        document.getElementById('searchResults').style.display = 'none';
-        document.getElementById('selectedUserContainer').style.display = 'none';
-        document.getElementById('sendInviteBtn').disabled = true;
+    function openInviteModal() {
+        const $modal = $('#inviteModal');
+        if (!$modal.length) return;
+
+        $modal.css('display', 'flex');
+        $('body').css('overflow', 'hidden');
+
+        $('#usernameOrEmail').val('');
+        $('#searchResults').css('display', 'none').empty();
+        $('#selectedUserContainer').css('display', 'none');
+        $('#sendInviteBtn').prop('disabled', true);
+
+        selectedUserId = null;
+        selectedUserData = null;
+        
+        setTimeout(() => $('#usernameOrEmail').trigger('focus'), 50);
+    }
+
+    function closeInviteModal() {
+        const $modal = $('#inviteModal');
+        if (!$modal.length) return;
+
+        $modal.css('display', 'none');
+        $('body').css('overflow', '');
 
         selectedUserId = null;
         selectedUserData = null;
     }
-}
 
-function closeInviteModal() {
-    const modal = document.getElementById('inviteModal');
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-
-        selectedUserId = null;
-        selectedUserData = null;
-    }
-}
-
-async function searchUsers(query) {
-    if (!query || query.length < 2) {
-        document.getElementById('searchResults').style.display = 'none';
-        return;
-    }
-
-    const resultsDiv = document.getElementById('searchResults');
-    resultsDiv.style.display = 'block';
-    resultsDiv.innerHTML = '<div class="loading-users"><i class="fas fa-spinner fa-spin"></i><br>Поиск...</div>';
-
-    try {
-        const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
-
-        if (!response.ok) {
-            throw new Error(`Ошибка ${response.status}`);
-        }
-
-        const users = await response.json();
-
-        if (!users || users.length === 0) {
-            resultsDiv.innerHTML = '<div class="no-results"><i class="fas fa-user-slash"></i><br>Пользователь не найден</div>';
+    async function searchUsers(query) {
+        if (!query || query.length < 2) {
+            $('#searchResults').css('display', 'none');
             return;
         }
 
-        resultsDiv.innerHTML = '';
+        const $resultsDiv = $('#searchResults');
+        $resultsDiv.css('display', 'block').html('<div class="loading-users"><i class="fas fa-spinner fa-spin"></i><br>Поиск...</div>');
 
-        users.forEach(user => {
-            if (!user) {
+        try {
+            const users = await window.api.get(`/api/users/search?q=${encodeURIComponent(query)}`);
+
+            if (!users || users.length === 0) {
+                $resultsDiv.html('<div class="no-results"><i class="fas fa-user-slash"></i><br>Пользователь не найден</div>');
                 return;
             }
 
-            const username = user.username || 'Без имени';
+            $resultsDiv.empty();
 
-            const userDiv = document.createElement('div');
-            userDiv.className = 'search-result-item';
-            userDiv.innerHTML = `
-                <div class="search-result-info">
-                    <span class="search-result-username">${escapeHtml(username)}</span>
-                    <span class="search-result-email">${escapeHtml(user.country || 'Игрок')}</span>
-                </div>
-                <button class="search-result-select"
-                        data-user-id="${user.id}"
-                        data-username="${escapeHtml(username)}"
-                        data-country="${escapeHtml(user.country || '')}"
-                        data-image="${escapeHtml(user.imageUrl || '')}">
-                    Выбрать
-                </button>
-            `;
+            users.forEach(user => {
+                if (!user) return;
 
-            userDiv.querySelector('.search-result-select').addEventListener('click', (e) => {
-                e.stopPropagation();
+                const username = user.username || 'Без имени';
 
-                selectUser({
-                    id: user.id,
-                    username: username,
-                    country: user.country,
-                    imageUrl: user.imageUrl
+                const $userDiv = $(`
+                    <div class="search-result-item">
+                        <div class="search-result-info">
+                            <span class="search-result-username">${escapeHtml(username)}</span>
+                            <span class="search-result-email">${escapeHtml(user.country || 'Игрок')}</span>
+                        </div>
+                        <button class="search-result-select"
+                            data-user-id="${user.id}"
+                            data-username="${escapeHtml(username)}"
+                            data-country="${escapeHtml(user.country || '')}"
+                            data-image="${escapeHtml(user.imageUrl || '')}">
+                            Выбрать
+                        </button>
+                    </div>
+                `);
+
+                $userDiv.find('.search-result-select').on('click', (e) => {
+                    e.stopPropagation();
+                    selectUser({
+                        id: user.id,
+                        username: username,
+                        country: user.country,
+                        imageUrl: user.imageUrl
+                    });
                 });
+
+                $resultsDiv.append($userDiv);
             });
-
-            resultsDiv.appendChild(userDiv);
-        });
-    } catch (error) {
-        console.error('Search error:', error);
-        resultsDiv.innerHTML = `<div class="no-results"><i class="fas fa-exclamation-triangle"></i><br>${error.message}</div>`;
-    }
-}
-
-function selectUser(user) {
-    if (!user) {
-        showToast('❌ Не удалось выбрать пользователя', true);
-        return;
-    }
-
-    selectedUserId = user.id;
-    selectedUserData = user;
-
-    document.getElementById('searchResults').style.display = 'none';
-    document.getElementById('usernameOrEmail').value = user.username || '';
-
-    const selectedContainer = document.getElementById('selectedUserContainer');
-    const selectedCard = document.getElementById('selectedUserCard');
-
-    selectedCard.innerHTML = `
-        <div class="selected-user-avatar">
-            ${user.imageUrl
-                ? `<img src="${escapeHtml(user.imageUrl)}" alt="avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                   <i class="fas fa-user-circle" style="display: none;"></i>`
-                : `<i class="fas fa-user-circle"></i>`
-            }
-        </div>
-        <div class="selected-user-info">
-            <span class="selected-user-name">${escapeHtml(user.username || 'Без имени')}</span>
-            <span class="selected-user-email">${escapeHtml(user.country || 'Игрок')}</span>
-        </div>
-        <button class="change-user-btn" id="changeUserBtn" title="Изменить">
-            <i class="fas fa-pen"></i>
-        </button>
-    `;
-
-    selectedContainer.style.display = 'block';
-    document.getElementById('sendInviteBtn').disabled = false;
-
-    document.getElementById('changeUserBtn').addEventListener('click', () => {
-        selectedContainer.style.display = 'none';
-        document.getElementById('sendInviteBtn').disabled = true;
-        document.getElementById('usernameOrEmail').value = '';
-        document.getElementById('usernameOrEmail').focus();
-
-        selectedUserId = null;
-        selectedUserData = null;
-    });
-}
-
-async function readErrorMessage(response, fallbackMessage) {
-    try {
-        const text = await response.text();
-
-        if (!text) {
-            return fallbackMessage;
+        } catch (error) {
+            console.error('Search error:', error);
+            $resultsDiv.html(`<div class="no-results"><i class="fas fa-exclamation-triangle"></i><br>${escapeHtml(error.message)}</div>`);
         }
+    }
+
+    function selectUser(user) {
+        if (!user) {
+            showToast('❌ Не удалось выбрать пользователя', true);
+            return;
+        }
+
+        selectedUserId = user.id;
+        selectedUserData = user;
+
+        $('#searchResults').css('display', 'none');
+        $('#usernameOrEmail').val(user.username || '');
+
+        const $selectedContainer = $('#selectedUserContainer');
+        const $selectedCard = $('#selectedUserCard');
+
+        const avatarHtml = user.imageUrl
+            ? `<img src="${escapeHtml(user.imageUrl)}" alt="avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+               <i class="fas fa-user-circle" style="display: none;"></i>`
+            : `<i class="fas fa-user-circle"></i>`;
+
+        $selectedCard.html(`
+            <div class="selected-user-avatar">
+                ${avatarHtml}
+            </div>
+            <div class="selected-user-info">
+                <span class="selected-user-name">${escapeHtml(user.username || 'Без имени')}</span>
+                <span class="selected-user-email">${escapeHtml(user.country || 'Игрок')}</span>
+            </div>
+            <button class="change-user-btn" id="changeUserBtn" title="Изменить">
+                <i class="fas fa-pen"></i>
+            </button>
+        `);
+
+        $selectedContainer.css('display', 'block');
+        $('#sendInviteBtn').prop('disabled', false);
+
+        $('#changeUserBtn').off('click').on('click', () => {
+            $selectedContainer.css('display', 'none');
+            $('#sendInviteBtn').prop('disabled', true);
+            $('#usernameOrEmail').val('').trigger('focus');
+
+            selectedUserId = null;
+            selectedUserData = null;
+        });
+    }
+
+    async function sendInvite() {
+        if (!selectedUserId) {
+            showToast('❌ Выберите пользователя', true);
+            return;
+        }
+
+        if (window.teamData?.currentMembersCount >= window.teamData?.maxMembersCount) {
+            showToast('❌ Команда уже заполнена', true);
+            closeInviteModal();
+            return;
+        }
+
+        if (window.currentUser && window.currentUser.id === selectedUserId) {
+            showToast('❌ Нельзя пригласить самого себя', true);
+            return;
+        }
+
+        const $sendBtn = $('#sendInviteBtn');
+        const originalText = $sendBtn.html();
+
+        $sendBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Отправка...');
 
         try {
-            const data = JSON.parse(text);
-            return data.message || data.error || data.detail || fallbackMessage;
-        } catch (_) {
-            return text;
-        }
-    } catch (_) {
-        return fallbackMessage;
-    }
-}
+            const teamId = window.teamData && window.teamData.id;
 
-async function sendInvite() {
-    if (!selectedUserId) {
-        showToast('❌ Выберите пользователя', true);
-        return;
-    }
+            if (!teamId) {
+                throw new Error('Не удалось определить команду для приглашения');
+            }
 
-    if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
-        showToast('❌ Команда уже заполнена', true);
-        closeInviteModal();
-        return;
-    }
+            const invitedUsername = selectedUserData?.username || 'игроку';
 
-    if (currentUser && currentUser.id === selectedUserId) {
-        showToast('❌ Нельзя пригласить самого себя', true);
-        return;
-    }
-
-    const sendBtn = document.getElementById('sendInviteBtn');
-    const originalText = sendBtn.innerHTML;
-
-    sendBtn.disabled = true;
-    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
-
-    try {
-        const teamId = window.teamData && window.teamData.id;
-
-        if (!teamId) {
-            throw new Error('Не удалось определить команду для приглашения');
-        }
-
-        const invitedUsername = selectedUserData?.username || 'игроку';
-
-        const response = await fetch(`/api/teams/${teamId}/invite`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
+            await window.api.post(`/api/teams/${teamId}/invite`, {
                 userId: selectedUserId
-            })
-        });
+            });
 
-        if (!response.ok) {
-            const message = await readErrorMessage(response, 'Не удалось отправить приглашение');
-            throw new Error(message);
+            closeInviteModal();
+            showToast(`✅ Приглашение отправлено игроку ${escapeHtml(invitedUsername)}!`);
+        } catch (error) {
+            showToast(`❌ ${error.message}`, true);
+        } finally {
+            $sendBtn.prop('disabled', false).html(originalText);
         }
-
-        closeInviteModal();
-        showToast(`✅ Приглашение отправлено игроку ${invitedUsername}!`);
-    } catch (error) {
-        showToast(`❌ ${error.message}`, true);
-    } finally {
-        sendBtn.disabled = false;
-        sendBtn.innerHTML = originalText;
-    }
-}
-
-function initModal() {
-    const searchInput = document.getElementById('usernameOrEmail');
-
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            if (searchTimeout) {
-                clearTimeout(searchTimeout);
-            }
-
-            searchTimeout = setTimeout(() => {
-                searchUsers(e.target.value.trim());
-            }, 300);
-        });
-
-        searchInput.addEventListener('focus', () => {
-            if (searchInput.value.trim().length >= 2 && !selectedUserId) {
-                searchUsers(searchInput.value.trim());
-            }
-        });
     }
 
-    document.getElementById('sendInviteBtn')?.addEventListener('click', sendInvite);
-    document.getElementById('closeInviteModalBtn')?.addEventListener('click', closeInviteModal);
-    document.getElementById('cancelInviteBtn')?.addEventListener('click', closeInviteModal);
-    document.querySelector('#inviteModal .modal-overlay')?.addEventListener('click', closeInviteModal);
+    function initModal() {
+        const $searchInput = $('#usernameOrEmail');
 
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            const modal = document.getElementById('inviteModal');
+        if ($searchInput.length) {
+            $searchInput.off('input').on('input', (e) => {
+                if (searchTimeout) clearTimeout(searchTimeout);
 
-            if (modal && modal.style.display === 'flex') {
-                closeInviteModal();
-            }
+                searchTimeout = setTimeout(() => {
+                    searchUsers($(e.target).val().trim());
+                }, 300);
+            });
+
+            $searchInput.off('focus').on('focus', () => {
+                const val = $searchInput.val().trim();
+                if (val.length >= 2 && !selectedUserId) {
+                    searchUsers(val);
+                }
+            });
         }
-    });
-}
+
+        $('#sendInviteBtn').off('click').on('click', sendInvite);
+        $('#closeInviteModalBtn, #cancelInviteBtn').off('click').on('click', closeInviteModal);
+        $('#inviteModal .modal-overlay').off('click').on('click', closeInviteModal);
+
+        $(document).off('keydown').on('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const $modal = $('#inviteModal');
+                if ($modal.length && $modal.css('display') === 'flex') {
+                    closeInviteModal();
+                }
+            }
+        });
+    }
+
+    // Экспортируем функции в глобальную область
+    window.openInviteModal = openInviteModal;
+    window.closeInviteModal = closeInviteModal;
+    window.initModal = initModal;
+})();

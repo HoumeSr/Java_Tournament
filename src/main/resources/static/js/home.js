@@ -39,7 +39,7 @@ $(document).ready(function() {
         return '🏆';
     }
 
-    // Загрузка данных - используем прямые GET запросы через api
+    // Загрузка данных - используем api хелпер
     async function loadCategories() {
         try {
             // Используем api.get для /api/gametypes
@@ -219,7 +219,8 @@ $(document).ready(function() {
             $grid.append($card);
         });
     }
-    // Авторизация - используем api.get напрямую
+    
+    // Авторизация - используем api.get
     async function updateAuthButtons() {
         const $auth = $('#authButtons');
         if (!$auth.length) return;

@@ -1,4 +1,4 @@
-/* team-actions.js — действия с DTO через jQuery/AJAX */
+/* team-actions.js — действия с DTO через API хелпер */
 $(function () {
     function showToast(message, isError = false) {
         const $toast = $('#demoToast');
@@ -19,10 +19,12 @@ $(function () {
         return '/images/' + imageUrl;
     }
 
-    function updateAuthButtons() {
-        $.ajax({ url: '/api/auth/check', method: 'GET', dataType: 'json' }).done(function (data) {
-            const $auth = $('#authButtons');
-            if (!$auth.length) return;
+    async function updateAuthButtons() {
+        const $auth = $('#authButtons');
+        if (!$auth.length) return;
+
+        try {
+            const data = await window.api.get('/api/auth/check');
 
             if (data.authenticated && data.user) {
                 const imageUrl = resolveImageUrl(data.user.imageUrl);
@@ -31,7 +33,7 @@ $(function () {
                         ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
                     </div>
                 `);
-                $('#profileIcon').on('click', function () { window.location.href = '/profile'; });
+                $('#profileIcon').off('click').on('click', function () { window.location.href = '/profile'; });
                 if (typeof getCurrentUser === 'function') getCurrentUser();
                 if (typeof createNotificationIcon === 'function') setTimeout(createNotificationIcon, 100);
             } else {
@@ -39,21 +41,32 @@ $(function () {
                     <button class="btn-outline" id="registerBtn">Регистрация</button>
                     <button class="btn-primary" id="loginBtn">Вход</button>
                 `);
-                $('#registerBtn').on('click', function () { window.location.href = '/register'; });
-                $('#loginBtn').on('click', function () { window.location.href = '/login'; });
+                $('#registerBtn').off('click').on('click', function () { window.location.href = '/register'; });
+                $('#loginBtn').off('click').on('click', function () { window.location.href = '/login'; });
             }
-        });
+        } catch (error) {
+            console.error('Auth check error:', error);
+            $auth.html(`
+                <button class="btn-outline" id="registerBtn">Регистрация</button>
+                <button class="btn-primary" id="loginBtn">Вход</button>
+            `);
+            $('#registerBtn').off('click').on('click', function () { window.location.href = '/register'; });
+            $('#loginBtn').off('click').on('click', function () { window.location.href = '/login'; });
+        }
     }
 
-    function getAuthUser() {
-        return $.ajax({ url: '/api/auth/check', method: 'GET', dataType: 'json' }).then(function (data) {
+    async function getAuthUser() {
+        try {
+            const data = await window.api.get('/api/auth/check');
             if (data.authenticated && data.user) return data.user;
             throw new Error('Необходимо авторизоваться');
-        });
+        } catch (error) {
+            throw new Error('Необходимо авторизоваться');
+        }
     }
 
     function initInviteButton() {
-        $('#addMemberBtn, #addMemberCard').on('click', function (event) {
+        $('#addMemberBtn, #addMemberCard').off('click').on('click', function (event) {
             event.preventDefault();
             if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
                 showToast('❌ Команда уже заполнена', true);
@@ -64,26 +77,24 @@ $(function () {
     }
 
     function initKickButtons() {
-        $('.btn-kick').on('click', function (event) {
+        $('.btn-kick').off('click').on('click', function (event) {
             event.stopPropagation();
             const userId = $(this).data('user-id');
             if (!confirm('Вы уверены, что хотите исключить этого участника?')) return;
 
-            $.ajax({
-                url: `/api/teams/${window.teamData.id}/members/${userId}`,
-                method: 'DELETE',
-                dataType: 'json'
-            }).done(function () {
-                showToast('✅ Участник исключён из команды');
-                setTimeout(function () { window.location.reload(); }, 800);
-            }).fail(function (xhr) {
-                showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось исключить участника'), true);
-            });
+            window.api.delete(`/api/teams/${window.teamData.id}/members/${userId}`)
+                .done(function () {
+                    showToast('✅ Участник исключён из команды');
+                    setTimeout(function () { window.location.reload(); }, 800);
+                })
+                .fail(function (xhr) {
+                    showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось исключить участника'), true);
+                });
         });
     }
 
     function initJoinButton() {
-        $('#joinTeamBtn').on('click', function () {
+        $('#joinTeamBtn').off('click').on('click', async function () {
             if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
                 showToast('❌ Команда уже заполнена', true);
                 return;
@@ -92,40 +103,33 @@ $(function () {
             const $button = $(this);
             $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Вступление...');
 
-            getAuthUser().then(function (user) {
-                return $.ajax({
-                    url: `/api/teams/${window.teamData.id}/members`,
-                    method: 'POST',
-                    contentType: 'application/json',
-                    dataType: 'json',
-                    data: JSON.stringify({ userId: user.id })
-                });
-            }).done(function () {
+            try {
+                const user = await getAuthUser();
+                await window.api.post(`/api/teams/${window.teamData.id}/members`, { userId: user.id });
                 showToast('✅ Вы вступили в команду');
                 setTimeout(function () { window.location.reload(); }, 800);
-            }).fail(function (xhr) {
-                showToast('❌ ' + (xhr.responseJSON?.message || xhr.message || 'Не удалось вступить в команду'), true);
+            } catch (error) {
+                showToast('❌ ' + (error.message || 'Не удалось вступить в команду'), true);
                 $button.prop('disabled', false).html('<i class="fas fa-sign-in-alt"></i> Вступить в команду');
-            });
+            }
         });
     }
 
     function initLeaveButton() {
-        $('#leaveTeamBtn').on('click', function () {
+        $('#leaveTeamBtn').off('click').on('click', async function () {
             if (!confirm('Вы уверены, что хотите покинуть команду?')) return;
+            
             const $button = $(this);
             $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Выход...');
 
-            $.ajax({
-                url: `/api/teams/${window.teamData.id}/leave`,
-                method: 'POST'
-            }).done(function () {
+            try {
+                await window.api.post(`/api/teams/${window.teamData.id}/leave`);
                 showToast('✅ Вы покинули команду');
                 setTimeout(function () { window.location.href = '/teams'; }, 800);
-            }).fail(function (xhr) {
-                showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось покинуть команду'), true);
+            } catch (error) {
+                showToast('❌ ' + (error.message || 'Не удалось покинуть команду'), true);
                 $button.prop('disabled', false).html('<i class="fas fa-sign-out-alt"></i> Покинуть команду');
-            });
+            }
         });
     }
 

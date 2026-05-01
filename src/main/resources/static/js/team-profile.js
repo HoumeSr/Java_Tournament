@@ -1,117 +1,125 @@
 // ========== УВЕДОМЛЕНИЯ ==========
 function showToast(message, isError = false) {
-    const toast = document.getElementById('demoToast');
-    if (!toast) return;
+    const $toast = $('#demoToast');
+    if (!$toast.length) return;
     
-    toast.textContent = message;
-    toast.style.background = isError ? '#b91c1c' : '#1f2937';
-    toast.style.opacity = '1';
-    toast.style.visibility = 'visible';
+    $toast.text(message).css({
+        background: isError ? '#b91c1c' : '#1f2937',
+        opacity: '1',
+        visibility: 'visible'
+    });
     
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.visibility = 'hidden';
+        $toast.css({ opacity: '0', visibility: 'hidden' });
     }, 3000);
 }
 
 // ========== АВТОРИЗАЦИЯ В ШАПКЕ ==========
-function updateAuthButtons() {
-    const authContainer = document.getElementById('authButtons');
-    if (!authContainer) return;
+async function updateAuthButtons() {
+    const $auth = $('#authButtons');
+    if (!$auth.length) return;
     
-    fetch('/api/auth/check')
-        .then(response => response.json())
-        .then(data => {
-            if (data.authenticated) {
-                const savedAvatar = localStorage.getItem('userAvatar');
-                
-                if (savedAvatar) {
-                    authContainer.innerHTML = `
-                        <div class="profile-icon" id="profileIcon">
-                            <img src="${savedAvatar}">
-                        </div>
-                    `;
-                } else {
-                    authContainer.innerHTML = `
-                        <div class="profile-icon" id="profileIcon">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
-                    `;
-                }
-                document.getElementById('profileIcon')?.addEventListener('click', () => {
-                    window.location.href = '/profile';
-                });
-            } else {
-                authContainer.innerHTML = `
-                    <button class="btn-outline" id="registerBtn">Регистрация</button>
-                    <button class="btn-primary" id="loginBtn">Вход</button>
-                `;
-                document.getElementById('registerBtn')?.addEventListener('click', () => {
-                    window.location.href = '/register';
-                });
-                document.getElementById('loginBtn')?.addEventListener('click', () => {
-                    window.location.href = '/login';
-                });
+    try {
+        // Используем api.get для проверки авторизации
+        const data = await window.api.get('/api/auth/check');
+        
+        if (data && data.authenticated && data.user) {
+            const avatarUrl = data.user.imageUrl 
+                ? (data.user.imageUrl.startsWith('/') || data.user.imageUrl.startsWith('http') 
+                    ? data.user.imageUrl 
+                    : '/images/' + data.user.imageUrl)
+                : null;
+            $auth.html(`
+                <div class="notification-wrapper">
+                    <div class="notification-bell" id="notificationBell">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                </div>
+                <div class="profile-icon" id="profileIcon">
+                    ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="Аватар">` : '<i class="fas fa-user-circle"></i>'}
+                </div>
+            `);
+            
+            $('#profileIcon').off('click').on('click', () => window.location.href = '/profile');
+            
+            // Инициализируем модуль уведомлений
+            if (window.NotificationsModule) {
+                window.NotificationsModule.init();
+                window.NotificationsModule.loadNotifications();
             }
-        });
+        } else {
+            $auth.html(`
+                <button class="btn-outline" id="registerBtn">Регистрация</button>
+                <button class="btn-primary" id="loginBtn">Вход</button>
+            `);
+            $('#registerBtn').off('click').on('click', () => window.location.href = '/register');
+            $('#loginBtn').off('click').on('click', () => window.location.href = '/login');
+            
+            // Очищаем уведомления для неавторизованных
+            if (window.NotificationsModule) {
+                window.NotificationsModule.destroy();
+            }
+        }
+    } catch (error) {
+        console.error('Auth check error:', error);
+        // Показываем кнопки входа в случае ошибки
+        $auth.html(`
+            <button class="btn-outline" id="registerBtn">Регистрация</button>
+            <button class="btn-primary" id="loginBtn">Вход</button>
+        `);
+        $('#registerBtn').off('click').on('click', () => window.location.href = '/register');
+        $('#loginBtn').off('click').on('click', () => window.location.href = '/login');
+    }
 }
 
 // ========== ДЕЙСТВИЯ С КОМАНДОЙ ==========
 function initTeamActions() {
-    const joinBtn = document.getElementById('joinTeamBtn');
-    const leaveBtn = document.getElementById('leaveTeamBtn');
-    const editBtn = document.getElementById('editTeamBtn');
+    const $joinBtn = $('#joinTeamBtn');
+    const $leaveBtn = $('#leaveTeamBtn');
+    const $editBtn = $('#editTeamBtn');
     
-    if (joinBtn) {
-        joinBtn.addEventListener('click', async () => {
+    if ($joinBtn.length) {
+        $joinBtn.off('click').on('click', async () => {
             try {
-                const response = await fetch('/api/teams/join', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: `teamId=${window.teamId}`
+                const data = await window.api.post('/api/teams/join', null, {
+                    params: { teamId: window.teamId }
                 });
-                const data = await response.json();
+                
                 if (data.success) {
                     showToast('✅ Вы вступили в команду');
                     setTimeout(() => window.location.reload(), 1500);
                 } else {
-                    showToast('❌ ' + data.message, true);
+                    showToast('❌ ' + (data.message || 'Не удалось вступить'), true);
                 }
             } catch (error) {
-                showToast('❌ Ошибка соединения', true);
+                showToast('❌ ' + (error.message || 'Ошибка соединения'), true);
             }
         });
     }
     
-    if (leaveBtn) {
-        leaveBtn.addEventListener('click', async () => {
+    if ($leaveBtn.length) {
+        $leaveBtn.off('click').on('click', async () => {
             if (confirm('Вы уверены, что хотите покинуть команду?')) {
                 try {
-                    const response = await fetch('/api/teams/leave', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: `teamId=${window.teamId}`
+                    const data = await window.api.post('/api/teams/leave', null, {
+                        params: { teamId: window.teamId }
                     });
-                    const data = await response.json();
+                    
                     if (data.success) {
                         showToast('👋 Вы покинули команду');
                         setTimeout(() => window.location.reload(), 1500);
                     } else {
-                        showToast('❌ ' + data.message, true);
+                        showToast('❌ ' + (data.message || 'Не удалось покинуть'), true);
                     }
                 } catch (error) {
-                    showToast('❌ Ошибка соединения', true);
+                    showToast('❌ ' + (error.message || 'Ошибка соединения'), true);
                 }
             }
         });
     }
     
-    if (editBtn) {
-        editBtn.addEventListener('click', () => {
+    if ($editBtn.length) {
+        $editBtn.off('click').on('click', () => {
             window.location.href = `/team/edit/${window.teamId}`;
         });
     }
@@ -119,17 +127,33 @@ function initTeamActions() {
 
 // ========== НАВИГАЦИЯ ==========
 function initNavBar() {
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        if (item.getAttribute('href') && item.getAttribute('href') !== '#') return;
-        item.addEventListener('click', () => {
+    $('.nav-item').each(function() {
+        const $item = $(this);
+        const href = $item.attr('href');
+        
+        if (href && href !== '#') return;
+        
+        $item.off('click').on('click', () => {
             showToast('📋 Этот раздел в разработке');
         });
     });
 }
 
+// ========== ESCAPE HTML ==========
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>"']/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        if (m === '"') return '&quot;';
+        if (m === "'") return '&#039;';
+        return m;
+    });
+}
+
 // ========== ЗАПУСК ==========
-document.addEventListener('DOMContentLoaded', () => {
+$(document).ready(() => {
     updateAuthButtons();
     initTeamActions();
     initNavBar();

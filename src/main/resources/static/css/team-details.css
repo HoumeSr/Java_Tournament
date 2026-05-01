@@ -69,6 +69,16 @@ main.container {
     color: transparent;
 }
 
+.logo-area a {
+    text-decoration: none;
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+.logo-area a:hover {
+    transform: scale(1.02);
+}
+
 .logo-area a:hover .site-title {
     background: linear-gradient(135deg, #a855f7, #818cf8);
     background-clip: text;
