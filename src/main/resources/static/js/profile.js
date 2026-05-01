@@ -121,8 +121,26 @@ $(function () {
         img.src = avatarUrl;
     }
 
+    function updateCountryDisplay(country) {
+        const $countryFlag = $('#countryFlag');
+        const $countryText = $('#countryText');
+        
+        $countryText.text(country);
+        
+        if (country === 'Россия') {
+            $countryFlag.text('🇷🇺').show();
+        } else if (country === 'Другое') {
+            $countryFlag.text('🌍').show();
+        } else {
+            $countryFlag.hide();
+        }
+    }
+
     function initCountryEdit() {
         const isOwner = Boolean(currentProfile?.owner);
+
+        const currentCountry = $('#countryText').text().trim();
+        updateCountryDisplay(currentCountry);
 
         if (isOwner) {
             $('#editCountryBtn').show();
@@ -185,7 +203,7 @@ $(function () {
                 })
             })
             .done(function () {
-                $('#countryText').text(selectedCountry);
+                updateCountryDisplay(selectedCountry);
                 $('#displayCountry').show();
                 $('#countryEditRow').hide();
 

@@ -1352,3 +1352,208 @@ body {
     background-clip: text;
     -webkit-background-clip: text;
 }
+
+/* Улучшенный горизонтальный выбор страны */
+.country-selector {
+    display: flex;
+    flex-direction: row;  /* Явно указываем горизонтальное направление */
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.country-option {
+    display: inline-flex;  /* Меняем на inline-flex для лучшего поведения в строке */
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-dim);
+    border-radius: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.country-option i {
+    font-size: 18px;
+    transition: transform 0.2s ease;
+}
+
+.country-option:hover {
+    background: rgba(124, 58, 237, 0.1);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.country-option:hover i {
+    transform: scale(1.1);
+}
+
+.country-option.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.country-option.selected i {
+    color: white;
+}
+
+/* Контейнер для кнопок действий */
+.country-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+/* Убедитесь, что строка редактирования правильно отображается */
+#countryEditRow {
+    margin-top: 10px;
+}
+
+/* Адаптив для мобильных устройств - на маленьких экранах переключаем в колонку */
+@media (max-width: 480px) {
+    .country-selector {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .country-option {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .country-actions {
+        flex-direction: column;
+    }
+    
+    .country-actions .btn-primary,
+    .country-actions .btn-outline {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Анимация при появлении */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#countryEditRow {
+    animation: slideDown 0.2s ease;
+}
+
+/* Стили для контейнера с опциями стран */
+.country-options {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+/* Стили для кнопок выбора страны */
+.country-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-dim);
+    border-radius: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.country-option i {
+    font-size: 16px;
+    color: var(--text-secondary);
+}
+
+.country-flag {
+    font-size: 18px;
+    display: inline-block;
+}
+
+.country-option:hover {
+    background: rgba(124, 58, 237, 0.1);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.country-option.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.country-option.selected i {
+    color: white;
+}
+
+.country-option.selected .country-flag {
+    transform: scale(1.05);
+}
+
+/* Адаптив для мобильных */
+@media (max-width: 480px) {
+    .country-options {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .country-option {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Отображение страны со флагом */
+#displayCountry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+#countryFlag {
+    font-size: 18px;
+    display: inline-block;
+}
+
+#countryText {
+    font-weight: 500;
+}
+
+/* Стили для кнопки редактирования */
+.edit-country-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.edit-country-btn:hover {
+    background: #374151;
+    color: white;
+}

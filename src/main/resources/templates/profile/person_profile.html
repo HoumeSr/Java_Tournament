@@ -86,23 +86,30 @@
                 </div>
 
                 <div class="info-row" id="countryRow">
-                    <div class="info-label"><i class="fas fa-globe"></i> Страна</div>
-
-                    <div class="info-value" id="displayCountry">
-                        <span id="countryText">Не указана</span>
-                        <button type="button" class="edit-country-btn" id="editCountryBtn" title="Изменить страну" style="display: none;">
-                            <i class="fas fa-pen"></i>
-                        </button>
-                    </div>
-
-                    <div class="info-value" id="countryEditRow" style="display: none;">
-                        <div class="country-options">
-                            <button type="button" class="country-option" data-country="Россия">Россия</button>
-                            <button type="button" class="country-option" data-country="Другое">Другое</button>
+                    <div class="info-label"><i class="fas fa-map-marker-alt"></i> Страна</div>
+                    <div class="info-value">
+                        <div id="displayCountry">
+                            <span id="countryFlag" style="display: none;">🇷🇺</span>
+                            <span id="countryText">Россия</span>
+                            <button id="editCountryBtn" class="edit-country-btn" title="Редактировать страну">
+                                <i class="fas fa-pen"></i>
+                            </button>
                         </div>
-                        <div class="country-actions" style="margin-top: 10px; display: flex; gap: 8px;">
-                            <button type="button" class="btn-primary" id="saveCountryBtn">Сохранить</button>
-                            <button type="button" class="btn-outline" id="cancelCountryBtn">Отмена</button>
+                        <div id="countryEditRow" style="display: none;">
+                            <div class="country-options">
+                                <button type="button" class="country-option" data-country="Россия">
+                                    <span class="country-flag">🇷🇺</span>
+                                    Россия
+                                </button>
+                                <button type="button" class="country-option" data-country="Другое">
+                                    <i class="fas fa-globe"></i>
+                                    Другое
+                                </button>
+                            </div>
+                            <div class="country-actions" style="margin-top: 10px; display: flex; gap: 8px;">
+                                <button type="button" class="btn-primary" id="saveCountryBtn">Сохранить</button>
+                                <button type="button" class="btn-outline" id="cancelCountryBtn">Отмена</button>
+                            </div>
                         </div>
                     </div>
                 </div>
