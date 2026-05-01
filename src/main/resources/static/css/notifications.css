@@ -1,7 +1,7 @@
 /* ========== ТЕМНЫЙ СТИЛЬ ДЛЯ УВЕДОМЛЕНИЙ ========== */
 
 .notification-wrapper {
-    position: relative;
+    position: relative; /* Важно: контейнер должен быть relative */
     margin-right: 12px;
 }
 
@@ -59,9 +59,8 @@
     }
 }
 
-/* Панель уведомлений */
 .notifications-panel {
-    position: fixed;
+    position: fixed; /* JS будет обновлять координаты */
     width: 420px;
     max-height: 520px;
     background: #1f2937;
@@ -73,6 +72,31 @@
     flex-direction: column;
     animation: slideDownDark 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     backdrop-filter: blur(0px);
+    /* top, right, left будут заданы через JS */
+}
+
+/* Фикс для случая, если панель не помещается снизу - открываем вверх */
+@supports (top: calc(100% + 12px)) {
+    .notifications-panel[data-position="top"] {
+        top: auto;
+        bottom: calc(100% + 12px);
+    }
+}
+
+/* или используем JS для динамического определения, но можно добавить медиа-запрос */
+@media (max-height: 600px) {
+    .notifications-panel {
+        top: auto;
+        bottom: calc(100% + 12px);
+    }
+    
+    .notifications-panel::before {
+        top: auto;
+        bottom: -8px;
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
+        border-top: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
 }
 
 @keyframes slideDownDark {
@@ -280,7 +304,7 @@
     opacity: 0.7;
 }
 
-/* Стрелка-указатель (треугольник) */
+/* Стрелка-указатель (треугольник) - ИСПРАВЛЕНО для absolute */
 .notifications-panel::before {
     content: '';
     position: absolute;
@@ -298,10 +322,13 @@
 @media (max-width: 640px) {
     .notifications-panel {
         width: calc(100vw - 32px);
-        right: 16px !important;
-        left: 16px !important;
-        top: 60px !important;
+        right: -8px; /* корректировка для мобильных */
+        left: auto;
         max-height: 460px;
+    }
+    
+    .notifications-panel::before {
+        right: 16px;
     }
     
     .notifications-panel .notification-actions {
@@ -325,10 +352,6 @@
     
     .notifications-panel .notification-icon i {
         font-size: 16px;
-    }
-    
-    .notifications-panel::before {
-        right: 16px;
     }
 }
 
@@ -384,4 +407,34 @@
     display: flex;
     align-items: center;
     gap: 12px;
+}
+
+.notifications-panel {
+    /* ... ваш стиль ... */
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    will-change: top, right;
+}
+
+.notifications-panel.panel-top::before {
+    top: auto;
+    bottom: -8px;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* При открытии сверху - другая анимация */
+@keyframes slideUpDark {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.notifications-panel.panel-top {
+    animation: slideUpDark 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }

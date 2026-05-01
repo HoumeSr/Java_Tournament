@@ -4,6 +4,8 @@ const NotificationsModule = (function() {
     let notificationsPanelOpen = false;
     let refreshInterval = null;
     let currentUser = null;
+    let scrollHandler = null; // Добавляем для отслеживания скролла
+    let resizeHandler = null; // Добавляем для отслеживания ресайза
 
     // Вспомогательные функции
     function showToast(message, isError = false) {
@@ -53,7 +55,7 @@ const NotificationsModule = (function() {
                     
                     // Если панель открыта, обновляем её
                     if (notificationsPanelOpen) {
-                        renderNotificationsPanel();
+                        updatePanelPosition(); // Обновляем позицию, а не перерендер
                     }
                 }
             })
@@ -79,6 +81,61 @@ const NotificationsModule = (function() {
         }
     }
 
+    // Новая функция: обновление позиции панели
+    function updatePanelPosition() {
+        const $panel = $('.notifications-panel');
+        if (!$panel.length || !notificationsPanelOpen) return;
+        
+        const $bell = $('.notification-bell');
+        if (!$bell.length) return;
+        
+        const rect = $bell[0].getBoundingClientRect();
+        const panelHeight = $panel.outerHeight();
+        const viewportHeight = window.innerHeight;
+        
+        
+        // Позиция по вертикали (снизу от кнопки)
+        let topPosition = rect.bottom + 8;
+        
+        // Проверяем, помещается ли панель снизу
+        if (topPosition + panelHeight > viewportHeight - 20) {
+            // Если не помещается снизу, открываем сверху
+            topPosition = rect.top - panelHeight - 8;
+            $panel.addClass('panel-top');
+        } else {
+            $panel.removeClass('panel-top');
+        }
+        
+        $panel.css({
+            top: topPosition,
+        });
+    }
+
+    // Новая функция: принудительное обновление позиции при скролле/ресайзе
+    function bindPositionTracking() {
+        if (scrollHandler) {
+            $(window).off('scroll', scrollHandler);
+            $(window).off('resize', scrollHandler);
+        }
+        
+        scrollHandler = function() {
+            if (notificationsPanelOpen) {
+                requestAnimationFrame(updatePanelPosition);
+            }
+        };
+        
+        $(window).on('scroll', scrollHandler);
+        $(window).on('resize', scrollHandler);
+    }
+    
+    function unbindPositionTracking() {
+        if (scrollHandler) {
+            $(window).off('scroll', scrollHandler);
+            $(window).off('resize', scrollHandler);
+            scrollHandler = null;
+        }
+    }
+
     // Действия с уведомлениями
     function acceptInvite(notificationId, teamId) {
         $.post(`/api/teams/invite/${notificationId}/accept`)
@@ -86,7 +143,7 @@ const NotificationsModule = (function() {
                 showToast('✅ Вы вступили в команду!');
                 loadNotifications().then(() => {
                     if (notificationsPanelOpen) {
-                        renderNotificationsPanel();
+                        renderNotificationsPanel(); // Перерендер после изменения
                     }
                 });
                 setTimeout(() => {
@@ -108,7 +165,7 @@ const NotificationsModule = (function() {
                 showToast('📩 Приглашение отклонено');
                 loadNotifications().then(() => {
                     if (notificationsPanelOpen) {
-                        renderNotificationsPanel();
+                        renderNotificationsPanel(); // Перерендер после изменения
                     }
                 });
             })
@@ -121,14 +178,15 @@ const NotificationsModule = (function() {
             });
     }
 
-    // Рендер панели
+    // Рендер панели (ИСПРАВЛЕНАЯ ВЕРСИЯ)
     function renderNotificationsPanel() {
+        // Удаляем старую панель, если есть
         $('.notifications-panel').remove();
         
         const pendingInvites = notifications.filter(n => n.type === 'TEAM_INVITE' && n.status === 'PENDING');
         
         const $panel = $(`
-            <div class="notifications-panel">
+            <div class="notifications-panel" style="display: none;">
                 <div class="notifications-header">
                     <h3><i class="fas fa-bell"></i> Приглашения в команды <span style="font-size: 12px; opacity: 0.8;">(${pendingInvites.length})</span></h3>
                 </div>
@@ -184,31 +242,28 @@ const NotificationsModule = (function() {
         
         $('body').append($panel);
         
-        // Позиционирование
-        const $bell = $('.notification-bell');
-        const offset = $bell.offset();
-        const bellWidth = $bell.outerWidth();
+        // Начинаем отслеживать скролл и ресайз
+        bindPositionTracking();
         
-        let rightPosition = $(window).width() - (offset.left + bellWidth);
-        rightPosition = Math.max(12, Math.min(rightPosition, $(window).width() - 430));
-        
-        $panel.css({
-            top: offset.top + $bell.outerHeight() + 8,
-            right: rightPosition
-        });
+        // Позиционируем и показываем
+        updatePanelPosition();
+        $panel.fadeIn(150);
         
         // Закрытие при клике вне
+        const closeHandler = function(e) {
+            if (!$(e.target).closest('.notifications-panel').length && 
+                !$(e.target).closest('.notification-bell').length) {
+                $('.notifications-panel').fadeOut(150, function() {
+                    $(this).remove();
+                });
+                $(document).off('click.notification');
+                unbindPositionTracking(); // Отключаем отслеживание
+                notificationsPanelOpen = false;
+            }
+        };
+        
+        // Небольшая задержка, чтобы не закрылось сразу при открытии
         setTimeout(() => {
-            const closeHandler = function(e) {
-                if (!$(e.target).closest('.notifications-panel').length && 
-                    !$(e.target).closest('.notification-bell').length) {
-                    $('.notifications-panel').fadeOut(150, function() {
-                        $(this).remove();
-                    });
-                    $(document).off('click.notification');
-                    notificationsPanelOpen = false;
-                }
-            };
             $(document).on('click.notification', closeHandler);
         }, 100);
     }
@@ -218,6 +273,7 @@ const NotificationsModule = (function() {
             $('.notifications-panel').fadeOut(150, function() {
                 $(this).remove();
                 notificationsPanelOpen = false;
+                unbindPositionTracking(); // Отключаем отслеживание
             });
         } else {
             loadNotifications().then(() => {
@@ -249,7 +305,11 @@ const NotificationsModule = (function() {
             clearInterval(refreshInterval);
             refreshInterval = null;
         }
+        unbindPositionTracking();
         $(document).off('click', '#notificationBell');
+        $(document).off('click.notification');
+        $('.notifications-panel').remove();
+        notificationsPanelOpen = false;
     }
 
     // Публичное API
@@ -257,7 +317,8 @@ const NotificationsModule = (function() {
         init: init,
         destroy: destroy,
         loadNotifications: loadNotifications,
-        getPendingCount: getPendingCount
+        getPendingCount: getPendingCount,
+        updatePanelPosition: updatePanelPosition // Экспортируем на случай ручного обновления
     };
 })();
 

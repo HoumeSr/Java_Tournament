@@ -26,7 +26,7 @@ $(document).ready(function() {
             REGISTRATION_OPEN: '🔥 Регистрация открыта',
             IN_PROGRESS: '⚡ Идёт турнир',
             FINISHED: '🏆 Завершён',
-            DRAFT: '📝 Черновик',
+            DRAFT: '📝 Регистрация еще не открыта',
             CANCELLED: '❌ Отменён'
         })[status] || status || 'Неизвестно';
     }
@@ -36,13 +36,6 @@ $(document).ready(function() {
     }
 
     function getGameIcon(gameName) {
-        if (!gameName) return '🏆';
-        const lower = gameName.toLowerCase();
-        if (lower.includes('chess')) return '♟️';
-        if (lower.includes('tennis')) return '🎾';
-        if (lower.includes('dota') || lower.includes('counter') || lower.includes('valorant') || lower.includes('league')) return '🎮';
-        if (lower.includes('football')) return '⚽';
-        if (lower.includes('fight')) return '🥋';
         return '🏆';
     }
 
@@ -161,25 +154,62 @@ $(document).ready(function() {
                 window.location.href = `/tournaments/${t.id}`;
             });
 
-            const bannerStyle = 'linear-gradient(125deg, #1e1b2e, #2d1b4e)';
-
+            // Разные градиенты для разных игр
+            const gradients = [
+                'linear-gradient(135deg, #1e1b2e 0%, #2d1b4e 100%)',
+                'linear-gradient(135deg, #1a1a2e 0%, #1b2d45 100%)',
+                'linear-gradient(135deg, #1e1b2e 0%, #2d1b2e 100%)',
+                'linear-gradient(135deg, #16213e 0%, #1e3a5f 100%)'
+            ];
+            const gradient = gradients[t.id % gradients.length];
+            
+            // Получаем иконку для игры
+            const gameIcon = getGameIcon(t.gameName);
+            
+            // Статус для баннера
+            let statusClass = '';
+            let statusText = '';
+            switch(t.status) {
+                case 'REGISTRATION_OPEN':
+                    statusClass = 'open';
+                    statusText = '🔥 Регистрация открыта';
+                    break;
+                case 'IN_PROGRESS':
+                    statusClass = 'in-progress';
+                    statusText = '⚡ Турнир идёт';
+                    break;
+                case 'FINISHED':
+                    statusClass = 'finished';
+                    statusText = '🏆 Турнир завершён';
+                    break;
+                default:
+                    statusClass = '';
+                    statusText = getStatusText(t.status);
+            }
+            
             const $banner = $('<div>').addClass('card-banner')
-                .css({ background: bannerStyle, backgroundSize: 'cover', backgroundPosition: 'center 30%' })
-                .html(`<span class="category-badge">${getGameIcon(t.gameName)} ${escapeHtml(t.gameName || 'Турнир')}</span>`);
+                .css('background', gradient)
+                .html(`
+                    <div class="game-icon-banner">${gameIcon}</div>
+                    <span class="status-badge-banner ${statusClass}">${statusText}</span>
+                `);
 
             const $content = $('<div>').addClass('card-content').html(`
                 <div class="tourney-name">${escapeHtml(t.title)}</div>
-                <div class="tourney-details">
-                    <span class="detail-item">${getParticipantTypeLabel(t.participantType)}</span>
-                    <span class="detail-item">Статус: ${escapeHtml(getStatusText(t.status))}</span>
+                <div class="tourney-meta">
+                    <span class="meta-badge"><i class="fas fa-users"></i> ${getParticipantTypeLabel(t.participantType)}</span>
+                    <span class="meta-badge"><i class="fas fa-gamepad"></i> ${escapeHtml(t.gameName || '—')}</span>
                 </div>
-                <div class="prize">Организатор: ${escapeHtml(t.organizerUsername || '—')}</div>
+                <div class="organizer">
+                    <i class="fas fa-user-circle"></i> ${escapeHtml(t.organizerUsername || '—')}
+                </div>
             `);
 
             const footerHtml = t.status === 'REGISTRATION_OPEN'
-                ? `<span class="register-badge">Открыта регистрация</span><span class="arrow-link">Подробнее →</span>`
+                ? `<span class="register-badge">✍️ Регистрация открыта</span><span class="arrow-link">Подробнее →</span>`
                 : `<span class="arrow-link" style="justify-content:flex-end;">Подробнее →</span>`;
             const $footer = $('<div>').addClass('card-footer').html(footerHtml);
+            
             $footer.find('.register-badge').on('click', function(e) {
                 e.stopPropagation();
                 window.location.href = `/tournaments/${t.id}`;
@@ -189,7 +219,6 @@ $(document).ready(function() {
             $grid.append($card);
         });
     }
-
     // Авторизация - используем api.get напрямую
     async function updateAuthButtons() {
         const $auth = $('#authButtons');
