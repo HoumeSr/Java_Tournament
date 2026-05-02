@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.kosmo.tournament.common.dto.PageResponseDTO;
 import com.kosmo.tournament.team.dto.AddTeamMemberDTO;
 import com.kosmo.tournament.team.dto.CreateTeamDTO;
 import com.kosmo.tournament.team.dto.InviteTeamMemberDTO;
@@ -44,6 +45,15 @@ public class TeamApiController {
     public List<TeamShortDTO> getOpenTeams() {
         return teamService.getOpenTeams();
     }
+    @GetMapping("/feed")
+    public PageResponseDTO<TeamShortDTO> getTeamsFeed(@RequestParam(defaultValue = "0") int page,
+                                                      @RequestParam(defaultValue = "9") int size,
+                                                      @RequestParam(required = false) Long gameTypeId,
+                                                      Authentication authentication) {
+        String currentUsername = authentication != null ? authentication.getName() : null;
+        return teamService.getTeamsFeed(currentUsername, gameTypeId, page, size);
+    }
+
 
     @GetMapping("/my")
     public List<TeamShortDTO> getMyTeams(Authentication authentication) {

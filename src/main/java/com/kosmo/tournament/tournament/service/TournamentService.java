@@ -1,8 +1,9 @@
 package com.kosmo.tournament.tournament.service;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -10,6 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kosmo.tournament.common.dto.PageResponseDTO;
 import com.kosmo.tournament.gametype.entity.GameType;
 import com.kosmo.tournament.gametype.repository.GameTypeRepository;
 import com.kosmo.tournament.match.entity.MatchSolo;
@@ -76,6 +78,27 @@ public class TournamentService {
                 .map(this::toShortDTO)
                 .toList();
     }
+    public PageResponseDTO<TournamentShortDTO> getTournamentsPage(Long gameTypeId,
+                                                              String status,
+                                                              int page,
+                                                              int size) {
+        int safePage = normalizePage(page);
+        int safeSize = normalizePageSize(size);
+
+        List<TournamentShortDTO> items = tournamentRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .filter(tournament -> gameTypeId == null
+                        || (tournament.getGameType() != null && gameTypeId.equals(tournament.getGameType().getId())))
+                .filter(tournament -> status == null
+                        || status.isBlank()
+                        || tournament.getStatus().equalsIgnoreCase(status))
+                .sorted(Comparator.comparing(Tournament::getCreatedAt).reversed())
+                .map(this::toShortDTO)
+                .toList();
+
+        return paginate(items, safePage, safeSize);
+    }
+
 
     public TournamentFullDTO getTournamentById(Long id, String currentUsername) {
         Tournament tournament = tournamentRepository.findById(id)
@@ -871,6 +894,49 @@ public class TournamentService {
             return (int) teamParticipantRepository.countByTournamentId(tournament.getId());
         }
         return (int) soloParticipantRepository.countByTournamentId(tournament.getId());
+    }
+
+
+    private int normalizePage(int page) {
+        return Math.max(page, 0);
+    }
+
+    private int normalizePageSize(int size) {
+        int safeSize = size <= 0 ? 9 : size;
+        safeSize = Math.max(3, Math.min(safeSize, 60));
+        int remainder = safeSize % 3;
+        if (remainder != 0) {
+            safeSize += (3 - remainder);
+            if (safeSize > 60) {
+                safeSize = 60;
+            }
+        }
+        return safeSize;
+    }
+
+    private PageResponseDTO<TournamentShortDTO> paginate(List<TournamentShortDTO> items, int page, int size) {
+        long totalElements = items.size();
+        int totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / size);
+        int fromIndex = Math.min(page * size, items.size());
+        int toIndex = Math.min(fromIndex + size, items.size());
+
+        List<TournamentShortDTO> content = fromIndex >= toIndex
+                ? List.of()
+                : items.subList(fromIndex, toIndex);
+
+        boolean first = page == 0;
+        boolean last = totalPages == 0 || page >= totalPages - 1;
+
+        return new PageResponseDTO<>(
+                content,
+                page,
+                size,
+                totalElements,
+                totalPages,
+                first,
+                last,
+                content.isEmpty()
+        );
     }
 
     private TournamentShortDTO toShortDTO(Tournament tournament) {
