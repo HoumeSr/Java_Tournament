@@ -45,6 +45,7 @@ public class TeamApiController {
     public List<TeamShortDTO> getOpenTeams() {
         return teamService.getOpenTeams();
     }
+
     @GetMapping("/feed")
     public PageResponseDTO<TeamShortDTO> getTeamsFeed(@RequestParam(defaultValue = "0") int page,
                                                       @RequestParam(defaultValue = "9") int size,
@@ -53,7 +54,6 @@ public class TeamApiController {
         String currentUsername = authentication != null ? authentication.getName() : null;
         return teamService.getTeamsFeed(currentUsername, gameTypeId, page, size);
     }
-
 
     @GetMapping("/my")
     public List<TeamShortDTO> getMyTeams(Authentication authentication) {
@@ -106,16 +106,17 @@ public class TeamApiController {
         }
 
         try {
-            AddTeamMemberDTO dto = new AddTeamMemberDTO();
-            dto.setUserId(getCurrentUserIdPlaceholder());
-            TeamFullDTO updated = teamService.addMember(teamId, dto, authentication.getName());
+            TeamFullDTO updated = teamService.addCurrentUserToTeam(teamId, authentication.getName());
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "message", "Вы вступили в команду",
                     "team", updated
             ));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
         }
     }
 
@@ -174,9 +175,15 @@ public class TeamApiController {
 
         try {
             teamService.leaveTeam(teamId, authentication.getName());
-            return ResponseEntity.ok(Map.of("success", true, "message", "Вы покинули команду"));
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Вы покинули команду"
+            ));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
         }
     }
 
@@ -219,13 +226,5 @@ public class TeamApiController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
         teamService.declineInvite(notificationId, authentication.getName());
-    }
-
-    /**
-     * Заглушка, если старый фронт вызывает join legacy без userId.
-     * Если у тебя этот метод не нужен — убери legacy endpoint целиком.
-     */
-    private Long getCurrentUserIdPlaceholder() {
-        return null;
     }
 }

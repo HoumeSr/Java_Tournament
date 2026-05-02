@@ -407,24 +407,27 @@ public class TournamentService {
     }
 
     @Transactional
-    public void joinTeamTournament(JoinTeamTournamentDTO dto, String username) {
+    public void joinTeamTournament(JoinTeamTournamentDTO dto, String currentUsername) {
         Tournament tournament = tournamentRepository.findById(dto.getTournamentId())
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
-
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        Team team = teamRepository.findById(dto.getTeamId())
-                .orElseThrow(() -> new RuntimeException("Team not found"));
 
         validateTournamentJoinCommon(tournament);
 
         if (!"TEAM".equalsIgnoreCase(tournament.getParticipantType())) {
-            throw new RuntimeException("This tournament is not team-based");
+            throw new RuntimeException("Tournament is not team-based");
         }
 
-        if (team.getCaptain() == null || !team.getCaptain().getId().equals(user.getId())) {
-            throw new RuntimeException("Only team captain can register team in tournament");
+        Team team = teamRepository.findById(dto.getTeamId())
+                .orElseThrow(() -> new RuntimeException("Team not found"));
+
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        boolean isCaptain = team.getCaptain() != null
+                && team.getCaptain().getId().equals(currentUser.getId());
+
+        if (!isCaptain) {
+            throw new RuntimeException("Only team captain can register a team");
         }
 
         if (team.getGameType() == null || tournament.getGameType() == null
@@ -432,7 +435,16 @@ public class TournamentService {
             throw new RuntimeException("Team game type does not match tournament game type");
         }
 
-        if (!isTeamFull(team)) {
+        long currentMembersCount = teamMemberRepository.countByTeamId(team.getId());
+        int requiredMembersCount = team.getGameType() != null && team.getGameType().getMaxPlayers() != null
+                ? team.getGameType().getMaxPlayers()
+                : 1;
+
+        if (currentMembersCount <= 0) {
+            throw new RuntimeException("Team has no members");
+        }
+
+        if (currentMembersCount < requiredMembersCount) {
             throw new RuntimeException("Team is not full");
         }
 

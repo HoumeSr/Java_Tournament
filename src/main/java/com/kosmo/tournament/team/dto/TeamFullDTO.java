@@ -19,6 +19,14 @@ public class TeamFullDTO {
     private Integer maxMembersCount;
     private List<TeamMemberDTO> members;
 
+    // Новые поля для фронта
+    private boolean rosterLocked;
+    private String rosterLockReason;
+    private boolean canLeaveTeam;
+    private boolean canKickMembers;
+    private boolean canInviteMembers;
+    private boolean canAddMembers;
+
     public TeamFullDTO() {
     }
 
@@ -36,6 +44,13 @@ public class TeamFullDTO {
     public Integer getMaxMembersCount() { return maxMembersCount; }
     public List<TeamMemberDTO> getMembers() { return members; }
 
+    public boolean isRosterLocked() { return rosterLocked; }
+    public String getRosterLockReason() { return rosterLockReason; }
+    public boolean isCanLeaveTeam() { return canLeaveTeam; }
+    public boolean isCanKickMembers() { return canKickMembers; }
+    public boolean isCanInviteMembers() { return canInviteMembers; }
+    public boolean isCanAddMembers() { return canAddMembers; }
+
     public void setId(Long id) { this.id = id; }
     public void setName(String name) { this.name = name; }
     public void setCaptainUsername(String captainUsername) { this.captainUsername = captainUsername; }
@@ -49,4 +64,11 @@ public class TeamFullDTO {
     public void setCurrentMembersCount(Integer currentMembersCount) { this.currentMembersCount = currentMembersCount; }
     public void setMaxMembersCount(Integer maxMembersCount) { this.maxMembersCount = maxMembersCount; }
     public void setMembers(List<TeamMemberDTO> members) { this.members = members; }
+
+    public void setRosterLocked(boolean rosterLocked) { this.rosterLocked = rosterLocked; }
+    public void setRosterLockReason(String rosterLockReason) { this.rosterLockReason = rosterLockReason; }
+    public void setCanLeaveTeam(boolean canLeaveTeam) { this.canLeaveTeam = canLeaveTeam; }
+    public void setCanKickMembers(boolean canKickMembers) { this.canKickMembers = canKickMembers; }
+    public void setCanInviteMembers(boolean canInviteMembers) { this.canInviteMembers = canInviteMembers; }
+    public void setCanAddMembers(boolean canAddMembers) { this.canAddMembers = canAddMembers; }
 }
