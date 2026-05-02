@@ -300,7 +300,7 @@ $(function () {
                     : null;
                 $auth.html(`
                     <div class="profile-icon" id="profileIcon">
-                        ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="Аватар">` : '<i class="fas fa-user-circle"></i>'}
+                        <img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="Аватар">
                     </div>
                 `);
                 
