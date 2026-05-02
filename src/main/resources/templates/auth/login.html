@@ -26,6 +26,10 @@
 
   <!-- Правая часть: форма входа -->
   <div class="form-panel">
+    <a href="/" class="back-home-btn">
+      <i class="fas fa-arrow-left"></i> На главную
+    </a>
+
     <div class="form-header">
       <h2>Войти в аккаунт</h2>
       <p>Введи свои данные для доступа</p>
@@ -48,13 +52,12 @@
       <div class="login-redirect">
         Нет аккаунта? <a th:href="@{/register}">Зарегистрироваться</a>
       </div>
-      
-      <div class="login-redirect" style="margin-top: 0.5rem;">
-        <a th:href="@{/forgot-password}" style="font-size: 0.8rem;">Забыли пароль?</a>
-      </div>
+
     </form>
   </div>
 </div>
+
+<div id="demoToast" class="demo-toast" style="opacity: 0; visibility: hidden;"></div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script th:src="@{/js/api.js}"></script>

@@ -119,16 +119,35 @@
             if (response && response.success) {
                 showToast('✅ ' + (response.message || 'Регистрация успешна! Перенаправление...'));
                 
-                // Проверяем, есть ли параметр success в URL (для стандартной формы)
-                // и очищаем его при успешной AJAX регистрации
-                if (window.location.search.includes('success=true')) {
-                    window.history.replaceState({}, document.title, window.location.pathname);
+                try {
+                    const loginFormData = new FormData();
+                    loginFormData.append('login', userData.email);
+                    loginFormData.append('password', userData.password);
+                    
+                    const loginResponse = await window.api.post('/api/auth/login', loginFormData);
+                    
+                    if (loginResponse && loginResponse.success) {
+                        showToast('✅ Вы успешно вошли в аккаунт! Перенаправление...');
+                        
+                        if (loginResponse.user) {
+                            sessionStorage.setItem('user', JSON.stringify(loginResponse.user));
+                        }
+                        
+                        setTimeout(() => {
+                            window.location.href = loginResponse.redirectUrl || '/profile';
+                        }, 1500);
+                    } else {
+                        // Если автоматический вход не удался
+                        setTimeout(() => {
+                            window.location.href = '/login?registered=true';
+                        }, 1500);
+                    }
+                } catch (loginError) {
+                    console.error('Auto-login error:', loginError);
+                    setTimeout(() => {
+                        window.location.href = '/login?registered=true';
+                    }, 1500);
                 }
-                
-                // Перенаправление через 1.5 секунды
-                setTimeout(() => {
-                    window.location.href = response.redirectUrl || '/login?registered=true';
-                }, 1500);
             } else {
                 showToast(response?.message || 'Ошибка регистрации', true);
             }
