@@ -60,41 +60,11 @@
                 </div>
 
                 <div class="form-group">
-    <label for="maxPlayers">Макс. участников</label>
-    <input type="number" id="maxPlayers" name="maxPlayers" min="2" max="256" value="32">
-    <div class="number-controls">
-        <div class="number-up">▲</div>
-        <div class="number-down">▼</div>
-    </div>
-</div>
-            </div>
-        </div>
-
-        <!-- Призовой фонд -->
-        <div class="form-section">
-            <h2 class="section-title"><i class="fas fa-medal"></i> Призовой фонд</h2>
-            
-            <div class="form-row">
-                <div class="form-group checkbox-group">
-                    <input type="checkbox" id="hasPrize" name="hasPrize">
-                    <label for="hasPrize">Есть призовые</label>
-                </div>
-            </div>
-
-            <div id="prizeFields" style="display: none;">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="prizeAmount">Сумма</label>
-                        <input type="text" id="prizeAmount" name="prizeAmount" placeholder="1 000 000 ₽">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="prizeCurrency">Валюта</label>
-                        <select id="prizeCurrency" name="prizeCurrency">
-                            <option value="RUB">₽ RUB</option>
-                            <option value="USD">$ USD</option>
-                            <option value="EUR">€ EUR</option>
-                        </select>
+                    <label for="maxPlayers">Макс. участников</label>
+                    <input type="number" id="maxPlayers" name="maxPlayers" min="2" max="256" value="32">
+                    <div class="number-controls">
+                        <div class="number-up">▲</div>
+                        <div class="number-down">▼</div>
                     </div>
                 </div>
             </div>
@@ -105,18 +75,11 @@
             <h2 class="section-title"><i class="fas fa-chart-line"></i> Формат турнира</h2>
             
             <div class="form-row">
-                <div class="form-group">
+                <div class="form-group full-width">
                     <label for="participantType">Формат участия <span class="required">*</span></label>
                     <select id="participantType" name="participantType" required>
                         <option value="SOLO">👤 Одиночный</option>
                         <option value="TEAM">👥 Командный</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="access">Доступ <span class="required">*</span></label>
-                    <select id="access" name="access" required>
-                        <option value="OPEN">🌍 Открытый</option>
-                        <option value="INVITE">🔒 По приглашениям</option>
                     </select>
                 </div>
             </div>

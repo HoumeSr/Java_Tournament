@@ -4,8 +4,8 @@ const NotificationsModule = (function() {
     let notificationsPanelOpen = false;
     let refreshInterval = null;
     let currentUser = null;
-    let scrollHandler = null; // Добавляем для отслеживания скролла
-    let resizeHandler = null; // Добавляем для отслеживания ресайза
+    let scrollHandler = null;
+    let resizeHandler = null;
 
     // Вспомогательные функции
     function showToast(message, isError = false) {
@@ -37,33 +37,34 @@ const NotificationsModule = (function() {
         return date.toLocaleDateString('ru-RU');
     }
 
-    // Загрузка уведомлений
-    function loadNotifications() {
-        return $.get('/api/notifications/my')
-            .done(function(data) {
-                const oldCount = getPendingCount();
-                notifications = data || [];
-                const newCount = getPendingCount();
+    // Загрузка уведомлений через api
+    async function loadNotifications() {
+        try {
+            const data = await window.api.get('/api/notifications/my');
+            const oldCount = getPendingCount();
+            notifications = data || [];
+            const newCount = getPendingCount();
+            
+            updateNotificationBell();
+            
+            // Анимация при появлении новых уведомлений
+            if (newCount > oldCount && newCount > 0) {
+                const $bell = $('.notification-bell');
+                $bell.addClass('new-notification');
+                setTimeout(() => $bell.removeClass('new-notification'), 800);
                 
-                updateNotificationBell();
-                
-                // Анимация при появлении новых уведомлений
-                if (newCount > oldCount && newCount > 0) {
-                    const $bell = $('.notification-bell');
-                    $bell.addClass('new-notification');
-                    setTimeout(() => $bell.removeClass('new-notification'), 800);
-                    
-                    // Если панель открыта, обновляем её
-                    if (notificationsPanelOpen) {
-                        updatePanelPosition(); // Обновляем позицию, а не перерендер
-                    }
+                // Если панель открыта, обновляем её
+                if (notificationsPanelOpen) {
+                    updatePanelPosition();
                 }
-            })
-            .fail(function(xhr) {
-                if (xhr.status !== 401) {
-                    console.error('Failed to load notifications:', xhr.status);
-                }
-            });
+            }
+            return notifications;
+        } catch (error) {
+            if (error.message !== 'Unauthorized') {
+                console.error('Failed to load notifications:', error);
+            }
+            return [];
+        }
     }
 
     function getPendingCount() {
@@ -81,7 +82,6 @@ const NotificationsModule = (function() {
         }
     }
 
-    // Новая функция: обновление позиции панели
     function updatePanelPosition() {
         const $panel = $('.notifications-panel');
         if (!$panel.length || !notificationsPanelOpen) return;
@@ -93,25 +93,18 @@ const NotificationsModule = (function() {
         const panelHeight = $panel.outerHeight();
         const viewportHeight = window.innerHeight;
         
-        
-        // Позиция по вертикали (снизу от кнопки)
         let topPosition = rect.bottom + 8;
         
-        // Проверяем, помещается ли панель снизу
         if (topPosition + panelHeight > viewportHeight - 20) {
-            // Если не помещается снизу, открываем сверху
             topPosition = rect.top - panelHeight - 8;
             $panel.addClass('panel-top');
         } else {
             $panel.removeClass('panel-top');
         }
         
-        $panel.css({
-            top: topPosition,
-        });
+        $panel.css({ top: topPosition });
     }
 
-    // Новая функция: принудительное обновление позиции при скролле/ресайзе
     function bindPositionTracking() {
         if (scrollHandler) {
             $(window).off('scroll', scrollHandler);
@@ -136,51 +129,40 @@ const NotificationsModule = (function() {
         }
     }
 
-    // Действия с уведомлениями
-    function acceptInvite(notificationId, teamId) {
-        $.post(`/api/teams/invite/${notificationId}/accept`)
-            .done(function() {
-                showToast('✅ Вы вступили в команду!');
-                loadNotifications().then(() => {
-                    if (notificationsPanelOpen) {
-                        renderNotificationsPanel(); // Перерендер после изменения
-                    }
-                });
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            })
-            .fail(function(err) {
-                let errorMsg = 'Не удалось принять приглашение';
-                if (err.responseJSON && err.responseJSON.message) {
-                    errorMsg = err.responseJSON.message;
-                }
-                showToast(`❌ ${errorMsg}`, true);
-            });
+    // Действия с уведомлениями через api
+    async function acceptInvite(notificationId, teamId) {
+        try {
+            await window.api.post(`/api/teams/invite/${notificationId}/accept`);
+            showToast('✅ Вы вступили в команду!');
+            await loadNotifications();
+            if (notificationsPanelOpen) {
+                renderNotificationsPanel();
+            }
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } catch (error) {
+            let errorMsg = error.message || 'Не удалось принять приглашение';
+            showToast(`❌ ${errorMsg}`, true);
+        }
     }
     
-    function declineInvite(notificationId) {
-        $.post(`/api/teams/invite/${notificationId}/decline`)
-            .done(function() {
-                showToast('📩 Приглашение отклонено');
-                loadNotifications().then(() => {
-                    if (notificationsPanelOpen) {
-                        renderNotificationsPanel(); // Перерендер после изменения
-                    }
-                });
-            })
-            .fail(function(err) {
-                let errorMsg = 'Не удалось отклонить приглашение';
-                if (err.responseJSON && err.responseJSON.message) {
-                    errorMsg = err.responseJSON.message;
-                }
-                showToast(`❌ ${errorMsg}`, true);
-            });
+    async function declineInvite(notificationId) {
+        try {
+            await window.api.post(`/api/teams/invite/${notificationId}/decline`);
+            showToast('📩 Приглашение отклонено');
+            await loadNotifications();
+            if (notificationsPanelOpen) {
+                renderNotificationsPanel();
+            }
+        } catch (error) {
+            let errorMsg = error.message || 'Не удалось отклонить приглашение';
+            showToast(`❌ ${errorMsg}`, true);
+        }
     }
 
-    // Рендер панели (ИСПРАВЛЕНАЯ ВЕРСИЯ)
+    // Рендер панели
     function renderNotificationsPanel() {
-        // Удаляем старую панель, если есть
         $('.notifications-panel').remove();
         
         const pendingInvites = notifications.filter(n => n.type === 'TEAM_INVITE' && n.status === 'PENDING');
@@ -226,12 +208,12 @@ const NotificationsModule = (function() {
                     </div>
                 `);
                 
-                $item.find('.btn-accept').on('click', (e) => {
+                $item.find('.btn-accept').off('click').on('click', (e) => {
                     e.stopPropagation();
                     acceptInvite(notification.id, notification.teamId);
                 });
                 
-                $item.find('.btn-decline').on('click', (e) => {
+                $item.find('.btn-decline').off('click').on('click', (e) => {
                     e.stopPropagation();
                     declineInvite(notification.id);
                 });
@@ -241,15 +223,10 @@ const NotificationsModule = (function() {
         }
         
         $('body').append($panel);
-        
-        // Начинаем отслеживать скролл и ресайз
         bindPositionTracking();
-        
-        // Позиционируем и показываем
         updatePanelPosition();
         $panel.fadeIn(150);
         
-        // Закрытие при клике вне
         const closeHandler = function(e) {
             if (!$(e.target).closest('.notifications-panel').length && 
                 !$(e.target).closest('.notification-bell').length) {
@@ -257,41 +234,37 @@ const NotificationsModule = (function() {
                     $(this).remove();
                 });
                 $(document).off('click.notification');
-                unbindPositionTracking(); // Отключаем отслеживание
+                unbindPositionTracking();
                 notificationsPanelOpen = false;
             }
         };
         
-        // Небольшая задержка, чтобы не закрылось сразу при открытии
         setTimeout(() => {
             $(document).on('click.notification', closeHandler);
         }, 100);
     }
     
-    function toggleNotifications() {
+    async function toggleNotifications() {
         if (notificationsPanelOpen) {
             $('.notifications-panel').fadeOut(150, function() {
                 $(this).remove();
                 notificationsPanelOpen = false;
-                unbindPositionTracking(); // Отключаем отслеживание
+                unbindPositionTracking();
             });
         } else {
-            loadNotifications().then(() => {
-                renderNotificationsPanel();
-                notificationsPanelOpen = true;
-            });
+            await loadNotifications();
+            renderNotificationsPanel();
+            notificationsPanelOpen = true;
         }
     }
 
     // Инициализация
     function init() {
-        // Обработчик клика по колокольчику (должен быть вызван после создания элемента)
-        $(document).on('click', '#notificationBell', function(e) {
+        $(document).off('click', '#notificationBell').on('click', '#notificationBell', function(e) {
             e.stopPropagation();
             toggleNotifications();
         });
         
-        // Запускаем автообновление
         if (refreshInterval) clearInterval(refreshInterval);
         refreshInterval = setInterval(() => {
             if (!notificationsPanelOpen) {
@@ -318,7 +291,7 @@ const NotificationsModule = (function() {
         destroy: destroy,
         loadNotifications: loadNotifications,
         getPendingCount: getPendingCount,
-        updatePanelPosition: updatePanelPosition // Экспортируем на случай ручного обновления
+        updatePanelPosition: updatePanelPosition
     };
 })();
 

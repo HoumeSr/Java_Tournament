@@ -1,71 +1,68 @@
 // ========== УВЕДОМЛЕНИЯ ==========
 function showToast(message, isError = false) {
-    const toast = document.getElementById('demoToast');
-    if (!toast) return;
+    const $toast = $('#demoToast');
+    if (!$toast.length) return;
     
-    toast.textContent = message;
-    toast.style.background = isError ? '#b91c1c' : '#1f2937';
-    toast.style.opacity = '1';
-    toast.style.visibility = 'visible';
+    $toast.text(message).css({
+        background: isError ? '#b91c1c' : '#1f2937',
+        opacity: '1',
+        visibility: 'visible'
+    });
     
     setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.visibility = 'hidden';
+        $toast.css({ opacity: '0', visibility: 'hidden' });
     }, 3000);
 }
 
 // ========== АВТОРИЗАЦИЯ ==========
-function updateAuthButtons() {
-    const authContainer = document.getElementById('authButtons');
-    if (!authContainer) return;
+async function updateAuthButtons() {
+    const $auth = $('#authButtons');
+    if (!$auth.length) return;
     
-    fetch('/api/auth/check')
-        .then(response => response.json())
-        .then(data => {
-            if (data.authenticated) {
-                const imageUrl = data.user?.imageUrl;
-                
-                if (imageUrl) {
-                    authContainer.innerHTML = `
-                        <div class="profile-icon" id="profileIcon">
-                            <img src="${imageUrl}">
-                        </div>
-                    `;
-                } else {
-                    authContainer.innerHTML = `
-                        <div class="profile-icon" id="profileIcon">
-                            <i class="fas fa-user-circle"></i>
-                        </div>
-                    `;
-                }
-                document.getElementById('profileIcon')?.addEventListener('click', () => {
-                    window.location.href = '/profile';
-                });
+    try {
+        const data = await window.api.get('/api/auth/check');
+        
+        if (data.authenticated) {
+            const imageUrl = data.user?.imageUrl;
+            
+            if (imageUrl) {
+                $auth.html(`
+                    <div class="profile-icon" id="profileIcon">
+                        <img src="${escapeHtml(imageUrl)}">
+                    </div>
+                `);
             } else {
-                authContainer.innerHTML = `
-                    <button class="btn-outline" id="registerBtn">Регистрация</button>
-                    <button class="btn-primary" id="loginBtn">Вход</button>
-                `;
-                document.getElementById('registerBtn')?.addEventListener('click', () => {
-                    window.location.href = '/register';
-                });
-                document.getElementById('loginBtn')?.addEventListener('click', () => {
-                    window.location.href = '/login';
-                });
+                $auth.html(`
+                    <div class="profile-icon" id="profileIcon">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                `);
             }
-        })
-        .catch(() => {});
+            $('#profileIcon').off('click').on('click', () => {
+                window.location.href = '/profile';
+            });
+        } else {
+            $auth.html(`
+                <button class="btn-outline" id="registerBtn">Регистрация</button>
+                <button class="btn-primary" id="loginBtn">Вход</button>
+            `);
+            $('#registerBtn').off('click').on('click', () => {
+                window.location.href = '/register';
+            });
+            $('#loginBtn').off('click').on('click', () => {
+                window.location.href = '/login';
+            });
+        }
+    } catch (error) {
+        console.error('Auth error:', error);
+    }
 }
 
 // ========== ПРОВЕРКА РЕГИСТРАЦИИ ПОЛЬЗОВАТЕЛЯ ==========
 async function checkUserRegistration(tournamentId) {
     try {
-        const response = await fetch(`/api/tournaments/${tournamentId}/my-registration`);
-        if (response.ok) {
-            const data = await response.json();
-            return data.registered;
-        }
-        return false;
+        const data = await window.api.get(`/api/tournaments/${tournamentId}/my-registration`);
+        return data.registered || false;
     } catch (error) {
         console.error('Error checking registration:', error);
         return false;
@@ -75,12 +72,8 @@ async function checkUserRegistration(tournamentId) {
 // ========== ЗАГРУЗКА КОМАНД ДЛЯ ТУРНИРА ==========
 async function loadUserTeamsForTournament(tournamentId) {
     try {
-        const response = await fetch(`/api/tournaments/${tournamentId}/my-eligible-teams`);
-        if (response.ok) {
-            const teams = await response.json();
-            return teams;
-        }
-        return [];
+        const teams = await window.api.get(`/api/tournaments/${tournamentId}/my-eligible-teams`);
+        return teams || [];
     } catch (error) {
         console.error('Error loading teams:', error);
         return [];
@@ -90,131 +83,94 @@ async function loadUserTeamsForTournament(tournamentId) {
 // ========== ЗАГРУЗКА КОМАНД В SELECT ==========
 async function loadTeamsIntoSelect() {
     const tournamentId = window.tournamentData?.id;
-    const teamSelect = document.getElementById('teamSelect');
-    const registerTeamBtn = document.getElementById('registerTeamBtn');
+    const $teamSelect = $('#teamSelect');
+    const $registerTeamBtn = $('#registerTeamBtn');
     
-    if (!teamSelect || !tournamentId) return;
+    if (!$teamSelect.length || !tournamentId) return;
     
-    // Показываем загрузку
-    teamSelect.innerHTML = '<option value="">Загрузка команд...</option>';
-    teamSelect.disabled = true;
+    $teamSelect.html('<option value="">Загрузка команд...</option>').prop('disabled', true);
     
     const teams = await loadUserTeamsForTournament(tournamentId);
     
     if (teams.length === 0) {
-        teamSelect.innerHTML = '<option value="">Нет доступных команд</option>';
-        if (registerTeamBtn) registerTeamBtn.disabled = true;
+        $teamSelect.html('<option value="">Нет доступных команд</option>');
+        if ($registerTeamBtn.length) $registerTeamBtn.prop('disabled', true);
     } else {
-        teamSelect.innerHTML = '<option value="">Выберите команду...</option>';
+        $teamSelect.html('<option value="">Выберите команду...</option>');
         teams.forEach(team => {
-            const option = document.createElement('option');
-            option.value = team.id;
-            option.textContent = `${team.name} (${team.currentMembersCount || 0}/${team.maxMembersCount || 1} участников)`;
+            let text = `${team.name} (${team.currentMembersCount || 0}/${team.maxMembersCount || 1} участников)`;
             if (team.captainUsername === window.currentUsername) {
-                option.textContent += ' 👑';
+                text += ' 👑';
             }
-            teamSelect.appendChild(option);
+            $teamSelect.append(`<option value="${team.id}">${escapeHtml(text)}</option>`);
         });
-        teamSelect.disabled = false;
+        $teamSelect.prop('disabled', false);
     }
     
-    // Обработчик изменения выбора команды
-    teamSelect.addEventListener('change', () => {
-        if (registerTeamBtn) {
-            registerTeamBtn.disabled = !teamSelect.value;
+    $teamSelect.off('change').on('change', () => {
+        if ($registerTeamBtn.length) {
+            $registerTeamBtn.prop('disabled', !$teamSelect.val());
         }
     });
 }
 
 // ========== РЕГИСТРАЦИЯ В СОЛО ТУРНИР ==========
 async function registerForSoloTournament(tournamentId) {
-    const registerBtn = document.getElementById('registerSoloBtn');
-    const originalText = registerBtn?.innerHTML;
+    const $registerBtn = $('#registerSoloBtn');
+    const originalText = $registerBtn.html();
     
     try {
-        // Показываем состояние загрузки
-        if (registerBtn) {
-            registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Регистрация...';
-            registerBtn.disabled = true;
+        if ($registerBtn.length) {
+            $registerBtn.html('<i class="fas fa-spinner fa-spin"></i> Регистрация...').prop('disabled', true);
         }
         
-        const response = await fetch('/api/tournaments/join/solo', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                tournamentId: tournamentId
-            })
-        });
-        
-        const result = await response.json();
+        const result = await window.api.post('/api/tournaments/join/solo', { tournamentId: tournamentId });
         
         if (result.success) {
             showToast('✅ ' + result.message);
-            // Обновляем страницу через 2 секунды
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
+            setTimeout(() => window.location.reload(), 2000);
         } else {
             showToast('❌ ' + result.message, true);
-            if (registerBtn) {
-                registerBtn.innerHTML = originalText;
-                registerBtn.disabled = false;
+            if ($registerBtn.length) {
+                $registerBtn.html(originalText).prop('disabled', false);
             }
         }
     } catch (error) {
         showToast('❌ Ошибка при регистрации: ' + error.message, true);
-        if (registerBtn) {
-            registerBtn.innerHTML = originalText;
-            registerBtn.disabled = false;
+        if ($registerBtn.length) {
+            $registerBtn.html(originalText).prop('disabled', false);
         }
     }
 }
 
 // ========== РЕГИСТРАЦИЯ КОМАНДЫ В ТУРНИР ==========
 async function registerTeamForTournament(tournamentId, teamId) {
-    const registerBtn = document.getElementById('registerTeamBtn');
-    const originalText = registerBtn?.innerHTML;
+    const $registerBtn = $('#registerTeamBtn');
+    const originalText = $registerBtn.html();
     
     try {
-        // Показываем состояние загрузки
-        if (registerBtn) {
-            registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Регистрация...';
-            registerBtn.disabled = true;
+        if ($registerBtn.length) {
+            $registerBtn.html('<i class="fas fa-spinner fa-spin"></i> Регистрация...').prop('disabled', true);
         }
         
-        const response = await fetch('/api/tournaments/join/team', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                tournamentId: tournamentId,
-                teamId: teamId
-            })
+        const result = await window.api.post('/api/tournaments/join/team', {
+            tournamentId: tournamentId,
+            teamId: teamId
         });
-        
-        const result = await response.json();
         
         if (result.success) {
             showToast('✅ ' + result.message);
-            // Обновляем страницу через 2 секунды
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
+            setTimeout(() => window.location.reload(), 2000);
         } else {
             showToast('❌ ' + result.message, true);
-            if (registerBtn) {
-                registerBtn.innerHTML = originalText;
-                registerBtn.disabled = false;
+            if ($registerBtn.length) {
+                $registerBtn.html(originalText).prop('disabled', false);
             }
         }
     } catch (error) {
         showToast('❌ Ошибка при регистрации: ' + error.message, true);
-        if (registerBtn) {
-            registerBtn.innerHTML = originalText;
-            registerBtn.disabled = false;
+        if ($registerBtn.length) {
+            $registerBtn.html(originalText).prop('disabled', false);
         }
     }
 }
@@ -228,11 +184,9 @@ async function initRegistrationButtons() {
     
     if (!tournamentId || isOwner) return;
     
-    // Сначала проверяем авторизацию пользователя
     let isAuthenticated = false;
     try {
-        const authCheck = await fetch('/api/auth/check');
-        const authData = await authCheck.json();
+        const authData = await window.api.get('/api/auth/check');
         isAuthenticated = authData.authenticated;
         if (authData.user?.username) {
             window.currentUsername = authData.user.username;
@@ -242,57 +196,39 @@ async function initRegistrationButtons() {
     }
     
     if (!isAuthenticated) {
-        const participantActions = document.querySelector('.participant-actions');
-        if (participantActions) {
-            participantActions.style.display = 'none';
-        }
+        $('.participant-actions').css('display', 'none');
         return;
     }
     
-    // Проверяем, зарегистрирован ли уже пользователь
     const isRegistered = await checkUserRegistration(tournamentId);
     
     if (isRegistered) {
-        const alreadyRegisteredDiv = document.getElementById('alreadyRegisteredMessage');
-        if (alreadyRegisteredDiv) {
-            alreadyRegisteredDiv.style.display = 'block';
-        }
-        // Скрываем кнопки регистрации
-        const participantActions = document.querySelector('.participant-actions');
-        if (participantActions) {
-            participantActions.style.display = 'none';
-        }
+        $('#alreadyRegisteredMessage').css('display', 'block');
+        $('.participant-actions').css('display', 'none');
         return;
     }
     
-    // Если турнир не в статусе регистрации, скрываем кнопки
     if (tournamentStatus !== 'REGISTRATION_OPEN') {
-        const participantActions = document.querySelector('.participant-actions');
-        if (participantActions) {
-            participantActions.style.display = 'none';
-        }
+        $('.participant-actions').css('display', 'none');
         return;
     }
     
-    // Инициализируем кнопку для соло турнира
-    const registerSoloBtn = document.getElementById('registerSoloBtn');
-    if (registerSoloBtn && participantType === 'SOLO') {
-        registerSoloBtn.addEventListener('click', () => {
+    const $registerSoloBtn = $('#registerSoloBtn');
+    if ($registerSoloBtn.length && participantType === 'SOLO') {
+        $registerSoloBtn.off('click').on('click', () => {
             registerForSoloTournament(tournamentId);
         });
     }
     
-    // Инициализируем выбор команды для командного турнира
     if (participantType === 'TEAM') {
-        const teamSelect = document.getElementById('teamSelect');
-        if (teamSelect) {
+        if ($('#teamSelect').length) {
             await loadTeamsIntoSelect();
         }
         
-        const registerTeamBtn = document.getElementById('registerTeamBtn');
-        if (registerTeamBtn) {
-            registerTeamBtn.addEventListener('click', () => {
-                const teamId = document.getElementById('teamSelect')?.value;
+        const $registerTeamBtn = $('#registerTeamBtn');
+        if ($registerTeamBtn.length) {
+            $registerTeamBtn.off('click').on('click', () => {
+                const teamId = $('#teamSelect').val();
                 if (teamId) {
                     registerTeamForTournament(tournamentId, parseInt(teamId));
                 }
@@ -385,12 +321,8 @@ async function loadMatchesData(tournamentId) {
     if (!tournamentId) return null;
     
     try {
-        const response = await fetch(`/api/matches/tournament/${tournamentId}`);
-        if (!response.ok) {
-            if (response.status === 404) return null;
-            throw new Error('Failed to load matches');
-        }
-        return await response.json();
+        const matches = await window.api.get(`/api/matches/tournament/${tournamentId}`);
+        return matches || null;
     } catch (error) {
         console.error('Error loading matches:', error);
         return null;
@@ -435,10 +367,10 @@ function applyMatchesData(rounds, matchesData) {
 
 // ========== РЕНДЕР СЕТКИ ==========
 async function renderBracket(maxParticipants, tournamentId) {
-    const container = document.getElementById('bracketContainer');
-    if (!container) return;
+    const $container = $('#bracketContainer');
+    if (!$container.length) return;
     
-    container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Загрузка сетки...</div>';
+    $container.html('<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Загрузка сетки...</div>');
     
     const rounds = generateBracket(maxParticipants);
     
@@ -449,8 +381,7 @@ async function renderBracket(maxParticipants, tournamentId) {
         }
     }
     
-    renderBracketHTML(container, rounds);
-
+    renderBracketHTML($container[0], rounds);
     setTimeout(() => drawConnections(), 100);
 }
 
@@ -522,9 +453,8 @@ function drawConnections() {
     const rounds = document.querySelectorAll('.round');
     if (rounds.length < 2) return;
     
-    // Создаём SVG поверх всей сетки
-    const container = document.getElementById('bracketContainer');
-    if (!container) return;
+    const $container = $('#bracketContainer');
+    if (!$container.length) return;
     
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.style.position = 'absolute';
@@ -535,7 +465,7 @@ function drawConnections() {
     svg.style.pointerEvents = 'none';
     svg.style.zIndex = '10';
     
-    const containerRect = container.getBoundingClientRect();
+    const containerRect = $container[0].getBoundingClientRect();
     
     for (let i = 0; i < rounds.length - 1; i++) {
         const currentRound = rounds[i];
@@ -568,11 +498,9 @@ function drawConnections() {
             const endX = lastRect.right - containerRect.left;
             const endY = lastRect.top + lastRect.height / 2 - containerRect.top;
             const targetX = targetRect.left - containerRect.left;
-            const targetY = targetRect.top + targetRect.height / 2 - containerRect.top;
             
             const connectorX = targetX - 20;
             
-            // Линия от первого матча к соединителю
             const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line1.setAttribute('x1', startX);
             line1.setAttribute('y1', startY);
@@ -583,7 +511,6 @@ function drawConnections() {
             line1.setAttribute('opacity', '0.5');
             svg.appendChild(line1);
             
-            // Линия от последнего матча к соединителю
             const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line2.setAttribute('x1', endX);
             line2.setAttribute('y1', endY);
@@ -594,7 +521,6 @@ function drawConnections() {
             line2.setAttribute('opacity', '0.5');
             svg.appendChild(line2);
             
-            // Вертикальная линия
             const verticalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             verticalLine.setAttribute('x1', connectorX);
             verticalLine.setAttribute('y1', startY);
@@ -605,7 +531,6 @@ function drawConnections() {
             verticalLine.setAttribute('opacity', '0.5');
             svg.appendChild(verticalLine);
             
-            // Линия к следующему матчу
             const line3 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line3.setAttribute('x1', connectorX);
             line3.setAttribute('y1', (startY + endY) / 2);
@@ -618,10 +543,9 @@ function drawConnections() {
         }
     }
     
-    const oldSvg = container.querySelector('svg');
-    if (oldSvg) oldSvg.remove();
-    container.style.position = 'relative';
-    container.appendChild(svg);
+    $container.find('svg').remove();
+    $container.css('position', 'relative');
+    $container[0].appendChild(svg);
 }
 
 // ========== ОБНОВЛЕНИЕ ПРИ ИЗМЕНЕНИИ РАЗМЕРА ==========
@@ -638,7 +562,7 @@ function handleResize() {
 // ========== ESCAPE HTML ==========
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
+    return String(str).replace(/[&<>]/g, function(m) {
         if (m === '&') return '&amp;';
         if (m === '<') return '&lt;';
         if (m === '>') return '&gt;';
@@ -648,10 +572,11 @@ function escapeHtml(str) {
 
 // ========== НАВИГАЦИЯ ==========
 function initNavBar() {
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        if (item.getAttribute('href') && item.getAttribute('href') !== '#') return;
-        item.addEventListener('click', () => {
+    $('.nav-item').each(function() {
+        const $item = $(this);
+        const href = $item.attr('href');
+        if (href && href !== '#') return;
+        $item.off('click').on('click', () => {
             showToast('📋 Этот раздел в разработке');
         });
     });
@@ -659,18 +584,15 @@ function initNavBar() {
 
 // ========== УПРАВЛЕНИЕ ТУРНИРОМ ==========
 function initTournamentActions() {
-    const startBtn = document.getElementById('startTournamentBtn');
-    const deleteBtn = document.getElementById('deleteTournamentBtn');
-    const openRegBtn = document.getElementById('openRegistrationBtn');
+    const $startBtn = $('#startTournamentBtn');
+    const $deleteBtn = $('#deleteTournamentBtn');
+    const $openRegBtn = $('#openRegistrationBtn');
     
-    if (openRegBtn) {
-        openRegBtn.addEventListener('click', async () => {
+    if ($openRegBtn.length) {
+        $openRegBtn.off('click').on('click', async () => {
             if (confirm('Открыть регистрацию на турнир? Участники смогут регистрироваться.')) {
                 try {
-                    const response = await fetch(`/api/tournaments/${window.tournamentData?.id}/open-registration`, {
-                        method: 'POST'
-                    });
-                    const result = await response.json();
+                    const result = await window.api.post(`/api/tournaments/${window.tournamentData?.id}/open-registration`);
                     if (result.success) {
                         showToast('✅ ' + result.message);
                         setTimeout(() => window.location.reload(), 1500);
@@ -684,32 +606,22 @@ function initTournamentActions() {
         });
     }
     
-    if (startBtn) {
-        startBtn.addEventListener('click', async () => {
-            // Используем данные из уже загруженного турнира
-            // Они передаются в HTML и доступны в window.tournamentData
-            const participantsCount = 3;
+    if ($startBtn.length) {
+        $startBtn.off('click').on('click', async () => {
+            const participantsCount = window.actualParticipantsCount || 0;
             const minParticipants = window.tournamentData?.minParticipants || 2;
-            
-            console.log('Participants count from tournament data:', participantsCount);
-            console.log('Min participants:', minParticipants);
             
             if (participantsCount < minParticipants) {
                 showToast(`❌ Недостаточно участников. Минимум: ${minParticipants}, зарегистрировано: ${participantsCount}`, true);
                 return;
             }
             
-            if (confirm(`Зарегистрировано участников: ${participantsCount}\nМинимум: ${minParticipants}\n\nВы уверены, что хотите начать турнир? После начала регистрация будет закрыта.`)) {
+            if (confirm(`Зарегистрировано участников: ${participantsCount}\nМинимум: ${minParticipants}\n\nВы уверены, что хотите начать турнир?`)) {
                 try {
-                    const response = await fetch(`/api/tournaments/${window.tournamentData?.id}/start`, {
-                        method: 'POST'
-                    });
-                    const result = await response.json();
+                    const result = await window.api.post(`/api/tournaments/${window.tournamentData?.id}/start`);
                     if (result.success) {
                         showToast('✅ Турнир успешно начат');
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 2000);
+                        setTimeout(() => window.location.reload(), 2000);
                     } else {
                         throw new Error(result.message || 'Не удалось начать турнир');
                     }
@@ -720,22 +632,15 @@ function initTournamentActions() {
         });
     }
     
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', async () => {
+    if ($deleteBtn.length) {
+        $deleteBtn.off('click').on('click', async () => {
             if (confirm('Вы уверены, что хотите удалить этот турнир? Это действие необратимо.')) {
                 try {
-                    const response = await fetch(`/api/tournaments/${window.tournamentData?.id}`, {
-                        method: 'DELETE'
-                    });
-                    const result = await response.json();
-                    if (result.success) {
-                        showToast('✅ Турнир успешно удалён');
-                        setTimeout(() => {
-                            window.location.href = '/';
-                        }, 1500);
-                    } else {
-                        throw new Error(result.message || 'Не удалось удалить турнир');
-                    }
+                    await window.api.delete(`/api/tournaments/${window.tournamentData?.id}`);
+                    showToast('✅ Турнир успешно удалён');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
                 } catch (error) {
                     showToast(`❌ ${error.message}`, true);
                 }
@@ -747,12 +652,8 @@ function initTournamentActions() {
 // ========== ЗАГРУЗКА КОЛИЧЕСТВА УЧАСТНИКОВ ==========
 async function loadParticipantsCount(tournamentId) {
     try {
-        const response = await fetch(`/api/tournaments/${tournamentId}/participants/count`);
-        if (response.ok) {
-            const data = await response.json();
-            return data.count;
-        }
-        return 0;
+        const data = await window.api.get(`/api/tournaments/${tournamentId}/participants/count`);
+        return data.count || 0;
     } catch (error) {
         console.error('Error loading participants count:', error);
         return 0;
@@ -762,13 +663,8 @@ async function loadParticipantsCount(tournamentId) {
 // ========== ЗАГРУЗКА СПИСКА УЧАСТНИКОВ ==========
 async function loadParticipantsList(tournamentId) {
     try {
-        const response = await fetch(`/api/tournaments/${tournamentId}/participants`);
-        if (response.ok) {
-            const participants = await response.json();
-            console.log('Участники:', participants);
-            return participants;
-        }
-        return [];
+        const participants = await window.api.get(`/api/tournaments/${tournamentId}/participants`);
+        return participants || [];
     } catch (error) {
         console.error('Error loading participants list:', error);
         return [];
@@ -781,83 +677,72 @@ async function addRegistrationToMeta() {
     const tournamentStatus = window.tournamentData?.status;
     const isOwner = window.tournamentData?.isOwner;
     const participantType = window.tournamentData?.participantType;
-    const tournamentMeta = document.querySelector('.tournament-meta');
+    const $tournamentMeta = $('.tournament-meta');
     
-    if (!tournamentMeta || isOwner || tournamentStatus !== 'REGISTRATION_OPEN') return;
+    if (!$tournamentMeta.length || isOwner || tournamentStatus !== 'REGISTRATION_OPEN') return;
     
-    // Проверяем авторизацию и регистрацию
     let isAuthenticated = false;
     let isRegistered = false;
     let currentUsername = null;
     
     try {
-        const authCheck = await fetch('/api/auth/check');
-        const authData = await authCheck.json();
+        const authData = await window.api.get('/api/auth/check');
         isAuthenticated = authData.authenticated;
         currentUsername = authData.user?.username;
         
         if (isAuthenticated) {
-            const regCheck = await fetch(`/api/tournaments/${tournamentId}/my-registration`);
-            const regData = await regCheck.json();
+            const regData = await window.api.get(`/api/tournaments/${tournamentId}/my-registration`);
             isRegistered = regData.registered;
         }
     } catch (error) {
         console.error('Error:', error);
     }
     
-    // Если уже зарегистрирован
     if (isRegistered) {
-        tournamentMeta.innerHTML += `
+        $tournamentMeta.append(`
             <div class="meta-registered">
                 <i class="fas fa-check-circle"></i> Вы уже зарегистрированы на этот турнир
             </div>
-        `;
+        `);
         return;
     }
     
-    // Если не авторизован
     if (!isAuthenticated) {
-        tournamentMeta.innerHTML += `
+        $tournamentMeta.append(`
             <div class="meta-auth-prompt">
                 <i class="fas fa-sign-in-alt"></i> 
                 <a href="/login">Войдите в аккаунт</a>, чтобы зарегистрироваться
             </div>
-        `;
+        `);
         return;
     }
     
-    // Если авторизован и статус позволяет регистрироваться
     if (participantType === 'SOLO') {
-        tournamentMeta.innerHTML += `
+        $tournamentMeta.append(`
             <button class="meta-register-btn" id="metaSoloRegisterBtn">
                 <i class="fas fa-user-plus"></i> Зарегистрироваться на турнир
             </button>
-        `;
-        
-        const soloBtn = document.getElementById('metaSoloRegisterBtn');
-        if (soloBtn) {
-            soloBtn.addEventListener('click', () => registerForSoloTournament(tournamentId));
-        }
+        `);
+        $('#metaSoloRegisterBtn').off('click').on('click', () => registerForSoloTournament(tournamentId));
     } else if (participantType === 'TEAM') {
-        // Загружаем команды
         const teams = await loadUserTeamsForTournament(tournamentId);
         
         if (teams.length === 0) {
-            tournamentMeta.innerHTML += `
+            $tournamentMeta.append(`
                 <div class="meta-auth-prompt">
                     <i class="fas fa-users"></i> 
                     У вас нет команд, подходящих для этого турнира.<br>
                     <a href="/teams">Создайте команду</a>
                 </div>
-            `;
+            `);
         } else {
-            tournamentMeta.innerHTML += `
+            $tournamentMeta.append(`
                 <div class="meta-team-select" id="metaTeamSelectContainer">
                     <select id="metaTeamSelect">
                         <option value="">Выберите команду...</option>
                         ${teams.map(team => `
                             <option value="${team.id}">
-                                ${team.name} (${team.currentMembersCount || 0}/${team.maxMembersCount || 1})
+                                ${escapeHtml(team.name)} (${team.currentMembersCount || 0}/${team.maxMembersCount || 1})
                                 ${team.captainUsername === currentUsername ? ' 👑' : ''}
                             </option>
                         `).join('')}
@@ -866,43 +751,24 @@ async function addRegistrationToMeta() {
                         <i class="fas fa-users"></i> Регистрация
                     </button>
                 </div>
-            `;
+            `);
             
-            const teamSelect = document.getElementById('metaTeamSelect');
-            const teamBtn = document.getElementById('metaTeamRegisterBtn');
+            const $teamSelect = $('#metaTeamSelect');
+            const $teamBtn = $('#metaTeamRegisterBtn');
             
-            if (teamSelect) {
-                teamSelect.addEventListener('change', () => {
-                    if (teamBtn) teamBtn.disabled = !teamSelect.value;
-                });
-            }
+            $teamSelect.off('change').on('change', () => {
+                $teamBtn.prop('disabled', !$teamSelect.val());
+            });
             
-            if (teamBtn) {
-                teamBtn.addEventListener('click', () => {
-                    const teamId = teamSelect?.value;
-                    if (teamId) {
-                        registerTeamForTournament(tournamentId, parseInt(teamId));
-                    }
-                });
-            }
+            $teamBtn.off('click').on('click', () => {
+                const teamId = $teamSelect.val();
+                if (teamId) {
+                    registerTeamForTournament(tournamentId, parseInt(teamId));
+                }
+            });
         }
     }
 }
-
-async function loadParticipantsCount(tournamentId) {
-    try {
-        const response = await fetch(`/api/tournaments/${tournamentId}/participants/count`);
-        if (response.ok) {
-            const data = await response.json();
-            return data.count;
-        }
-        return 0;
-    } catch (error) {
-        console.error('Error loading participants count:', error);
-        return 0;
-    }
-}
-
 
 // ========== УПРАВЛЕНИЕ ПЛАВАЮЩЕЙ КНОПКОЙ ==========
 async function initFloatingRegisterButton() {
@@ -910,79 +776,65 @@ async function initFloatingRegisterButton() {
     const tournamentStatus = window.tournamentData?.status;
     const isOwner = window.tournamentData?.isOwner;
     const participantType = window.tournamentData?.participantType;
-    const floatingBtn = document.getElementById('floatingRegisterBtn');
+    const $floatingBtn = $('#floatingRegisterBtn');
     
-    if (!floatingBtn || isOwner || tournamentStatus !== 'REGISTRATION_OPEN') {
-        if (floatingBtn) floatingBtn.style.display = 'none';
+    if (!$floatingBtn.length || isOwner || tournamentStatus !== 'REGISTRATION_OPEN') {
+        if ($floatingBtn.length) $floatingBtn.css('display', 'none');
         return;
     }
     
-    // Проверяем авторизацию и регистрацию
     let isAuthenticated = false;
     let isRegistered = false;
     
     try {
-        const authCheck = await fetch('/api/auth/check');
-        const authData = await authCheck.json();
+        const authData = await window.api.get('/api/auth/check');
         isAuthenticated = authData.authenticated;
         
         if (isAuthenticated) {
-            const regCheck = await fetch(`/api/tournaments/${tournamentId}/my-registration`);
-            const regData = await regCheck.json();
+            const regData = await window.api.get(`/api/tournaments/${tournamentId}/my-registration`);
             isRegistered = regData.registered;
         }
     } catch (error) {
         console.error('Error:', error);
     }
     
-    // Если уже зарегистрирован - скрываем кнопку
     if (isRegistered) {
-        floatingBtn.style.display = 'none';
+        $floatingBtn.css('display', 'none');
         return;
     }
     
-    // Если не авторизован - показываем с redirect на логин
     if (!isAuthenticated) {
-        floatingBtn.style.display = 'flex';
-        floatingBtn.onclick = () => {
+        $floatingBtn.css('display', 'flex').off('click').on('click', () => {
             window.location.href = '/login';
-        };
+        });
         return;
     }
     
-    // Для соло турнира - сразу регистрируем
     if (participantType === 'SOLO') {
-        floatingBtn.style.display = 'flex';
-        floatingBtn.onclick = () => {
+        $floatingBtn.css('display', 'flex').off('click').on('click', () => {
             registerForSoloTournament(tournamentId);
-        };
-    } 
-    // Для командного турнира - ВСЕГДА открываем модалку
-    else if (participantType === 'TEAM') {
+        });
+    } else if (participantType === 'TEAM') {
         const teams = await loadUserTeamsForTournament(tournamentId);
         
         if (teams.length === 0) {
-            // Нет команд - показываем сообщение
-            floatingBtn.style.display = 'flex';
-            floatingBtn.onclick = () => {
+            $floatingBtn.css('display', 'flex').off('click').on('click', () => {
                 showToast('❌ У вас нет команд, подходящих для этого турнира', true);
                 setTimeout(() => {
                     if (confirm('Хотите создать новую команду?')) {
                         window.location.href = '/teams';
                     }
                 }, 1000);
-            };
+            });
         } else {
-            // ВСЕГДА открываем модальное окно выбора команды
-            floatingBtn.style.display = 'flex';
-            floatingBtn.onclick = () => {
+            $floatingBtn.css('display', 'flex').off('click').on('click', () => {
                 showTeamSelectionModal(teams, tournamentId);
-            };
+            });
         }
     }
 }
 
-// Модалка для выбора команды (всегда открывается)
+// ========== МОДАЛКА ДЛЯ ВЫБОРА КОМАНДЫ ==========
 function showTeamSelectionModal(teams, tournamentId) {
     const modalHtml = `
         <div class="team-selection-modal" id="teamSelectionModal">
@@ -1004,89 +856,213 @@ function showTeamSelectionModal(teams, tournamentId) {
         </div>
     `;
     
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    $('body').append(modalHtml);
     
-    const modal = document.getElementById('teamSelectionModal');
-    const overlay = modal.querySelector('.team-selection-overlay');
-    const cancelBtn = modal.querySelector('.team-selection-cancel');
+    const $modal = $('#teamSelectionModal');
+    $modal.css('display', 'flex');
     
-    modal.style.display = 'flex';
+    const closeModal = () => $modal.remove();
     
-    const closeModal = () => modal.remove();
+    $modal.find('.team-selection-overlay, .team-selection-cancel').off('click').on('click', closeModal);
     
-    overlay.addEventListener('click', closeModal);
-    cancelBtn.addEventListener('click', closeModal);
+    $modal.find('.team-selection-item').off('click').on('click', async function() {
+        const teamId = parseInt($(this).data('team-id'));
+        closeModal();
+        await registerTeamForTournament(tournamentId, teamId);
+    });
+}
+
+async function loadParticipants() {
+    const tournamentId = window.tournamentData?.id;
+    if (!tournamentId) return [];
     
-    modal.querySelectorAll('.team-selection-item').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const teamId = parseInt(btn.dataset.teamId);
-            closeModal();
-            await registerTeamForTournament(tournamentId, teamId);
-        });
+    try {
+        const participants = await window.api.get(`/api/tournaments/${tournamentId}/participants`);
+        console.log('Raw participants data:', participants);
+        
+        if (!participants || !Array.isArray(participants)) {
+            return [];
+        }
+        
+        const isTeamTournament = window.tournamentData?.participantType === 'TEAM';
+        
+        // Для командных турниров загружаем название команды и капитана
+        if (isTeamTournament && participants.length > 0) {
+            // Загружаем детали команд параллельно
+            const teamDetailsPromises = participants.map(async (participant) => {
+                try {
+                    const teamDetails = await window.api.get(`/api/teams/${participant.teamId}`);
+                    return {
+                        ...participant,
+                        teamName: teamDetails.name,
+                        captainUsername: teamDetails.captain?.username || teamDetails.captainUsername
+                    };
+                } catch (error) {
+                    console.error(`Error loading team ${participant.teamId}:`, error);
+                    return participant;
+                }
+            });
+            
+            const results = await Promise.all(teamDetailsPromises);
+            return results;
+        }
+        
+        return participants;
+    } catch (error) {
+        console.error('Error loading participants:', error);
+        showToast('Не удалось загрузить список участников', true);
+        return [];
+    }
+}
+
+async function openParticipantsModal() {
+    const $modal = $('#participantsModal');
+    const $participantsList = $('#participantsList');
+    const $participantsCount = $('#participantsCount');
+    
+    if (!$modal.length) return;
+    
+    $modal.css('display', 'flex');
+    $participantsList.html('<div class="loading-spinner-small"><i class="fas fa-spinner fa-spin"></i> Загрузка участников...</div>');
+    
+    const participants = await loadParticipants();
+    const isTeamTournament = window.tournamentData?.participantType === 'TEAM';
+    
+    console.log('Loaded participants:', participants);
+    
+    if (!participants || participants.length === 0) {
+        $participantsList.html(`
+            <div class="empty-participants">
+                <i class="fas fa-user-slash"></i>
+                <p>Пока нет зарегистрированных участников</p>
+            </div>
+        `);
+        $participantsCount.text('0');
+        return;
+    }
+    
+    $participantsCount.text(participants.length);
+    
+    let participantsHtml = '';
+    
+    if (isTeamTournament) {
+        // Командный турнир - показываем команды
+        participantsHtml = participants.map((participant, index) => {
+            const teamName = participant.teamName || participant.name || 'Команда';
+            const captainName = participant.captainUsername || 'Не указан';
+            const seed = participant.seed;
+            
+            const animationDelay = index * 0.05;
+            
+            return `
+                <div class="participant-item" style="animation: slideUp 0.3s ease ${animationDelay}s both;">
+                    <div class="participant-avatar">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="participant-info">
+                        <div class="participant-name">
+                            ${escapeHtml(teamName)}
+                            ${seed ? `<span class="participant-seed">#${seed}</span>` : ''}
+                        </div>
+                        <div class="participant-role">
+                            <i class="fas fa-crown"></i> Капитан: ${escapeHtml(captainName)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } else {
+        // Соло турнир - показываем игроков
+        participantsHtml = participants.map((participant, index) => {
+            const username = participant.name || participant.username || 'Игрок';
+            const seed = participant.seed;
+            
+            const animationDelay = index * 0.05;
+            
+            return `
+                <div class="participant-item" style="animation: slideUp 0.3s ease ${animationDelay}s both;">
+                    <div class="participant-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="participant-info">
+                        <div class="participant-name">
+                            ${escapeHtml(username)}
+                            ${seed ? `<span class="participant-seed">#${seed}</span>` : ''}
+                        </div>
+                        <div class="participant-role">
+                            Участник турнира
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    $participantsList.html(participantsHtml);
+}
+
+// ========== ЗАКРЫТИЕ МОДАЛЬНОГО ОКНА ==========
+function closeParticipantsModal() {
+    $('#participantsModal').css('display', 'none');
+}
+
+// ========== ИНИЦИАЛИЗАЦИЯ КНОПКИ УЧАСТНИКОВ ==========
+function initParticipantsButton() {
+    // Для ссылки в панели управления (оставляем как есть, если это ссылка)
+    $('.participants-btn').off('click').on('click', async (e) => {
+        e.preventDefault();
+        await openParticipantsModal();
+    });
+    
+    // Для кнопок закрытия
+    $('#closeParticipantsModal, #cancelParticipantsBtn').off('click').on('click', closeParticipantsModal);
+    
+    // Закрытие по клику вне модалки
+    $('#participantsModal').off('click').on('click', (e) => {
+        if ($(e.target).is('#participantsModal')) {
+            closeParticipantsModal();
+        }
     });
 }
 
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 async function init() {
-    // Проверяем, существуют ли данные турнира
     if (!window.tournamentData || !window.tournamentData.id) {
         console.warn('Данные турнира отсутствуют');
-        const container = document.getElementById('bracketContainer');
-        if (container) {
-            container.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Данные турнира не загружены</div>';
-        }
+        $('#bracketContainer').html('<div class="error-message"><i class="fas fa-exclamation-triangle"></i> Данные турнира не загружены</div>');
         return;
     }
     
-    console.log('Загрузка турнира:', window.tournamentData);
-    
-    // ИСПРАВЛЕНИЕ ТУТ: используем maxParticipants, а не actualParticipantsCount
-    // Потому что generateBracket ожидает максимальное количество мест в турнирной сетке
     const maxParticipants = window.tournamentData.maxParticipants;
     const tournamentId = window.tournamentData.id;
     const tournamentStatus = window.tournamentData.status;
     
-    // Загружаем реальное количество участников (только для отображения, не для сетки)
     const actualParticipantsCount = await loadParticipantsCount(tournamentId);
+    window.actualParticipantsCount = actualParticipantsCount;
     
-    // Обновляем отображение количества участников
-    const teamsCountDisplay = document.getElementById('teamsCountDisplay');
-    if (teamsCountDisplay) {
-        teamsCountDisplay.textContent = `${actualParticipantsCount}/${maxParticipants}`;
+    $('#teamsCountDisplay').text(`${actualParticipantsCount}/${maxParticipants}`);
+    
+    const $participantsMetaItem = $('.meta-item .fa-users').parent();
+    if ($participantsMetaItem.length) {
+        $participantsMetaItem.find('strong').text(`${actualParticipantsCount}/${maxParticipants}`);
     }
     
-    // Обновляем информацию в мета-данных
-    const participantsMetaItem = document.querySelector('.meta-item .fa-users')?.parentElement;
-    if (participantsMetaItem) {
-        const strongElement = participantsMetaItem.querySelector('strong');
-        if (strongElement) {
-            strongElement.textContent = `${actualParticipantsCount}/${maxParticipants}`;
-        }
-    }
-
     let bracketSize = maxParticipants;
     
     if (tournamentStatus === 'IN_PROGRESS' || tournamentStatus === 'FINISHED') {
         bracketSize = actualParticipantsCount;
-        console.log('Турнир в статусе', tournamentStatus, '- строим сетку по фактическим участникам:', bracketSize);
-    } else {
-        console.log('Турнир в статусе', tournamentStatus, '- строим сетку по максимальному количеству:', bracketSize);
     }
     
-    // Рендерим сетку с выбранным размером
     await renderBracket(bracketSize, tournamentId);
-    
-    // Инициализируем кнопки управления (только для организатора)
     initTournamentActions();
-    
-    // Инициализируем кнопки регистрации (для участников)
     await initFloatingRegisterButton();
+    initParticipantsButton();
 }
 
 // ========== ЗАПУСК ==========
-document.addEventListener('DOMContentLoaded', () => {
+$(document).ready(() => {
     updateAuthButtons();
     init();
     initNavBar();
-    window.addEventListener('resize', handleResize);
+    $(window).on('resize', handleResize);
 });

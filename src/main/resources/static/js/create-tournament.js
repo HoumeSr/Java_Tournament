@@ -25,45 +25,54 @@ $(function () {
         return '/images/' + imageUrl;
     }
 
-    function updateAuthButtons() {
-        $.ajax({ url: '/api/auth/check', method: 'GET', dataType: 'json' })
-            .done(function (data) {
-                const $auth = $('#authButtons');
-                if (!$auth.length) return;
-                if (data.authenticated && data.user) {
-                    const imageUrl = resolveImageUrl(data.user.imageUrl);
-                    $auth.html(`
-                        <div class="profile-icon" id="profileIcon">
-                            ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
-                        </div>
-                    `);
-                    $('#profileIcon').on('click', function () { window.location.href = '/profile'; });
-                } else {
-                    $auth.html(`
-                        <button class="btn-outline" id="registerBtn">Регистрация</button>
-                        <button class="btn-primary" id="loginBtn">Вход</button>
-                    `);
-                    $('#registerBtn').on('click', function () { window.location.href = '/register'; });
-                    $('#loginBtn').on('click', function () { window.location.href = '/login'; });
-                }
-            });
+    async function updateAuthButtons() {
+        const $auth = $('#authButtons');
+        if (!$auth.length) return;
+        
+        try {
+            const data = await window.api.get('/api/auth/check');
+            if (data.authenticated && data.user) {
+                const imageUrl = resolveImageUrl(data.user.imageUrl);
+                $auth.html(`
+                    <div class="profile-icon" id="profileIcon">
+                        ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" class="avatar-mini" alt="avatar">` : '<i class="fas fa-user-circle"></i>'}
+                    </div>
+                `);
+                $('#profileIcon').off('click').on('click', function () { window.location.href = '/profile'; });
+            } else {
+                $auth.html(`
+                    <button class="btn-outline" id="registerBtn">Регистрация</button>
+                    <button class="btn-primary" id="loginBtn">Вход</button>
+                `);
+                $('#registerBtn').off('click').on('click', function () { window.location.href = '/register'; });
+                $('#loginBtn').off('click').on('click', function () { window.location.href = '/login'; });
+            }
+        } catch (error) {
+            console.error('Auth check error:', error);
+            $auth.html(`
+                <button class="btn-outline" id="registerBtn">Регистрация</button>
+                <button class="btn-primary" id="loginBtn">Вход</button>
+            `);
+            $('#registerBtn').off('click').on('click', function () { window.location.href = '/register'; });
+            $('#loginBtn').off('click').on('click', function () { window.location.href = '/login'; });
+        }
     }
 
-    function loadGameTypes() {
+    async function loadGameTypes() {
         const $select = $('#category');
         if (!$select.length) return;
-        $.ajax({ url: '/api/gametypes/active', method: 'GET', dataType: 'json' })
-            .done(function (data) {
-                gameTypes = data || [];
-                $select.html('<option value="">— Выберите игру —</option>');
-                gameTypes.forEach(function (game) {
-                    $select.append(`<option value="${game.id}">${escapeHtml(game.name)}</option>`);
-                });
-            })
-            .fail(function () {
-                $select.html('<option value="">— Ошибка загрузки игр —</option>');
-                showToast('❌ Не удалось загрузить категории', true);
+        
+        try {
+            const data = await window.api.get('/api/gametypes/active');
+            gameTypes = data || [];
+            $select.html('<option value="">— Выберите игру —</option>');
+            gameTypes.forEach(function (game) {
+                $select.append(`<option value="${game.id}">${escapeHtml(game.name)}</option>`);
             });
+        } catch (error) {
+            $select.html('<option value="">— Ошибка загрузки игр —</option>');
+            showToast('❌ Не удалось загрузить категории', true);
+        }
     }
 
     function normalizePower(value) {
@@ -84,29 +93,29 @@ $(function () {
         $input.attr({ min: 2, max: 256, step: 2, inputmode: 'numeric' });
         setMaxPlayers($input.val() || 16);
 
-        $('.number-up').on('click', function () {
+        $('.number-up').off('click').on('click', function () {
             const current = normalizePower($input.val());
             const index = POWERS_OF_TWO.indexOf(current);
             setMaxPlayers(POWERS_OF_TWO[Math.min(index + 1, POWERS_OF_TWO.length - 1)]);
         });
-        $('.number-down').on('click', function () {
+        $('.number-down').off('click').on('click', function () {
             const current = normalizePower($input.val());
             const index = POWERS_OF_TWO.indexOf(current);
             setMaxPlayers(POWERS_OF_TWO[Math.max(index - 1, 0)]);
         });
-        $input.on('input change blur', function () { setMaxPlayers(this.value); });
-        $input.on('keydown', function (event) {
+        $input.off('input change blur').on('input change blur', function () { setMaxPlayers(this.value); });
+        $input.off('keydown').on('keydown', function (event) {
             if (event.key === 'ArrowUp') { event.preventDefault(); $('.number-up').trigger('click'); }
             if (event.key === 'ArrowDown') { event.preventDefault(); $('.number-down').trigger('click'); }
         });
     }
 
     function initPrizeToggle() {
-        $('#hasPrize').on('change', function () { $('#prizeFields').toggle(this.checked); });
+        $('#hasPrize').off('change').on('change', function () { $('#prizeFields').toggle(this.checked); });
     }
 
-    function initFormSubmit() {
-        $('#createTournamentForm').on('submit', function (event) {
+    async function initFormSubmit() {
+        $('#createTournamentForm').off('submit').on('submit', async function (event) {
             event.preventDefault();
 
             const title = $.trim($('#tournamentName').val());
@@ -121,7 +130,7 @@ $(function () {
                 title: title,
                 description: $.trim($('#description').val()) || 'Описание пока не добавлено',
                 participantType: $('#participantType').val() || 'SOLO',
-                access: $('#access').val() || 'OPEN',
+                access: 'OPEN',
                 gameTypeId: gameTypeId,
                 status: 'DRAFT',
                 startDate: new Date().toISOString().slice(0, 19),
@@ -134,26 +143,23 @@ $(function () {
             const $submit = $('.btn-submit');
             $submit.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Создание...');
 
-            $.ajax({
-                url: '/api/tournaments',
-                method: 'POST',
-                contentType: 'application/json',
-                dataType: 'json',
-                data: JSON.stringify(dto)
-            }).done(function (result) {
+            try {
+                const result = await window.api.post('/api/tournaments', dto);
                 showToast('✅ Турнир успешно создан');
-                const tournamentId = result.tournament?.id;
-                setTimeout(function () { window.location.href = tournamentId ? `/tournaments/${tournamentId}` : '/'; }, 1000);
-            }).fail(function (xhr) {
-                showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось создать турнир'), true);
-            }).always(function () {
+                const tournamentId = result.tournament?.id || result.id;
+                setTimeout(function () { 
+                    window.location.href = tournamentId ? `/tournaments/${tournamentId}` : '/'; 
+                }, 1000);
+            } catch (error) {
+                showToast('❌ ' + (error.message || 'Не удалось создать турнир'), true);
+            } finally {
                 $submit.prop('disabled', false).html('<i class="fas fa-check"></i> Создать турнир');
-            });
+            }
         });
     }
 
     function initCancel() {
-        $('#cancelBtn').on('click', function () {
+        $('#cancelBtn').off('click').on('click', function () {
             if (confirm('Все введённые данные будут потеряны. Продолжить?')) window.location.href = '/';
         });
     }
@@ -162,15 +168,18 @@ $(function () {
         $('.nav-item').each(function () {
             const href = $(this).attr('href');
             if (href && href !== '#') return;
-            $(this).on('click', function () { showToast('📋 Этот раздел пока в разработке'); });
+            $(this).off('click').on('click', function () { showToast('📋 Этот раздел пока в разработке'); });
         });
     }
 
-    updateAuthButtons();
-    loadGameTypes();
-    initMaxPlayersControl();
-    initPrizeToggle();
-    initFormSubmit();
-    initCancel();
-    initNavBar();
+    // Инициализация
+    (async function init() {
+        await updateAuthButtons();
+        await loadGameTypes();
+        initMaxPlayersControl();
+        initPrizeToggle();
+        await initFormSubmit();
+        initCancel();
+        initNavBar();
+    })();
 });

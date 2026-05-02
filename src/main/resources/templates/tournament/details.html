@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link th:href="@{/css/tournament.css}" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body>
 
@@ -106,13 +107,10 @@
                         <a th:href="@{/tournaments/{id}/manage(id=${tournament.id})}" class="mgmt-btn edit-btn">
                             <i class="fas fa-pen"></i> Редактировать
                         </a>
-                        <a th:href="@{/tournaments/{id}/participants(id=${tournament.id})}" class="mgmt-btn participants-btn">
+                        <button class="mgmt-btn participants-btn" id="showParticipantsBtn">
                             <i class="fas fa-users"></i> Участники
-                        </a>
-                        <a th:href="@{/tournaments/{id}/matches(id=${tournament.id})}" class="mgmt-btn matches-btn">
-                            <i class="fas fa-calendar-alt"></i> Матчи
-                        </a>
-                        <!-- В панели организатора измените условие для кнопки Старт -->
+                        </button>
+                        <!-- Кнопка Матчи УДАЛЕНА -->
                         <button class="mgmt-btn start-btn" 
                                 th:if="${tournament.status == 'REGISTRATION_OPEN'}" 
                                 id="startTournamentBtn">
@@ -167,6 +165,29 @@
     </div>
 </main>
 
+<div id="participantsModal" class="modal">
+    <div class="modal-content modal-participants">
+        <div class="modal-header">
+            <h3><i class="fas fa-users"></i> Участники турнира</h3>
+            <span class="modal-close" id="closeParticipantsModal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="participants-stats">
+                <span id="participantsCount">0</span> участников
+            </div>
+            <div id="participantsList" class="participants-list">
+                <div class="loading-spinner-small">
+                    <i class="fas fa-spinner fa-spin"></i> Загрузка...
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" id="cancelParticipantsBtn">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+
 <footer class="modern-footer">
     <div class="footer-content">
         <div class="footer-info">
@@ -191,22 +212,12 @@
         title: /*[[${tournament != null ? tournament.title : ''}]]*/ '',
         maxParticipants: /*[[${tournament != null ? tournament.maxParticipants : 4}]]*/ 4,
         status: /*[[${tournament != null ? tournament.status : 'NOT_FOUND'}]]*/ 'NOT_FOUND',
-        isOwner: /*[[${isOwner != null ? isOwner : false}]]*/ false
-    };
-    /*]]>*/
-</script>
-<script th:inline="javascript">
-    /*<![CDATA[*/
-    window.tournamentData = {
-        id: /*[[${tournament != null ? tournament.id : null}]]*/ null,
-        title: /*[[${tournament != null ? tournament.title : ''}]]*/ '',
-        maxParticipants: /*[[${tournament != null ? tournament.maxParticipants : 4}]]*/ 4,
-        status: /*[[${tournament != null ? tournament.status : 'NOT_FOUND'}]]*/ 'NOT_FOUND',
         isOwner: /*[[${isOwner != null ? isOwner : false}]]*/ false,
         participantType: /*[[${tournament != null ? tournament.participantType : 'SOLO'}]]*/ 'SOLO'
     };
     /*]]>*/
 </script>
+<script th:src="@{/js/api.js}"></script>
 <script th:src="@{/js/tournament-bracket.js}"></script>
 </body>
 </html>

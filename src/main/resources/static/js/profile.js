@@ -51,44 +51,56 @@ $(function () {
         return match ? Number(match[1]) : null;
     }
 
-    function updateHeaderAuth() {
-        return $.ajax({ url: '/api/auth/check', method: 'GET', dataType: 'json' })
-            .done(function (data) {
-                const $auth = $('#authButtons');
-                if (!$auth.length) return;
+    async function updateHeaderAuth() {
+        const $auth = $('#authButtons');
+        if (!$auth.length) return;
 
-                if (data.authenticated && data.user) {
-                    currentAuthUser = data.user;
-                    const avatarUrl = resolveImageUrl(data.user.imageUrl);
-                    $auth.html(`
-                        <div class="profile-icon" id="profileIcon" title="Мой профиль">
-                            ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="Аватар">` : '<i class="fas fa-user-circle"></i>'}
-                        </div>
-                    `);
-                    $('#profileIcon').on('click', function () { window.location.href = '/profile'; });
-                } else {
-                    currentAuthUser = null;
-                    $auth.html(`
-                        <button class="btn-outline" id="registerBtn">Регистрация</button>
-                        <button class="btn-primary" id="loginBtn">Вход</button>
-                    `);
-                    $('#registerBtn').on('click', function () { window.location.href = '/register'; });
-                    $('#loginBtn').on('click', function () { window.location.href = '/login'; });
-                }
-            });
+        try {
+            const data = await window.api.get('/api/auth/check');
+            
+            if (data.authenticated && data.user) {
+                currentAuthUser = data.user;
+                const avatarUrl = resolveImageUrl(data.user.imageUrl);
+                $auth.html(`
+                    <div class="profile-icon" id="profileIcon" title="Мой профиль">
+                        ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="Аватар">` : '<i class="fas fa-user-circle"></i>'}
+                    </div>
+                `);
+                $('#profileIcon').off('click').on('click', function () { window.location.href = '/profile'; });
+            } else {
+                currentAuthUser = null;
+                $auth.html(`
+                    <button class="btn-outline" id="registerBtn">Регистрация</button>
+                    <button class="btn-primary" id="loginBtn">Вход</button>
+                `);
+                $('#registerBtn').off('click').on('click', function () { window.location.href = '/register'; });
+                $('#loginBtn').off('click').on('click', function () { window.location.href = '/login'; });
+            }
+        } catch (error) {
+            console.error('Auth check error:', error);
+            $auth.html(`
+                <button class="btn-outline" id="registerBtn">Регистрация</button>
+                <button class="btn-primary" id="loginBtn">Вход</button>
+            `);
+            $('#registerBtn').off('click').on('click', function () { window.location.href = '/register'; });
+            $('#loginBtn').off('click').on('click', function () { window.location.href = '/login'; });
+        }
     }
 
-    function getTargetProfileId() {
+    async function getTargetProfileId() {
         const publicId = getProfileIdFromUrlOrServer();
-        if (publicId) return $.Deferred().resolve(publicId).promise();
+        if (publicId) return publicId;
 
-        return $.ajax({ url: '/api/auth/check', method: 'GET', dataType: 'json' }).then(function (data) {
+        try {
+            const data = await window.api.get('/api/auth/check');
             if (data.authenticated && data.user && data.user.id) {
                 currentAuthUser = data.user;
                 return data.user.id;
             }
             throw new Error('Необходимо авторизоваться');
-        });
+        } catch (error) {
+            throw new Error('Необходимо авторизоваться');
+        }
     }
 
     function setAvatar(imageUrl) {
@@ -178,7 +190,7 @@ $(function () {
             $(this).addClass('selected');
         });
 
-        $('#saveCountryBtn').off('click').on('click', function () {
+        $('#saveCountryBtn').off('click').on('click', async function () {
             if (!currentProfile || !currentProfile.owner) {
                 showToast('❌ Нет прав для изменения страны', true);
                 $('#editCountryBtn').hide();
@@ -194,15 +206,8 @@ $(function () {
                 return;
             }
 
-            $.ajax({
-                url: '/api/users/update',
-                method: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    country: selectedCountry
-                })
-            })
-            .done(function () {
+            try {
+                await window.api.put('/api/users/update', { country: selectedCountry });
                 updateCountryDisplay(selectedCountry);
                 $('#displayCountry').show();
                 $('#countryEditRow').hide();
@@ -212,11 +217,9 @@ $(function () {
                 }
 
                 showToast('✅ Страна обновлена');
-            })
-            .fail(function (xhr) {
-                const errorMsg = xhr.responseJSON?.message || 'Не удалось обновить страну';
-                showToast('❌ ' + errorMsg, true);
-            });
+            } catch (error) {
+                showToast('❌ ' + (error.message || 'Не удалось обновить страну'), true);
+            }
         });
 
         $('#cancelCountryBtn').off('click').on('click', function () {
@@ -296,22 +299,21 @@ $(function () {
         initCountryEdit();
     }
 
-    function loadProfile() {
-        getTargetProfileId()
-            .then(function (profileId) {
-                return $.ajax({ url: '/api/users/' + profileId, method: 'GET', dataType: 'json' });
-            })
-            .done(renderProfile)
-            .fail(function (xhr) {
-                const message = xhr.responseJSON?.message || xhr.message || 'Не удалось загрузить профиль';
-                showToast('❌ ' + message, true);
-                if (String(message).includes('авторизоваться')) {
-                    setTimeout(function () { window.location.href = '/login'; }, 1200);
-                }
-            });
+    async function loadProfile() {
+        try {
+            const profileId = await getTargetProfileId();
+            const userDTO = await window.api.get(`/api/users/${profileId}`);
+            renderProfile(userDTO);
+        } catch (error) {
+            const message = error.message || 'Не удалось загрузить профиль';
+            showToast('❌ ' + message, true);
+            if (String(message).includes('авторизоваться')) {
+                setTimeout(function () { window.location.href = '/login'; }, 1200);
+            }
+        }
     }
 
-    function resetAvatar() {
+    async function resetAvatar() {
         if (!currentProfile || !currentProfile.owner) {
             showToast('❌ Нет прав для изменения аватара', true);
             return;
@@ -319,37 +321,26 @@ $(function () {
 
         showToast('⏳ Сброс аватара...');
 
-        $.ajax({
-            url: '/api/users/avatar',
-            method: 'DELETE',
-            contentType: 'application/json'
-        })
-        .done(function () {
+        try {
+            await window.api.delete('/api/users/avatar');
             if (currentProfile) {
                 currentProfile.imageUrl = DEFAULT_IMAGE_URL;
             }
-
             forceRefreshAvatar(DEFAULT_IMAGE_URL);
-            updateHeaderAuth();
+            await updateHeaderAuth();
             showToast('✅ Аватар сброшен на стандартный');
-        })
-        .fail(function (xhr) {
-            let errorMsg = 'Не удалось сбросить аватар';
-            if (xhr.responseJSON?.message) {
-                errorMsg = xhr.responseJSON.message;
-            } else if (xhr.status === 403) {
-                errorMsg = 'Нет прав для сброса аватара';
-            }
+        } catch (error) {
+            let errorMsg = error.message || 'Не удалось сбросить аватар';
             showToast('❌ ' + errorMsg, true);
-        });
+        }
     }
 
     function initAvatarChange() {
-        $('#changeAvatarBtn').on('click', function () {
+        $('#changeAvatarBtn').off('click').on('click', function () {
             $('#avatarUpload').trigger('click');
         });
 
-        $('#avatarPreview').on('dblclick', function (e) {
+        $('#avatarPreview').off('dblclick').on('dblclick', function (e) {
             e.preventDefault();
             e.stopPropagation();
 
@@ -363,9 +354,12 @@ $(function () {
             }
         });
 
-        $('#avatarUpload').on('change', function (event) {
+        $('#avatarUpload').off('change').on('change', async function (event) {
             const file = event.target.files && event.target.files[0];
-            if (!file || !currentProfile || !currentProfile.owner) return;
+            if (!file || !currentProfile || !currentProfile.owner) {
+                $(this).val('');
+                return;
+            }
 
             if (file.size > 5 * 1024 * 1024) {
                 showToast('❌ Файл должен быть до 5MB', true);
@@ -392,14 +386,8 @@ $(function () {
             const formData = new FormData();
             formData.append('file', file);
 
-            $.ajax({
-                url: '/api/users/avatar',
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false
-            })
-            .done(function (response) {
+            try {
+                const response = await window.api.post('/api/users/avatar', formData);
                 const imageUrl = response.imageUrl;
 
                 if (currentProfile) {
@@ -407,18 +395,16 @@ $(function () {
                 }
 
                 forceRefreshAvatar(imageUrl);
-                updateHeaderAuth();
+                await updateHeaderAuth();
                 showToast('✅ Аватар обновлён');
-            })
-            .fail(function (xhr) {
-                showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось обновить аватар'), true);
+            } catch (error) {
+                showToast('❌ ' + (error.message || 'Не удалось обновить аватар'), true);
                 if (currentProfile) {
                     setAvatar(currentProfile.imageUrl);
                 }
-            })
-            .always(() => {
-                $('#avatarUpload').val('');
-            });
+            } finally {
+                $(this).val('');
+            }
         });
     }
 
@@ -485,22 +471,22 @@ $(function () {
     }
 
     function initPasswordModal() {
-        $('#changePasswordBtn').on('click', function () {
+        $('#changePasswordBtn').off('click').on('click', function () {
             if (!currentProfile?.owner) return;
             $('#passwordModal').css('display', 'flex');
             $('#currentPasswordInput, #newPasswordInput, #confirmPasswordInput').val('');
             $('#newPasswordHint, #confirmPasswordHint').text('');
         });
 
-        $('#closeModalBtn, #cancelPasswordBtn').on('click', function () {
+        $('#closeModalBtn, #cancelPasswordBtn').off('click').on('click', function () {
             $('#passwordModal').hide();
         });
 
-        $('#passwordModal').on('click', function (e) {
+        $('#passwordModal').off('click').on('click', function (e) {
             if (e.target === this) $('#passwordModal').hide();
         });
 
-        $('#submitPasswordBtn').on('click', function () {
+        $('#submitPasswordBtn').off('click').on('click', async function () {
             const $btn = $(this);
             const currentPassword = $('#currentPasswordInput').val();
             const newPassword = $('#newPasswordInput').val();
@@ -527,42 +513,26 @@ $(function () {
             const originalText = $btn.text();
             $btn.prop('disabled', true).text('Сохранение...');
 
-            $.ajax({
-                url: '/api/users/change-password',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
+            try {
+                await window.api.post('/api/users/change-password', {
                     currentPassword: currentPassword,
                     newPassword: newPassword
-                })
-            })
-            .done(function () {
+                });
                 $('#passwordModal').hide();
                 showToast('✅ Пароль успешно изменён');
                 $('#currentPasswordInput, #newPasswordInput, #confirmPasswordInput').val('');
-            })
-            .fail(function (xhr) {
+            } catch (error) {
                 let errorMsg = 'Не удалось сменить пароль';
-
-                if (xhr.status === 400) {
-                    errorMsg = xhr.responseJSON?.message || 'Неверный текущий пароль';
-                } else if (xhr.status === 401) {
-                    errorMsg = 'Сессия истекла, войдите заново';
-                    setTimeout(function () {
-                        window.location.href = '/login';
-                    }, 2000);
-                } else if (xhr.responseJSON?.message) {
-                    errorMsg = xhr.responseJSON.message;
+                if (error.message) {
+                    errorMsg = error.message;
                 }
-
                 showToast('❌ ' + errorMsg, true);
-            })
-            .always(function () {
+            } finally {
                 $btn.prop('disabled', false).text(originalText);
-            });
+            }
         });
 
-        $('#newPasswordInput').on('input', function () {
+        $('#newPasswordInput').off('input').on('input', function () {
             const val = $(this).val();
             const $hint = $('#newPasswordHint');
             if (val.length === 0) {
@@ -579,7 +549,7 @@ $(function () {
             }
         });
 
-        $('#confirmPasswordInput').on('input', function () {
+        $('#confirmPasswordInput').off('input').on('input', function () {
             const newPass = $('#newPasswordInput').val();
             const confirmPass = $(this).val();
             const $hint = $('#confirmPasswordHint');
@@ -593,7 +563,7 @@ $(function () {
             }
         });
 
-        $('#passwordModal input').on('keypress', function (e) {
+        $('#passwordModal input').off('keypress').on('keypress', function (e) {
             if (e.which === 13) {
                 e.preventDefault();
                 $('#submitPasswordBtn').click();
@@ -602,15 +572,21 @@ $(function () {
     }
 
     function initLogout() {
-        $('#logoutBtn').on('click', function () {
-            $.post('/api/auth/logout').always(function () {
+        $('#logoutBtn').off('click').on('click', async function () {
+            try {
+                await window.api.post('/api/auth/logout', {});
+            } finally {
                 window.location.href = '/login';
-            });
+            }
         });
     }
 
-    updateHeaderAuth().always(loadProfile);
-    initAvatarChange();
-    initPasswordModal();
-    initLogout();
+    // Асинхронная инициализация
+    (async function init() {
+        await updateHeaderAuth();
+        await loadProfile();
+        initAvatarChange();
+        initPasswordModal();
+        initLogout();
+    })();
 });
