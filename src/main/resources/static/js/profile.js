@@ -26,7 +26,7 @@ $(function () {
     }
 
     function getAvatarUrlWithCacheBust(imageUrl) {
-        if (!imageUrl || imageUrl === 'null' || imageUrl === 'DEFAULT_USER_IMAGE.jpg') return null;
+        if (!imageUrl || imageUrl === 'null') return null;
 
         let baseUrl;
         if (/^https?:\/\//.test(imageUrl) || imageUrl.startsWith('/')) {
@@ -40,7 +40,7 @@ $(function () {
     }
 
     function resolveImageUrl(imageUrl) {
-        if (!imageUrl || imageUrl === 'null' || imageUrl === 'DEFAULT_USER_IMAGE.jpg') return null;
+        if (!imageUrl || imageUrl === 'null') return null;
         if (/^https?:\/\//.test(imageUrl) || imageUrl.startsWith('/')) return imageUrl;
         return '/images/' + imageUrl;
     }
@@ -63,7 +63,7 @@ $(function () {
                 const avatarUrl = resolveImageUrl(data.user.imageUrl);
                 $auth.html(`
                     <div class="profile-icon" id="profileIcon" title="Мой профиль">
-                        ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="Аватар">` : '<i class="fas fa-user-circle"></i>'}
+                        <img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="avatar">
                     </div>
                 `);
                 $('#profileIcon').off('click').on('click', function () { window.location.href = '/profile'; });
@@ -107,7 +107,7 @@ $(function () {
         const $avatar = $('#avatarPreview');
         if (!$avatar.length) return;
 
-        if (!imageUrl || imageUrl === 'null' || imageUrl === 'DEFAULT_USER_IMAGE.jpg') {
+        if (!imageUrl || imageUrl === 'null') {
             $avatar.html('<i class="fas fa-user-circle"></i>');
             return;
         }
@@ -416,7 +416,7 @@ $(function () {
             $('.user-avatar')
         ].filter($el => $el && $el.length);
 
-        if (!imageUrl || imageUrl === 'null' || imageUrl === 'DEFAULT_USER_IMAGE.jpg') {
+        if (!imageUrl || imageUrl === 'null') {
             avatarElements.forEach($el => {
                 if ($el.is('img')) {
                     $el.replaceWith('<i class="fas fa-user-circle"></i>');

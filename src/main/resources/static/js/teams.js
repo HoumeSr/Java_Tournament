@@ -18,7 +18,7 @@ $(function () {
     }
 
     function resolveImageUrl(imageUrl) {
-        if (!imageUrl || imageUrl === 'DEFAULT_USER_IMAGE.jpg') return null;
+        if (!imageUrl) return null;
         if (/^https?:\/\//.test(imageUrl) || imageUrl.startsWith('/') || imageUrl.startsWith('data:')) return imageUrl;
         return '/images/' + imageUrl;
     }
@@ -42,7 +42,7 @@ $(function () {
                     : null;
                 $auth.html(`
                     <div class="profile-icon" id="profileIcon">
-                        ${avatarUrl ? `<img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="Аватар">` : '<i class="fas fa-user-circle"></i>'}
+                        <img src="${escapeHtml(avatarUrl)}" class="avatar-mini" alt="avatar">
                     </div>
                 `);
                 

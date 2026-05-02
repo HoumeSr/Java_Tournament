@@ -25,19 +25,11 @@ async function updateAuthButtons() {
         if (data.authenticated) {
             const imageUrl = data.user?.imageUrl;
             
-            if (imageUrl) {
-                $auth.html(`
-                    <div class="profile-icon" id="profileIcon">
-                        <img src="${escapeHtml(imageUrl)}">
-                    </div>
-                `);
-            } else {
-                $auth.html(`
-                    <div class="profile-icon" id="profileIcon">
-                        <i class="fas fa-user-circle"></i>
-                    </div>
-                `);
-            }
+            $auth.html(`
+                <div class="profile-icon" id="profileIcon">
+                    <img src="${escapeHtml(imageUrl)}">
+                </div>
+            `);
             $('#profileIcon').off('click').on('click', () => {
                 window.location.href = '/profile';
             });
