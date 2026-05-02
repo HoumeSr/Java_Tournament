@@ -1,14 +1,10 @@
 package com.kosmo.tournament.team.service;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.kosmo.tournament.common.dto.PageResponseDTO;
 import com.kosmo.tournament.gametype.entity.GameType;
 import com.kosmo.tournament.gametype.repository.GameTypeRepository;
 import com.kosmo.tournament.notification.entity.Notification;
@@ -22,6 +18,9 @@ import com.kosmo.tournament.team.entity.Team;
 import com.kosmo.tournament.team.entity.TeamMember;
 import com.kosmo.tournament.team.repository.TeamMemberRepository;
 import com.kosmo.tournament.team.repository.TeamRepository;
+import com.kosmo.tournament.tournament.entity.TournamentTeamParticipant;
+import com.kosmo.tournament.tournament.model.TournamentStatus;
+import com.kosmo.tournament.tournament.repository.TournamentTeamParticipantRepository;
 import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
 
@@ -33,27 +32,26 @@ public class TeamService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final GameTypeRepository gameTypeRepository;
+    private final TournamentTeamParticipantRepository tournamentTeamParticipantRepository;
 
     public TeamService(TeamRepository teamRepository,
                        TeamMemberRepository teamMemberRepository,
                        UserRepository userRepository,
                        NotificationService notificationService,
-                       GameTypeRepository gameTypeRepository) {
+                       GameTypeRepository gameTypeRepository,
+                       TournamentTeamParticipantRepository tournamentTeamParticipantRepository) {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.gameTypeRepository = gameTypeRepository;
+        this.tournamentTeamParticipantRepository = tournamentTeamParticipantRepository;
     }
 
     public List<TeamShortDTO> getAllTeams() {
         return teamRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
-                .map(team -> {
-                    TeamShortDTO dto = toShortDTO(team);
-                    dto.setListType("open");
-                    return dto;
-                })
+                .map(this::toShortDTO)
                 .toList();
     }
 
@@ -73,55 +71,9 @@ public class TeamService {
                 .stream()
                 .map(TeamMember::getTeam)
                 .distinct()
-                .map(team -> {
-                    TeamShortDTO dto = toShortDTO(team);
-                    dto.setListType("my");
-                    return dto;
-                })
+                .map(this::toShortDTO)
                 .toList();
     }
-
-    public PageResponseDTO<TeamShortDTO> getTeamsFeed(String username,
-                                                      Long gameTypeId,
-                                                      int page,
-                                                      int size) {
-        int safePage = normalizePage(page);
-        int safeSize = normalizePageSize(size);
-
-        List<Team> baseTeams = teamRepository.findAllByOrderByCreatedAtDesc()
-                .stream()
-                .filter(team -> gameTypeId == null
-                        || (team.getGameType() != null && gameTypeId.equals(team.getGameType().getId())))
-                .sorted(Comparator.comparing(Team::getCreatedAt).reversed())
-                .toList();
-
-        final Set<Long> myTeamIds;
-        if (username != null && !username.isBlank()) {
-            User currentUser = userRepository.findByUsername(username).orElse(null);
-            if (currentUser != null) {
-                myTeamIds = teamMemberRepository.findByPlayerId(currentUser.getId())
-                        .stream()
-                        .map(TeamMember::getTeam)
-                        .map(Team::getId)
-                        .collect(Collectors.toSet());
-            } else {
-                myTeamIds = Set.of();
-            }
-        } else {
-            myTeamIds = Set.of();
-        }
-
-        List<TeamShortDTO> mapped = baseTeams.stream()
-                .map(team -> {
-                    TeamShortDTO dto = toShortDTO(team);
-                    dto.setListType(myTeamIds.contains(team.getId()) ? "my" : "open");
-                    return dto;
-                })
-                .toList();
-
-        return paginate(mapped, safePage, safeSize);
-    }
-
 
     public TeamFullDTO getTeamById(Long teamId, String currentUsername) {
         Team team = teamRepository.findById(teamId)
@@ -187,6 +139,8 @@ public class TeamService {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found"));
 
+        assertRosterUnlocked(team);
+
         User currentUser = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("Current user not found"));
 
@@ -223,6 +177,8 @@ public class TeamService {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found"));
 
+        assertRosterUnlocked(team);
+
         User currentUser = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("Current user not found"));
 
@@ -246,6 +202,8 @@ public class TeamService {
     public void leaveTeam(Long teamId, String currentUsername) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found"));
+
+        assertRosterUnlocked(team);
 
         User currentUser = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -282,6 +240,8 @@ public class TeamService {
     public void inviteUserToTeam(Long teamId, Long invitedUserId, String currentUsername) {
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found"));
+
+        assertRosterUnlocked(team);
 
         User currentUser = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("Current user not found"));
@@ -327,6 +287,8 @@ public class TeamService {
         if (team == null) {
             throw new RuntimeException("Team not found in notification");
         }
+
+        assertRosterUnlocked(team);
 
         if (!teamMemberRepository.existsByTeamIdAndPlayerId(team.getId(), currentUser.getId())) {
             validateTeamCapacity(team);
@@ -383,49 +345,6 @@ public class TeamService {
         return isCaptain || isMember || isAdmin;
     }
 
-
-    private int normalizePage(int page) {
-        return Math.max(page, 0);
-    }
-
-    private int normalizePageSize(int size) {
-        int safeSize = size <= 0 ? 9 : size;
-        safeSize = Math.max(3, Math.min(safeSize, 60));
-        int remainder = safeSize % 3;
-        if (remainder != 0) {
-            safeSize += (3 - remainder);
-            if (safeSize > 60) {
-                safeSize = 60;
-            }
-        }
-        return safeSize;
-    }
-
-    private PageResponseDTO<TeamShortDTO> paginate(List<TeamShortDTO> items, int page, int size) {
-        long totalElements = items.size();
-        int totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / size);
-        int fromIndex = Math.min(page * size, items.size());
-        int toIndex = Math.min(fromIndex + size, items.size());
-
-        List<TeamShortDTO> content = fromIndex >= toIndex
-                ? List.of()
-                : items.subList(fromIndex, toIndex);
-
-        boolean first = page == 0;
-        boolean last = totalPages == 0 || page >= totalPages - 1;
-
-        return new PageResponseDTO<>(
-                content,
-                page,
-                size,
-                totalElements,
-                totalPages,
-                first,
-                last,
-                content.isEmpty()
-        );
-    }
-
     private void validateTeamCapacity(Team team) {
         long currentCount = teamMemberRepository.countByTeamId(team.getId());
 
@@ -435,6 +354,36 @@ public class TeamService {
 
         if (currentCount >= maxCount) {
             throw new RuntimeException("Team is already full");
+        }
+    }
+
+    private boolean isRosterLocked(Team team) {
+        return tournamentTeamParticipantRepository.findByTeamId(team.getId())
+                .stream()
+                .map(TournamentTeamParticipant::getTournament)
+                .filter(tournament -> tournament != null && tournament.getStatus() != null)
+                .anyMatch(tournament ->
+                        TournamentStatus.REGISTRATION_OPEN.value().equalsIgnoreCase(tournament.getStatus())
+                                || TournamentStatus.IN_PROGRESS.value().equalsIgnoreCase(tournament.getStatus()));
+    }
+
+    private String getRosterLockReason(Team team) {
+        return tournamentTeamParticipantRepository.findByTeamId(team.getId())
+                .stream()
+                .map(TournamentTeamParticipant::getTournament)
+                .filter(tournament -> tournament != null && tournament.getStatus() != null)
+                .filter(tournament ->
+                        TournamentStatus.REGISTRATION_OPEN.value().equalsIgnoreCase(tournament.getStatus())
+                                || TournamentStatus.IN_PROGRESS.value().equalsIgnoreCase(tournament.getStatus()))
+                .findFirst()
+                .map(tournament -> "Состав команды заблокирован: команда участвует в турнире \"" + tournament.getTitle() + "\"")
+                .orElse(null);
+    }
+
+    private void assertRosterUnlocked(Team team) {
+        if (isRosterLocked(team)) {
+            String reason = getRosterLockReason(team);
+            throw new RuntimeException(reason != null ? reason : "Team roster is locked while participating in a tournament");
         }
     }
 
@@ -480,9 +429,21 @@ public class TeamService {
 
         GameType gameType = team.getGameType();
         Integer maxPlayers = gameType != null ? gameType.getMaxPlayers() : null;
-        dto.setMaxMembersCount(maxPlayers != null ? maxPlayers : 1);
+        int maxMembersCount = maxPlayers != null ? maxPlayers : 1;
+        int currentMembersCount = (int) teamMemberRepository.countByTeamId(team.getId());
 
+        dto.setMaxMembersCount(maxMembersCount);
         dto.setMembers(getTeamMembers(team.getId()));
+
+        boolean rosterLocked = isRosterLocked(team);
+        dto.setRosterLocked(rosterLocked);
+        dto.setRosterLockReason(rosterLocked ? getRosterLockReason(team) : null);
+
+        dto.setCanLeaveTeam(member && !rosterLocked);
+        dto.setCanKickMembers(owner && !rosterLocked);
+        dto.setCanInviteMembers(member && !rosterLocked);
+        dto.setCanAddMembers(member && !rosterLocked && currentMembersCount < maxMembersCount);
+
         return dto;
     }
 }

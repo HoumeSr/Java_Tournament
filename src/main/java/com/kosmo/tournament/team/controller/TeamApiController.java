@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.kosmo.tournament.common.dto.PageResponseDTO;
 import com.kosmo.tournament.team.dto.AddTeamMemberDTO;
 import com.kosmo.tournament.team.dto.CreateTeamDTO;
 import com.kosmo.tournament.team.dto.InviteTeamMemberDTO;
@@ -45,20 +44,11 @@ public class TeamApiController {
     public List<TeamShortDTO> getOpenTeams() {
         return teamService.getOpenTeams();
     }
-    @GetMapping("/feed")
-    public PageResponseDTO<TeamShortDTO> getTeamsFeed(@RequestParam(defaultValue = "0") int page,
-                                                      @RequestParam(defaultValue = "9") int size,
-                                                      @RequestParam(required = false) Long gameTypeId,
-                                                      Authentication authentication) {
-        String currentUsername = authentication != null ? authentication.getName() : null;
-        return teamService.getTeamsFeed(currentUsername, gameTypeId, page, size);
-    }
-
 
     @GetMapping("/my")
     public List<TeamShortDTO> getMyTeams(Authentication authentication) {
         if (authentication == null) {
-            return List.of();
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
         return teamService.getMyTeams(authentication.getName());
     }
@@ -75,8 +65,7 @@ public class TeamApiController {
     }
 
     @PostMapping
-    public TeamFullDTO createTeam(@RequestBody CreateTeamDTO dto,
-                                  Authentication authentication) {
+    public TeamFullDTO createTeam(@RequestBody CreateTeamDTO dto, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
@@ -94,8 +83,7 @@ public class TeamApiController {
     }
 
     /**
-     * Старый фронт team-profile.js отправляет application/x-www-form-urlencoded:
-     * POST /api/teams/join, body: teamId=123.
+     * Старый фронт мог стучаться в POST /api/teams/join.
      */
     @PostMapping("/join")
     public ResponseEntity<?> joinTeamLegacy(@RequestParam Long teamId,
@@ -108,12 +96,8 @@ public class TeamApiController {
         try {
             AddTeamMemberDTO dto = new AddTeamMemberDTO();
             dto.setUserId(getCurrentUserIdPlaceholder());
-            TeamFullDTO updated = teamService.addMember(teamId, dto, authentication.getName());
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Вы вступили в команду",
-                    "team", updated
-            ));
+            teamService.addMember(teamId, dto, authentication.getName());
+            return ResponseEntity.ok(Map.of("success", true, "message", "Вы вступили в команду"));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
