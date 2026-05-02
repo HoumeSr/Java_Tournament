@@ -1,8 +1,15 @@
-// home.js - адаптирован под базовый api.js
+// home.js - адаптирован под базовый api.js с пагинацией
 $(document).ready(function() {
     let currentCategory = 'all';
     let tournaments = [];
     let categories = [{ id: 'all', label: 'Все', icon: '🌍' }];
+    
+    // Пагинация
+    let currentPage = 0;
+    let totalPages = 0;
+    let pageSize = 3;
+    let totalElements = 0;
+    let currentStatusFilter = 'all';
 
     // Вспомогательные функции
     function showToast(message, isError = false) {
@@ -39,21 +46,99 @@ $(document).ready(function() {
         return '🏆';
     }
 
-    // Загрузка данных - используем api хелпер
+    // Пересчет количества турниров для всех категорий с учётом фильтра по статусу
+    async function reloadCategoryCounts() {
+        try {
+            // Формируем базовый URL с фильтром по статусу
+            let statusParam = '';
+            if (currentStatusFilter !== 'all') {
+                statusParam = `&status=${currentStatusFilter}`;
+            }
+            
+            // Собираем все запросы в массив для параллельного выполнения
+            const gameCategories = categories.filter(cat => cat.id !== 'all' && cat.gameId);
+            
+            // Создаём массив промисов для всех запросов
+            const promises = [
+                // Запрос для "Все"
+                window.api.get(`/api/tournaments/page?page=0&size=1${statusParam}`),
+                // Запросы для каждой игры
+                ...gameCategories.map(cat => 
+                    window.api.get(`/api/tournaments/page?page=0&size=1&gameTypeId=${cat.gameId}${statusParam}`)
+                        .catch(error => ({ totalElements: 0 })) // Обрабатываем ошибки
+                )
+            ];
+            
+            // Выполняем все запросы параллельно
+            const results = await Promise.all(promises);
+            
+            // Обновляем количество для "Все" (первый результат)
+            const allCategory = categories.find(c => c.id === 'all');
+            if (allCategory) {
+                allCategory.count = results[0].totalElements || 0;
+            }
+            
+            // Обновляем количества для игр (остальные результаты)
+            gameCategories.forEach((cat, index) => {
+                cat.count = results[index + 1].totalElements || 0;
+            });
+            
+            // Перерисовываем категории с новыми количествами
+            renderCategories();
+            
+        } catch (error) {
+            console.error('Error reloading category counts:', error);
+        }
+    }
+
+    function renderStatusFilter() {
+        const $container = $('#statusFilterContainer');
+        if (!$container.length) return;
+        
+        $container.empty();
+        
+        const $btn = $('<button>')
+            .addClass(`status-filter-btn ${currentStatusFilter === 'REGISTRATION_OPEN' ? 'active' : ''}`)
+            .html('<i class="fas fa-fire"></i> Только открытые')
+            .on('click', async function() {  // Добавили async
+                if (currentStatusFilter === 'REGISTRATION_OPEN') {
+                    currentStatusFilter = 'all';
+                } else {
+                    currentStatusFilter = 'REGISTRATION_OPEN';
+                }
+                currentPage = 0;
+                renderStatusFilter();
+                
+                // Пересчитываем количество для всех категорий с новым фильтром
+                await reloadCategoryCounts();
+                
+                await loadTournaments();
+            });
+        
+        $container.append($btn);
+    }
+    // Добавьте эту функцию ПЕРЕД loadTournaments()
+
     async function loadCategories() {
         try {
-            // Используем api.get для /api/gametypes
             const gameTypes = await window.api.get('/api/gametypes');
-            categories = [{ id: 'all', label: 'Все', icon: '🌍' }].concat(
+            
+            // Формируем базовые категории без количеств
+            categories = [{ id: 'all', label: 'Все', icon: '🌍', count: 0, gameId: null }].concat(
                 (gameTypes || [])
                     .filter(game => game.isActive === true)
                     .map(game => ({
                         id: String(game.id),
                         label: game.name,
                         icon: getGameIcon(game.name),
-                        gameId: game.id
+                        gameId: game.id,
+                        count: 0
                     }))
             );
+            
+            // Загружаем количества с учётом текущего фильтра
+            await reloadCategoryCounts();
+            
             renderCategories();
         } catch (error) {
             console.error('Error loading categories:', error);
@@ -63,9 +148,27 @@ $(document).ready(function() {
 
     async function loadTournaments() {
         try {
-            // Используем api.get для /api/tournaments
-            const data = await window.api.get('/api/tournaments');
-            tournaments = (data || []).map(t => ({
+            // Строим URL с пагинацией
+            let url = `/api/tournaments/page?page=${currentPage}&size=${pageSize}`;
+            
+            // Добавляем фильтр по игре, если выбран не "Все"
+            if (currentCategory !== 'all') {
+                const category = categories.find(c => c.id === currentCategory);
+                if (category && category.gameId) {
+                    url += `&gameTypeId=${category.gameId}`;
+                }
+            }
+            
+            // ✅ ДОБАВЬТЕ ЭТОТ БЛОК - фильтр по статусу
+            if (currentStatusFilter !== 'all') {
+                url += `&status=${currentStatusFilter}`;
+            }
+            
+            // Используем api.get для /api/tournaments/page
+            const response = await window.api.get(url);
+            
+            // Обновляем данные из ответа
+            tournaments = (response.content || []).map(t => ({
                 id: t.id,
                 title: t.title,
                 status: t.status,
@@ -73,8 +176,15 @@ $(document).ready(function() {
                 gameName: t.gameName,
                 organizerUsername: t.organizerUsername,
             }));
+            
+            // Обновляем пагинацию
+            currentPage = response.page || 0;
+            totalPages = response.totalPages || 0;
+            totalElements = response.totalElements || 0;
+            
             renderTournaments();
             updateTournamentCount();
+            renderPagination(response);
             renderCategories();
         } catch (error) {
             console.error('Error loading tournaments:', error);
@@ -85,45 +195,123 @@ $(document).ready(function() {
         }
     }
 
-    // Рендер UI
+    // Рендер пагинации
+    function renderPagination(response) {
+        const $pagination = $('#pagination');
+        if (!$pagination.length) return;
+
+        if (totalPages <= 1) {
+            $pagination.empty();
+            return;
+        }
+
+        let pagesHtml = '';
+
+        // Кнопка "Назад"
+        const isFirstPage = response ? response.first : (currentPage === 0);
+        pagesHtml += `
+            <button class="page-btn prev-btn" ${isFirstPage ? 'disabled' : ''}>
+                <i class="fas fa-chevron-left"></i> Назад
+            </button>
+        `;
+
+        // Номера страниц
+        const startPage = Math.max(0, currentPage - 2);
+        const endPage = Math.min(totalPages - 1, currentPage + 2);
+
+        if (startPage > 0) {
+            pagesHtml += `<button class="page-btn" data-page="0">1</button>`;
+            if (startPage > 1) pagesHtml += `<span class="page-dots">...</span>`;
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pagesHtml += `
+                <button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">
+                    ${i + 1}
+                </button>
+            `;
+        }
+
+        if (endPage < totalPages - 1) {
+            if (endPage < totalPages - 2) pagesHtml += `<span class="page-dots">...</span>`;
+            pagesHtml += `<button class="page-btn" data-page="${totalPages - 1}">${totalPages}</button>`;
+        }
+
+        // Кнопка "Вперёд"
+        const isLastPage = response ? response.last : (currentPage >= totalPages - 1);
+        pagesHtml += `
+            <button class="page-btn next-btn" ${isLastPage ? 'disabled' : ''}>
+                Вперёд <i class="fas fa-chevron-right"></i>
+            </button>
+        `;
+
+        $pagination.html(pagesHtml);
+
+        // Обработчики
+        $('.prev-btn').off('click').on('click', () => {
+            if (!isFirstPage && currentPage > 0) {
+                currentPage--;
+                loadTournaments();
+                scrollToTop();
+            }
+        });
+
+        $('.next-btn').off('click').on('click', () => {
+            if (!isLastPage && currentPage < totalPages - 1) {
+                currentPage++;
+                loadTournaments();
+                scrollToTop();
+            }
+        });
+
+        $('.page-btn[data-page]').off('click').on('click', function() {
+            const page = parseInt($(this).data('page'));
+            if (!isNaN(page) && page !== currentPage) {
+                currentPage = page;
+                loadTournaments();
+                scrollToTop();
+            }
+        });
+    }
+
+    function scrollToTop() {
+        $('html, body').animate({ scrollTop: 0 }, 300);
+    }
+
     function renderCategories() {
         const $container = $('#categoriesContainer');
         if (!$container.length) return;
         $container.empty();
+        
         categories.forEach(cat => {
-            const count = cat.id === 'all'
-                ? tournaments.length
-                : tournaments.filter(t => t.gameName === cat.label).length;
-
             const $btn = $('<button>')
                 .addClass(`cat-btn ${currentCategory === cat.id ? 'active-cat' : ''}`)
                 .html(`${cat.icon} ${cat.label}`)
                 .data('cat', cat.id)
                 .on('click', function() {
                     currentCategory = cat.id;
+                    currentPage = 0;
                     renderCategories();
-                    renderTournaments();
+                    loadTournaments();
                 });
 
-            if (count > 0) {
-                $btn.append($('<span>').addClass('category-count').text(count));
+            // Показываем количество для всех категорий
+            if (cat.count !== undefined && cat.count > 0) {
+                $btn.append($('<span>').addClass('category-count').text(cat.count));
             }
             $container.append($btn);
         });
     }
 
     function getFilteredTournaments() {
-        if (currentCategory === 'all') return [...tournaments];
-        const category = categories.find(c => c.id === currentCategory);
-        if (!category) return [];
-        return tournaments.filter(t => t.gameName === category.label);
+        // Больше не нужно фильтровать на клиенте, так как фильтрация на бэке
+        return [...tournaments];
     }
 
     function updateTournamentCount() {
         const $count = $('#tournamentCount');
         if ($count.length) {
-            const filtered = getFilteredTournaments();
-            $count.text(`${filtered.length} ${getNoun(filtered.length, 'событие', 'события', 'событий')}`);
+            $count.text(`${totalElements} ${getNoun(totalElements, 'событие', 'события', 'событий')}`);
         }
     }
 
@@ -141,7 +329,6 @@ $(document).ready(function() {
         const filtered = getFilteredTournaments();
         const $grid = $('#tournamentsGrid');
         if (!$grid.length) return;
-        updateTournamentCount();
         
         if (filtered.length === 0) {
             $grid.html('<div class="no-results">😔 В этой категории пока нет турниров. Загляни позже!</div>');
@@ -303,6 +490,7 @@ $(document).ready(function() {
     // Старт - асинхронная инициализация
     (async function init() {
         await loadCategories();
+        renderStatusFilter();
         await loadTournaments();
         await updateAuthButtons();
         await updateCreateTournamentButton();

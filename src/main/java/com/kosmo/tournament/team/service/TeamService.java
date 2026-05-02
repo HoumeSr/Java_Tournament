@@ -1,10 +1,14 @@
 package com.kosmo.tournament.team.service;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.kosmo.tournament.common.dto.PageResponseDTO;
 import com.kosmo.tournament.gametype.entity.GameType;
 import com.kosmo.tournament.gametype.repository.GameTypeRepository;
 import com.kosmo.tournament.notification.entity.Notification;
@@ -45,7 +49,11 @@ public class TeamService {
     public List<TeamShortDTO> getAllTeams() {
         return teamRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
-                .map(this::toShortDTO)
+                .map(team -> {
+                    TeamShortDTO dto = toShortDTO(team);
+                    dto.setListType("open");
+                    return dto;
+                })
                 .toList();
     }
 
@@ -65,9 +73,55 @@ public class TeamService {
                 .stream()
                 .map(TeamMember::getTeam)
                 .distinct()
-                .map(this::toShortDTO)
+                .map(team -> {
+                    TeamShortDTO dto = toShortDTO(team);
+                    dto.setListType("my");
+                    return dto;
+                })
                 .toList();
     }
+
+    public PageResponseDTO<TeamShortDTO> getTeamsFeed(String username,
+                                                      Long gameTypeId,
+                                                      int page,
+                                                      int size) {
+        int safePage = normalizePage(page);
+        int safeSize = normalizePageSize(size);
+
+        List<Team> baseTeams = teamRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .filter(team -> gameTypeId == null
+                        || (team.getGameType() != null && gameTypeId.equals(team.getGameType().getId())))
+                .sorted(Comparator.comparing(Team::getCreatedAt).reversed())
+                .toList();
+
+        final Set<Long> myTeamIds;
+        if (username != null && !username.isBlank()) {
+            User currentUser = userRepository.findByUsername(username).orElse(null);
+            if (currentUser != null) {
+                myTeamIds = teamMemberRepository.findByPlayerId(currentUser.getId())
+                        .stream()
+                        .map(TeamMember::getTeam)
+                        .map(Team::getId)
+                        .collect(Collectors.toSet());
+            } else {
+                myTeamIds = Set.of();
+            }
+        } else {
+            myTeamIds = Set.of();
+        }
+
+        List<TeamShortDTO> mapped = baseTeams.stream()
+                .map(team -> {
+                    TeamShortDTO dto = toShortDTO(team);
+                    dto.setListType(myTeamIds.contains(team.getId()) ? "my" : "open");
+                    return dto;
+                })
+                .toList();
+
+        return paginate(mapped, safePage, safeSize);
+    }
+
 
     public TeamFullDTO getTeamById(Long teamId, String currentUsername) {
         Team team = teamRepository.findById(teamId)
@@ -327,6 +381,49 @@ public class TeamService {
         boolean isAdmin = "ADMIN".equalsIgnoreCase(currentUser.getRole());
 
         return isCaptain || isMember || isAdmin;
+    }
+
+
+    private int normalizePage(int page) {
+        return Math.max(page, 0);
+    }
+
+    private int normalizePageSize(int size) {
+        int safeSize = size <= 0 ? 9 : size;
+        safeSize = Math.max(3, Math.min(safeSize, 60));
+        int remainder = safeSize % 3;
+        if (remainder != 0) {
+            safeSize += (3 - remainder);
+            if (safeSize > 60) {
+                safeSize = 60;
+            }
+        }
+        return safeSize;
+    }
+
+    private PageResponseDTO<TeamShortDTO> paginate(List<TeamShortDTO> items, int page, int size) {
+        long totalElements = items.size();
+        int totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / size);
+        int fromIndex = Math.min(page * size, items.size());
+        int toIndex = Math.min(fromIndex + size, items.size());
+
+        List<TeamShortDTO> content = fromIndex >= toIndex
+                ? List.of()
+                : items.subList(fromIndex, toIndex);
+
+        boolean first = page == 0;
+        boolean last = totalPages == 0 || page >= totalPages - 1;
+
+        return new PageResponseDTO<>(
+                content,
+                page,
+                size,
+                totalElements,
+                totalPages,
+                first,
+                last,
+                content.isEmpty()
+        );
     }
 
     private void validateTeamCapacity(Team team) {

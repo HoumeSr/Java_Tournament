@@ -9,6 +9,7 @@ public class TeamShortDTO {
     private String imageUrl;
     private Integer currentMembersCount;
     private Integer maxMembersCount;
+    private String listType;
 
     public TeamShortDTO() {
     }
@@ -20,6 +21,7 @@ public class TeamShortDTO {
     public String getImageUrl() { return imageUrl; }
     public Integer getCurrentMembersCount() { return currentMembersCount; }
     public Integer getMaxMembersCount() { return maxMembersCount; }
+    public String getListType() { return listType; }
 
     public void setId(Long id) { this.id = id; }
     public void setName(String name) { this.name = name; }
@@ -28,4 +30,5 @@ public class TeamShortDTO {
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setCurrentMembersCount(Integer currentMembersCount) { this.currentMembersCount = currentMembersCount; }
     public void setMaxMembersCount(Integer maxMembersCount) { this.maxMembersCount = maxMembersCount; }
+    public void setListType(String listType) { this.listType = listType; }
 }

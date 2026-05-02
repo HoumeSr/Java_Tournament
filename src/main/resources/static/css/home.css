@@ -1056,3 +1056,102 @@ body {
     pointer-events: none;
 }
 
+
+/* Пагинация */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin: 40px 0 20px;
+    flex-wrap: wrap;
+}
+
+.page-btn {
+    padding: 8px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.page-btn:hover:not(:disabled) {
+    background: var(--accent);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.page-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-dots {
+    color: var(--text-secondary);
+    padding: 0 4px;
+}
+
+.prev-btn, .next-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+@media (max-width: 600px) {
+    .page-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+}
+
+/* Кнопка фильтра по статусу */
+.status-filter-container {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.status-filter-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    padding: 0.6rem 1.5rem;
+    border-radius: 100px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-filter-btn i {
+    font-size: 1rem;
+}
+
+.status-filter-btn.active {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: white;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+.status-filter-btn:hover:not(.active) {
+    background: #1e293b;
+    border-color: #475569;
+    color: white;
+}
+
+.status-filter-btn.active:hover {
+    background: #dc2626;
+    transform: scale(0.98);
+}

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.kosmo.tournament.common.dto.PageResponseDTO;
 import com.kosmo.tournament.match.dto.MatchDTO;
 import com.kosmo.tournament.match.service.MatchService;
 import com.kosmo.tournament.team.dto.TeamShortDTO;
@@ -44,6 +45,14 @@ public class TournamentApiController {
     public List<TournamentShortDTO> getAllTournaments() {
         return tournamentService.getAllTournaments();
     }
+    @GetMapping("/page")
+    public PageResponseDTO<TournamentShortDTO> getTournamentsPage(@RequestParam(defaultValue = "0") int page,
+                                                                  @RequestParam(defaultValue = "9") int size,
+                                                                  @RequestParam(required = false) Long gameTypeId,
+                                                                  @RequestParam(required = false) String status) {
+        return tournamentService.getTournamentsPage(gameTypeId, status, page, size);
+    }
+
 
     @GetMapping("/{id}")
     public TournamentFullDTO getTournamentById(@PathVariable Long id, Authentication authentication) {
