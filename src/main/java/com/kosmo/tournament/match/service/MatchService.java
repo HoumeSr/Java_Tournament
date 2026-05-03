@@ -23,6 +23,7 @@ import com.kosmo.tournament.tournament.model.TournamentStatus;
 import com.kosmo.tournament.tournament.repository.TournamentRepository;
 import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
+import com.kosmo.tournament.rating.service.RatingService;
 
 @Service
 public class MatchService {
@@ -33,19 +34,22 @@ public class MatchService {
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final RatingService ratingService;
 
     public MatchService(MatchSoloRepository matchSoloRepository,
                         MatchTeamRepository matchTeamRepository,
                         TournamentRepository tournamentRepository,
                         UserRepository userRepository,
                         TeamRepository teamRepository,
-                        TeamMemberRepository teamMemberRepository) {
+                        TeamMemberRepository teamMemberRepository,
+                        RatingService ratingService) {
         this.matchSoloRepository = matchSoloRepository;
         this.matchTeamRepository = matchTeamRepository;
         this.tournamentRepository = tournamentRepository;
         this.userRepository = userRepository;
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
+        this.ratingService = ratingService;
     }
 
     public List<MatchDTO> getTournamentMatches(Long tournamentId, String currentUsername) {
@@ -113,9 +117,20 @@ public class MatchService {
         }
 
         match.setWinnerPlayer(winner);
-        // Результат матча всегда завершает матч. Статус нельзя свободно менять из DTO.
         match.setStatus("FINISHED");
         MatchSolo saved = matchSoloRepository.save(match);
+
+        Long gameTypeId = match.getTournament().getGameType().getId();
+        String gameTypeName = match.getTournament().getGameType().getName();
+
+        updatePlayerWinRating(winner, gameTypeId, gameTypeName);
+
+        User loser = match.getPlayer1().getId().equals(winner.getId())
+                ? match.getPlayer2()
+                : match.getPlayer1();
+        if (loser != null) {
+            updatePlayerRating(loser, gameTypeId, gameTypeName);
+        }
 
         propagateSoloWinner(saved, winner);
         finishTournamentIfNeeded(saved.getTournament());
@@ -143,15 +158,33 @@ public class MatchService {
         }
 
         match.setWinnerTeam(winner);
-        // Результат матча всегда завершает матч. Статус нельзя свободно менять из DTO.
         match.setStatus("FINISHED");
         MatchTeam saved = matchTeamRepository.save(match);
+
+        Long gameTypeId = match.getTournament().getGameType().getId();
+        String gameTypeName = match.getTournament().getGameType().getName();
+
+        List<TeamMember> winnerMembers = teamMemberRepository.findByTeamId(winner.getId());
+        for (TeamMember member : winnerMembers) {
+            updatePlayerWinRating(member.getPlayer(), gameTypeId, gameTypeName);
+        }
+
+        Team loser = match.getTeam1().getId().equals(winner.getId())
+                ? match.getTeam2()
+                : match.getTeam1();
+        if (loser != null) {
+            List<TeamMember> loserMembers = teamMemberRepository.findByTeamId(loser.getId());
+            for (TeamMember member : loserMembers) {
+                updatePlayerRating(member.getPlayer(), gameTypeId, gameTypeName);
+            }
+        }
 
         propagateTeamWinner(saved, winner);
         finishTournamentIfNeeded(saved.getTournament());
 
         return toTeamDTO(saved, currentUsername);
     }
+
     @Transactional
     public MatchDTO startMatch(String matchType, Long matchId, String currentUsername) {
         if ("TEAM".equalsIgnoreCase(matchType)) {
@@ -223,7 +256,6 @@ public class MatchService {
         return toSoloDTO(matchSoloRepository.save(match), currentUsername);
     }
 
-
     private void validateMatchOwnershipAndState(Tournament tournament,
                                                 String currentUsername,
                                                 String matchStatus,
@@ -242,6 +274,7 @@ public class MatchService {
             throw new RuntimeException("Match does not have two participants");
         }
     }
+
     private void validateCanManageMatch(Tournament tournament, String currentUsername) {
         User currentUser = getUserByUsername(currentUsername);
         assertCanManageTournament(tournament, currentUser);
@@ -266,7 +299,6 @@ public class MatchService {
             throw new AccessDeniedException("Only organizer or admin can manage this tournament");
         }
     }
-
 
     private void propagateSoloWinner(MatchSolo finishedMatch, User winner) {
         MatchSolo next = finishedMatch.getNextMatch();
@@ -306,6 +338,21 @@ public class MatchService {
         }
 
         matchTeamRepository.save(next);
+    }
+
+    private void updatePlayerRating(User player, Long gameTypeId, String gameTypeName) {
+        if (player == null || gameTypeId == null) return;
+
+        ratingService.ensureUserStatsExists(player.getId(), gameTypeId, gameTypeName);
+        ratingService.incrementMatches(player.getId(), gameTypeId);
+    }
+
+    private void updatePlayerWinRating(User winner, Long gameTypeId, String gameTypeName) {
+        if (winner == null || gameTypeId == null) return;
+
+        ratingService.ensureUserStatsExists(winner.getId(), gameTypeId, gameTypeName);
+        ratingService.incrementMatches(winner.getId(), gameTypeId);
+        ratingService.incrementWins(winner.getId(), gameTypeId);
     }
 
     private void finishTournamentIfNeeded(Tournament tournament) {

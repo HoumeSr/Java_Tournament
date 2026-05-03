@@ -40,6 +40,7 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/favicon.ico",
                                 "/api/auth/**",
+                                "/api/rating/**",
                                 "/tournaments",
                                 "/tournaments/*",
                                 "/teams",
