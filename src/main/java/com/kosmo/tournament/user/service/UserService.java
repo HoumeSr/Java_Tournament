@@ -1,8 +1,10 @@
 package com.kosmo.tournament.user.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,6 +21,8 @@ import com.kosmo.tournament.user.dto.UserGameStatsDTO;
 import com.kosmo.tournament.user.dto.UserProfileDTO;
 import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
+import com.kosmo.tournament.rating.entity.RatingStats;
+import com.kosmo.tournament.rating.repository.RatingStatsRepository;
 
 @Service
 public class UserService {
@@ -30,17 +34,20 @@ public class UserService {
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
+    private final RatingStatsRepository ratingStatsRepository;
 
     private static final String DEFAULT_IMAGE_URL = "http://localhost:9000/images/profiles/DEFAULT_IMAGE.png";
 
     public UserService(UserRepository userRepository,
                        JdbcTemplate jdbcTemplate,
                        PasswordEncoder passwordEncoder,
-                       FileStorageService fileStorageService) {
+                       FileStorageService fileStorageService,
+                       RatingStatsRepository ratingStatsRepository) {
         this.userRepository = userRepository;
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
         this.fileStorageService = fileStorageService;
+        this.ratingStatsRepository = ratingStatsRepository;
     }
 
     public UserProfileDTO getUserProfile(Long requestedUserId, String currentUsername) {
@@ -236,43 +243,21 @@ public class UserService {
     }
 
     public List<UserGameStatsDTO> getUserGamesStats(Long userId) {
-        String sql = """
-            SELECT
-                gt."id" AS game_type_id,
-                gt."name" AS game_name,
-                COUNT(ms."id") AS total_matches,
-                COALESCE(SUM(CASE WHEN ms."winnerPlayerId" = ? THEN 1 ELSE 0 END), 0) AS total_wins
-            FROM "UserGames" ug
-            JOIN "GameTypes" gt
-                ON gt."id" = ug."gameId"
-            LEFT JOIN "Tournament" t
-                ON t."gameType" = gt."id"
-            LEFT JOIN "MatchSolo" ms
-                ON ms."tournamentId" = t."id"
-               AND ms."status" = 'FINISHED'
-               AND (ms."player1Id" = ? OR ms."player2Id" = ?)
-            WHERE ug."userId" = ?
-            GROUP BY gt."id", gt."name"
-            ORDER BY gt."name"
-        """;
+        List<RatingStats> statsList = ratingStatsRepository.findByUserIdOrderByWinRateDesc(userId);
 
-        return jdbcTemplate.query(
-                sql,
-                (rs, rowNum) -> {
-                    int totalMatches = rs.getInt("total_matches");
-                    int totalWins = rs.getInt("total_wins");
-                    int winRate = totalMatches == 0 ? 0 : (int) Math.round((totalWins * 100.0) / totalMatches);
+        if (statsList.isEmpty()) {
+            return new ArrayList<>();
+        }
 
-                    return new UserGameStatsDTO(
-                            rs.getLong("game_type_id"),
-                            rs.getString("game_name"),
-                            totalMatches,
-                            totalWins,
-                            winRate
-                    );
-                },
-                userId, userId, userId, userId
-        );
+        return statsList.stream()
+                .map(stats -> new UserGameStatsDTO(
+                        stats.getGameTypeId(),
+                        stats.getGameTypeName(),
+                        stats.getTotalMatches(),
+                        stats.getTotalWins(),
+                        stats.getWinRate()
+                ))
+                .collect(Collectors.toList());
     }
 
     private ShortUserDTO toShortUserDTO(User user) {

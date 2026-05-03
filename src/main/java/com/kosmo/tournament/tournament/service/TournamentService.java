@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import com.kosmo.tournament.match.entity.MatchSolo;
 import com.kosmo.tournament.match.entity.MatchTeam;
 import com.kosmo.tournament.match.repository.MatchSoloRepository;
 import com.kosmo.tournament.match.repository.MatchTeamRepository;
+import com.kosmo.tournament.rating.service.RatingService;
 import com.kosmo.tournament.team.dto.TeamShortDTO;
 import com.kosmo.tournament.team.entity.Team;
 import com.kosmo.tournament.team.entity.TeamMember;
@@ -51,6 +53,7 @@ public class TournamentService {
     private final TournamentTeamParticipantRepository teamParticipantRepository;
     private final MatchSoloRepository matchSoloRepository;
     private final MatchTeamRepository matchTeamRepository;
+    private final RatingService ratingService;
 
     public TournamentService(TournamentRepository tournamentRepository,
                              UserRepository userRepository,
@@ -60,7 +63,8 @@ public class TournamentService {
                              TournamentSoloParticipantRepository soloParticipantRepository,
                              TournamentTeamParticipantRepository teamParticipantRepository,
                              MatchSoloRepository matchSoloRepository,
-                             MatchTeamRepository matchTeamRepository) {
+                             MatchTeamRepository matchTeamRepository,
+                             RatingService ratingService) {
         this.tournamentRepository = tournamentRepository;
         this.userRepository = userRepository;
         this.gameTypeRepository = gameTypeRepository;
@@ -70,6 +74,7 @@ public class TournamentService {
         this.teamParticipantRepository = teamParticipantRepository;
         this.matchSoloRepository = matchSoloRepository;
         this.matchTeamRepository = matchTeamRepository;
+        this.ratingService = ratingService;
     }
 
     public List<TournamentShortDTO> getAllTournaments() {
@@ -78,10 +83,11 @@ public class TournamentService {
                 .map(this::toShortDTO)
                 .toList();
     }
+
     public PageResponseDTO<TournamentShortDTO> getTournamentsPage(Long gameTypeId,
-                                                              String status,
-                                                              int page,
-                                                              int size) {
+                                                                  String status,
+                                                                  int page,
+                                                                  int size) {
         int safePage = normalizePage(page);
         int safeSize = normalizePageSize(size);
 
@@ -98,7 +104,6 @@ public class TournamentService {
 
         return paginate(items, safePage, safeSize);
     }
-
 
     public TournamentFullDTO getTournamentById(Long id, String currentUsername) {
         Tournament tournament = tournamentRepository.findById(id)
@@ -186,8 +191,6 @@ public class TournamentService {
         tournament.setDescription(dto.getDescription());
         tournament.setParticipantType(normalizeParticipantType(dto.getParticipantType()));
         tournament.setAccess(normalizeAccess(dto.getAccess()));
-        // Статус нового турнира всегда начинается с DRAFT.
-        // Клиент не должен задавать lifecycle-статус при создании.
         tournament.setStatus(TournamentStatus.DRAFT.value());
         tournament.setGameType(gameType);
         tournament.setOrganizer(organizer);
@@ -230,13 +233,6 @@ public class TournamentService {
         if (dto.getAccess() != null && !dto.getAccess().isBlank()) {
             tournament.setAccess(dto.getAccess().toUpperCase());
         }
-
-        // ВАЖНО: статус турнира нельзя менять через PUT /api/tournaments/{id}.
-        // Для lifecycle-изменений используются только action endpoint-ы:
-        // POST /api/tournaments/{id}/open-registration
-        // POST /api/tournaments/{id}/start
-        // POST /api/tournaments/{id}/cancel
-        // POST /api/tournaments/{id}/finish
 
         if (dto.getGameTypeId() != null) {
             GameType gameType = gameTypeRepository.findById(dto.getGameTypeId())
@@ -322,87 +318,36 @@ public class TournamentService {
     public boolean isUserRegistered(Long tournamentId, String username) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
-        
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         if ("SOLO".equalsIgnoreCase(tournament.getParticipantType())) {
             return soloParticipantRepository.existsByTournamentIdAndPlayerId(tournamentId, user.getId());
         } else if ("TEAM".equalsIgnoreCase(tournament.getParticipantType())) {
-            // Проверяем, зарегистрирована ли любая команда пользователя
             List<Team> userTeams = teamMemberRepository.findByPlayerId(user.getId())
                     .stream()
                     .map(TeamMember::getTeam)
                     .toList();
-            
+
             for (Team team : userTeams) {
                 if (teamParticipantRepository.existsByTournamentIdAndTeamId(tournamentId, team.getId())) {
                     return true;
                 }
             }
         }
-        
+
         return false;
     }
 
     public int getParticipantsCount(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
-        
+
         if ("SOLO".equalsIgnoreCase(tournament.getParticipantType())) {
             return (int) soloParticipantRepository.countByTournamentId(tournamentId);
         } else {
             return (int) teamParticipantRepository.countByTournamentId(tournamentId);
-        }
-    }
-
-    public List<?> getTournamentParticipants(Long tournamentId, String currentUsername) {
-        Tournament tournament = tournamentRepository.findById(tournamentId)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
-        
-        // Проверяем права: только организатор может видеть участников
-        boolean isOwner = currentUsername != null 
-                && tournament.getOrganizer() != null 
-                && currentUsername.equals(tournament.getOrganizer().getUsername());
-        
-        if (!isOwner && !"IN_PROGRESS".equalsIgnoreCase(tournament.getStatus()) 
-                && !"COMPLETED".equalsIgnoreCase(tournament.getStatus())) {
-            throw new RuntimeException("Participants list is only available to tournament organizer before tournament starts");
-        }
-        
-        if ("SOLO".equalsIgnoreCase(tournament.getParticipantType())) {
-            List<TournamentSoloParticipant> participants = soloParticipantRepository
-                    .findByTournamentIdOrderBySeedAsc(tournamentId);
-            
-            return participants.stream()
-                    .map(p -> {
-                        Map<String, Object> dto = new HashMap<>();
-                        dto.put("id", p.getId());
-                        dto.put("playerId", p.getPlayer().getId());
-                        dto.put("playerUsername", p.getPlayer().getUsername());
-                        dto.put("playerImageUrl", p.getPlayer().getImageUrl());
-                        dto.put("seed", p.getSeed());
-                        dto.put("status", p.getStatus());
-                        return dto;
-                    })
-                    .toList();
-        } else {
-            List<TournamentTeamParticipant> participants = teamParticipantRepository
-                    .findByTournamentIdOrderBySeedAsc(tournamentId);
-            
-            return participants.stream()
-                    .map(p -> {
-                        Map<String, Object> dto = new HashMap<>();
-                        dto.put("id", p.getId());
-                        dto.put("teamId", p.getTeam().getId());
-                        dto.put("teamName", p.getTeam().getName());
-                        dto.put("teamImageUrl", p.getTeam().getImageUrl());
-                        dto.put("captainUsername", p.getTeam().getCaptain() != null ? p.getTeam().getCaptain().getUsername() : null);
-                        dto.put("seed", p.getSeed());
-                        dto.put("status", p.getStatus());
-                        return dto;
-                    })
-                    .toList();
         }
     }
 
@@ -475,8 +420,6 @@ public class TournamentService {
         assertCanManageTournament(tournament, currentUser);
         assertStatusTransitionAllowed(tournament, TournamentStatus.IN_PROGRESS);
 
-    
-
         if ("SOLO".equalsIgnoreCase(tournament.getParticipantType()) && !matchSoloRepository.findByTournamentId(tournamentId).isEmpty()) {
             throw new RuntimeException("Tournament bracket has already been generated");
         }
@@ -494,6 +437,7 @@ public class TournamentService {
         Tournament saved = tournamentRepository.save(tournament);
         return toFullDTO(saved, true);
     }
+
     public List<Map<String, Object>> getTournamentParticipants(Long tournamentId) {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
@@ -573,7 +517,6 @@ public class TournamentService {
         return toFullDTO(saved, true);
     }
 
-
     private void startSoloTournament(Tournament tournament) {
         List<TournamentSoloParticipant> participants = soloParticipantRepository.findByTournamentIdOrderBySeedAsc(tournament.getId());
         validateParticipantsForStart(tournament, participants.size());
@@ -581,39 +524,45 @@ public class TournamentService {
         int actualCount = participants.size();
         int bracketSize = nextPowerOfTwo(actualCount);
         int firstRoundMatches = bracketSize / 2;
-        int activeMatches = actualCount - bracketSize / 2;
-        int byeMatches = firstRoundMatches - activeMatches;
 
         List<MatchSolo> matches = createSoloBracketSkeleton(tournament, bracketSize);
         MatchSolo[] firstRound = matches.subList(0, firstRoundMatches).toArray(new MatchSolo[0]);
 
         int pointer = 0;
-        for (int i = 0; i < byeMatches; i++) {
+        for (int i = 0; i < firstRoundMatches; i++) {
             MatchSolo match = firstRound[i];
-            User player = participants.get(pointer++).getPlayer();
-            match.setPlayer1(player);
-            match.setPlayer2(null);
-            match.setWinnerPlayer(player);
-            match.setStatus("FINISHED");
-            match.setScheduledAt(tournament.getStartDate());
-        }
+            if (pointer < actualCount) {
+                User player1 = participants.get(pointer++).getPlayer();
+                match.setPlayer1(player1);
 
-        for (int i = byeMatches; i < firstRoundMatches; i++) {
-            MatchSolo match = firstRound[i];
-            User player1 = participants.get(pointer++).getPlayer();
-            User player2 = participants.get(pointer++).getPlayer();
-            match.setPlayer1(player1);
-            match.setPlayer2(player2);
-            match.setStatus("IN_PROGRESS");
+                if (pointer < actualCount) {
+                    User player2 = participants.get(pointer++).getPlayer();
+                    match.setPlayer2(player2);
+                    match.setStatus("IN_PROGRESS");
+                } else {
+                    match.setPlayer2(null);
+                    match.setWinnerPlayer(player1);
+                    match.setStatus("FINISHED");
+                }
+            } else {
+                match.setStatus("SCHEDULED");
+            }
             match.setScheduledAt(tournament.getStartDate());
         }
 
         matchSoloRepository.saveAll(matches);
 
-        for (int i = 0; i < byeMatches; i++) {
+        for (int i = 0; i < firstRoundMatches; i++) {
             MatchSolo match = firstRound[i];
-            propagateSoloWinner(match, match.getWinnerPlayer());
+            if (match.getWinnerPlayer() != null) {
+                propagateSoloWinner(match, match.getWinnerPlayer());
+            }
         }
+
+        List<User> players = participants.stream()
+                .map(TournamentSoloParticipant::getPlayer)
+                .collect(Collectors.toList());
+        initializeSoloPlayerRatings(tournament, players);
     }
 
     private void startTeamTournament(Tournament tournament) {
@@ -656,6 +605,32 @@ public class TournamentService {
             MatchTeam match = firstRound[i];
             propagateTeamWinner(match, match.getWinnerTeam());
         }
+
+        List<Team> teams = participants.stream()
+                .map(TournamentTeamParticipant::getTeam)
+                .collect(Collectors.toList());
+        initializeTeamPlayerRatings(tournament, teams);
+    }
+
+    private void initializeSoloPlayerRatings(Tournament tournament, List<User> players) {
+        Long gameTypeId = tournament.getGameType().getId();
+        String gameTypeName = tournament.getGameType().getName();
+
+        for (User player : players) {
+            ratingService.ensureUserStatsExists(player.getId(), gameTypeId, gameTypeName);
+        }
+    }
+
+    private void initializeTeamPlayerRatings(Tournament tournament, List<Team> teams) {
+        Long gameTypeId = tournament.getGameType().getId();
+        String gameTypeName = tournament.getGameType().getName();
+
+        for (Team team : teams) {
+            List<TeamMember> members = teamMemberRepository.findByTeamId(team.getId());
+            for (TeamMember member : members) {
+                ratingService.ensureUserStatsExists(member.getPlayer().getId(), gameTypeId, gameTypeName);
+            }
+        }
     }
 
     private List<MatchSolo> createSoloBracketSkeleton(Tournament tournament, int bracketSize) {
@@ -670,6 +645,7 @@ public class TournamentService {
                 match.setTournament(tournament);
                 match.setRoundNumber(roundNumber);
                 match.setStatus("SCHEDULED");
+                // Не устанавливаем player1 и player2 здесь
                 allMatches.add(match);
             }
             roundMatches /= 2;
@@ -767,6 +743,7 @@ public class TournamentService {
 
         matchTeamRepository.save(nextMatch);
     }
+
     private User getUserByUsername(String currentUsername) {
         if (currentUsername == null || currentUsername.isBlank()) {
             throw new AccessDeniedException("Authentication required");
@@ -804,22 +781,6 @@ public class TournamentService {
                     + currentStatus.value() + " -> " + targetStatus.value() + " is not allowed");
         }
     }
-
-    private boolean isOrganizerOrAdmin(Tournament tournament, String currentUsername) {
-        if (currentUsername == null || currentUsername.isBlank()) {
-            return false;
-        }
-
-        return userRepository.findByUsername(currentUsername)
-                .map(user -> {
-                    boolean isAdmin = "ADMIN".equalsIgnoreCase(user.getRole());
-                    boolean isOrganizer = tournament.getOrganizer() != null
-                            && tournament.getOrganizer().getId().equals(user.getId());
-                    return isAdmin || isOrganizer;
-                })
-                .orElse(false);
-    }
-
 
     private void validateCreateTournament(CreateTournamentDTO dto) {
         if (dto.getTitle() == null || dto.getTitle().isBlank()) {
@@ -896,18 +857,12 @@ public class TournamentService {
         return value.toUpperCase();
     }
 
-    private String normalizeStatus(String value) {
-        if (value == null || value.isBlank()) return TournamentStatus.DRAFT.value();
-        return TournamentStatus.from(value).value();
-    }
-
     private int getCurrentParticipantsCount(Tournament tournament) {
         if ("TEAM".equalsIgnoreCase(tournament.getParticipantType())) {
             return (int) teamParticipantRepository.countByTournamentId(tournament.getId());
         }
         return (int) soloParticipantRepository.countByTournamentId(tournament.getId());
     }
-
 
     private int normalizePage(int page) {
         return Math.max(page, 0);
