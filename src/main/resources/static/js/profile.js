@@ -25,6 +25,16 @@ $(function () {
         });
     }
 
+    function getNoun(number, one, two, five) {
+        let n = Math.abs(number);
+        n %= 100;
+        if (n >= 5 && n <= 20) return five;
+        n %= 10;
+        if (n === 1) return one;
+        if (n >= 2 && n <= 4) return two;
+        return five;
+    }
+
     function getAvatarUrlWithCacheBust(imageUrl) {
         if (!imageUrl || imageUrl === 'null') return null;
 
@@ -131,6 +141,145 @@ $(function () {
         };
 
         img.src = avatarUrl;
+    }
+
+    // Рендер карусели рейтинга внутри статистики
+    function renderRatingCarousel(ratingData) {
+        const $wrapper = $('#ratingCarouselWrapper');
+        const $track = $('#ratingCarouselTrack');
+        
+        // ПРОВЕРКА НА ПУСТОЙ СПИСОК
+        if (!ratingData || ratingData.length === 0) {
+            $wrapper.show();
+            $track.html(`
+                <div class="rating-empty-state">
+                    <i class="fas fa-chart-line"></i>
+                    <p>Нет статистики по играм</p>
+                    <span>Участвуйте в турнирах, чтобы появился рейтинг</span>
+                </div>
+            `);
+            return;
+        }
+        
+        $wrapper.show();
+        $('#ratingTotalGames').text(`${ratingData.length} ${getNoun(ratingData.length, 'игра', 'игры', 'игр')}`);
+        
+        $track.empty();
+        
+        ratingData.forEach((game, index) => {
+            const winRateClass = getWinRateClassForRating(game.winRate);
+            const gameIcon = getGameIconForRating(game.gameTypeName);
+            const losses = (game.totalMatches || 0) - (game.totalWins || 0);
+            
+            const $card = $(`
+                <div class="rating-card-mini" data-game-id="${game.gameTypeId}" data-game-name="${escapeHtml(game.gameTypeName)}" data-index="${index}">
+                    <div class="rating-card-mini-game">
+                        <i class="${gameIcon}"></i>
+                        <span>${escapeHtml(game.gameTypeName)}</span>
+                    </div>
+                    <div class="rating-card-mini-stats">
+                        <div class="rating-stat-mini">
+                            <span class="rating-stat-mini-label"><i class="fas fa-trophy"></i> Матчи</span>
+                            <span class="rating-stat-mini-value">${game.totalMatches || 0}</span>
+                        </div>
+                        <div class="rating-stat-mini">
+                            <span class="rating-stat-mini-label"><i class="fas fa-check-circle"></i> Победы</span>
+                            <span class="rating-stat-mini-value">${game.totalWins || 0}</span>
+                        </div>
+                        <div class="rating-stat-mini">
+                            <span class="rating-stat-mini-label"><i class="fas fa-times-circle"></i> Поражения</span>
+                            <span class="rating-stat-mini-value">${losses}</span>
+                        </div>
+                    </div>
+                    <div class="rating-card-bottom">
+                        <div class="rating-winrate-mini">
+                            <span class="rating-winrate-mini-value ${winRateClass}">
+                                ${game.winRate || 0}% побед
+                            </span>
+                        </div>
+                        <div class="carousel-nav-buttons">
+                            <button class="carousel-btn-mini prev-card" ${index === 0 ? 'disabled' : ''}>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button class="carousel-btn-mini next-card" ${index === ratingData.length - 1 ? 'disabled' : ''}>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            // Обработчик клика по карточке
+            $card.on('click', function(e) {
+                if (!$(e.target).closest('.carousel-btn-mini').length) {
+                    const gameId = $(this).data('game-id');
+                    // Переход на страницу рейтинга с параметром game
+                    window.location.href = `/rating?game=${gameId}`;
+                }
+            });
+
+            $track.append($card);
+        });
+        
+        initCarouselScroll();
+    }
+
+    function initCarouselScroll() {
+        const $track = $('#ratingCarouselTrack');
+        
+        // Обработчики для кнопок внутри каждой карточки
+        $('.carousel-btn-mini.prev-card').off('click').on('click', function(e) {
+            e.stopPropagation();
+            const $card = $(this).closest('.rating-card-mini');
+            const currentIndex = $card.data('index');
+            if (currentIndex > 0) {
+                scrollToCard(currentIndex - 1);
+            }
+        });
+        
+        $('.carousel-btn-mini.next-card').off('click').on('click', function(e) {
+            e.stopPropagation();
+            const $card = $(this).closest('.rating-card-mini');
+            const currentIndex = $card.data('index');
+            const totalCards = $('.rating-card-mini').length;
+            if (currentIndex < totalCards - 1) {
+                scrollToCard(currentIndex + 1);
+            }
+        });
+        
+        function scrollToCard(index) {
+            const $cards = $('.rating-card-mini');
+            const $targetCard = $cards.eq(index);
+            const cardWidth = $targetCard.outerWidth();
+            const scrollLeft = index * (cardWidth + 16); // 16 - gap
+            
+            $track.animate({
+                scrollLeft: scrollLeft
+            }, 300, function() {
+                // Обновляем data-index у всех карточек
+                $cards.each(function(i) {
+                    $(this).attr('data-index', i);
+                });
+                
+                // Обновляем состояние кнопок
+                $cards.each(function(i) {
+                    const $card = $(this);
+                    const total = $cards.length;
+                    $card.find('.prev-card').prop('disabled', i === 0);
+                    $card.find('.next-card').prop('disabled', i === total - 1);
+                });
+            });
+        }
+    }
+
+    function getWinRateClassForRating(winRate) {
+        if (winRate >= 70) return 'winrate-high';
+        if (winRate >= 40) return 'winrate-medium';
+        return 'winrate-low';
+    }
+
+    function getGameIconForRating(gameName) {
+        return 'fas fa-gamepad';
     }
 
     function updateCountryDisplay(country) {
@@ -295,8 +444,21 @@ $(function () {
         $('#changeAvatarBtn').toggle(isOwner);
 
         setAvatar(userDTO.imageUrl);
-        renderStats(userDTO.games || userDTO.gameStats || []);
         initCountryEdit();
+    }
+
+    async function loadUserRating(userId) {
+        try {
+            const response = await window.api.get(`/api/rating/user/${userId}`);
+            if (response && response.success && response.rating) {
+                renderRatingCarousel(response.rating);
+            } else {
+                $('#ratingCarouselSection').hide();
+            }
+        } catch (error) {
+            console.error('Error loading user rating:', error);
+            $('#ratingCarouselSection').hide();
+        }
     }
 
     async function loadProfile() {
@@ -304,6 +466,7 @@ $(function () {
             const profileId = await getTargetProfileId();
             const userDTO = await window.api.get(`/api/users/${profileId}`);
             renderProfile(userDTO);
+            await loadUserRating(profileId);
         } catch (error) {
             const message = error.message || 'Не удалось загрузить профиль';
             showToast('❌ ' + message, true);

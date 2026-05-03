@@ -46,26 +46,21 @@
 
             <input type="file" id="avatarUpload" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;">
 
-            <div class="stats-card">
-                <h3>📊 Статистика</h3>
-                <div class="stat-item">
-                    <span class="stat-label">Турниров участвовал</span>
-                    <span class="stat-value" id="tournamentsCount">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Побед</span>
-                    <span class="stat-value" id="winsCount">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Рейтинг</span>
-                    <span class="stat-value" id="rating">1200</span>
+            <div class="stats-card">                
+               <div class="rating-carousel-wrapper" id="ratingCarouselWrapper" style="display: none;">
+                    <div class="rating-carousel-divider"></div>
+                    <div class="rating-carousel-header">
+                        <span class="rating-carousel-title">
+                            <i class="fas fa-chart-line"></i> Рейтинг по играм
+                        </span>
+                        <span class="rating-carousel-count" id="ratingTotalGames">0 игр</span>
+                    </div>
+                    <div class="rating-carousel-container">
+                        <div class="rating-carousel-track" id="ratingCarouselTrack"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="games-card" id="gamesCard" style="display: none;">
-                <h3>🎮 Любимые игры</h3>
-                <div class="games-list" id="gamesList"></div>
-            </div>
         </div>
 
         <div class="profile-main">
@@ -138,6 +133,7 @@
                     <i class="fas fa-sign-out-alt"></i> Выйти из аккаунта
                 </button>
             </div>
+            
         </div>
     </div>
 </main>
