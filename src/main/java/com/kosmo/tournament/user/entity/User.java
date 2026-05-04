@@ -62,7 +62,6 @@ public class User {
         if (enabled == null) enabled = true;
         if (role == null) role = "PLAYER";
         if (country == null) country = "Не указана";
-        if (imageUrl == null) imageUrl = "http://localhost:9000/images/profiles/DEFAULT_IMAGE.png";
     }
 
     public Long getId() { return id; }

@@ -12,7 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.kosmo.tournament.rating.entity.RatingStats;
+import com.kosmo.tournament.rating.repository.RatingStatsRepository;
 import com.kosmo.tournament.storage.service.FileStorageService;
+import com.kosmo.tournament.storage.service.RandomImageService;
 import com.kosmo.tournament.user.dto.ChangePasswordDTO;
 import com.kosmo.tournament.user.dto.CreateUserDTO;
 import com.kosmo.tournament.user.dto.ShortUserDTO;
@@ -21,8 +24,6 @@ import com.kosmo.tournament.user.dto.UserGameStatsDTO;
 import com.kosmo.tournament.user.dto.UserProfileDTO;
 import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
-import com.kosmo.tournament.rating.entity.RatingStats;
-import com.kosmo.tournament.rating.repository.RatingStatsRepository;
 
 @Service
 public class UserService {
@@ -35,19 +36,23 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final FileStorageService fileStorageService;
     private final RatingStatsRepository ratingStatsRepository;
+    
+    private final RandomImageService randomImageService;
 
-    private static final String DEFAULT_IMAGE_URL = "http://localhost:9000/images/profiles/DEFAULT_IMAGE.png";
+    // private static final String DEFAULT_IMAGE_URL = "http://localhost:9000/images/profiles/DEFAULT_IMAGE.png";
 
     public UserService(UserRepository userRepository,
                        JdbcTemplate jdbcTemplate,
                        PasswordEncoder passwordEncoder,
                        FileStorageService fileStorageService,
-                       RatingStatsRepository ratingStatsRepository) {
+                       RatingStatsRepository ratingStatsRepository,
+                       RandomImageService randomImageService) {
         this.userRepository = userRepository;
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
         this.fileStorageService = fileStorageService;
         this.ratingStatsRepository = ratingStatsRepository;
+        this.randomImageService = randomImageService;
     }
 
     public UserProfileDTO getUserProfile(Long requestedUserId, String currentUsername) {
@@ -111,7 +116,7 @@ public class UserService {
         user.setCreatedAt(LocalDateTime.now());
         user.setImageUrl(dto.getImageUrl() != null && !dto.getImageUrl().trim().isBlank()
                 ? dto.getImageUrl().trim()
-                : DEFAULT_IMAGE_URL);
+                : randomImageService.getRandomProfileImage());
 
         User saved = userRepository.save(user);
         return buildUserProfileDTO(saved, true);
@@ -201,7 +206,7 @@ public class UserService {
         User user = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.setImageUrl(DEFAULT_IMAGE_URL);
+        user.setImageUrl(randomImageService.getRandomProfileImage());
         userRepository.save(user);
     }
 

@@ -26,14 +26,30 @@ services:
       echo 'Creating bucket ${MINIO_BUCKET}...';
       mc mb local/${MINIO_BUCKET} || true;
 
-      echo 'Creating category prefixes...';
-      printf '' | mc pipe local/${MINIO_BUCKET}/profiles/.keep || true;
-      printf '' | mc pipe local/${MINIO_BUCKET}/games/.keep || true;
-
       echo 'Setting public read policy...';
       mc anonymous set download local/${MINIO_BUCKET} || true;
 
       echo 'MinIO init done';
+      exit 0;
+      "
+
+  minio-upload-images:
+    image: minio/mc:latest
+    depends_on:
+      - minio-init
+    volumes:
+      - ./src/main/resources/static/images:/upload/images:ro
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO...';
+      until mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}; do
+        sleep 2;
+      done;
+
+      echo 'Uploading images with preserved structure...';
+      mc mirror /upload/images local/${MINIO_BUCKET}/images;
+
+      echo 'Upload complete';
       exit 0;
       "
 

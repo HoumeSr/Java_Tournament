@@ -13,6 +13,7 @@ import com.kosmo.tournament.gametype.entity.GameType;
 import com.kosmo.tournament.gametype.repository.GameTypeRepository;
 import com.kosmo.tournament.notification.entity.Notification;
 import com.kosmo.tournament.notification.service.NotificationService;
+import com.kosmo.tournament.storage.service.RandomImageService;
 import com.kosmo.tournament.team.dto.AddTeamMemberDTO;
 import com.kosmo.tournament.team.dto.CreateTeamDTO;
 import com.kosmo.tournament.team.dto.TeamFullDTO;
@@ -37,19 +38,22 @@ public class TeamService {
     private final NotificationService notificationService;
     private final GameTypeRepository gameTypeRepository;
     private final TournamentTeamParticipantRepository tournamentTeamParticipantRepository;
+    private final RandomImageService randomImageService;
 
     public TeamService(TeamRepository teamRepository,
                        TeamMemberRepository teamMemberRepository,
                        UserRepository userRepository,
                        NotificationService notificationService,
                        GameTypeRepository gameTypeRepository,
-                       TournamentTeamParticipantRepository tournamentTeamParticipantRepository) {
+                       TournamentTeamParticipantRepository tournamentTeamParticipantRepository,
+                       RandomImageService randomImageService) {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
         this.gameTypeRepository = gameTypeRepository;
         this.tournamentTeamParticipantRepository = tournamentTeamParticipantRepository;
+        this.randomImageService = randomImageService;
     }
 
     public List<TeamShortDTO> getAllTeams() {
@@ -168,7 +172,13 @@ public class TeamService {
         team.setName(dto.getName());
         team.setCaptain(captain);
         team.setGameType(gameType);
-        team.setImageUrl(dto.getImageUrl());
+        String imageUrl = dto.getImageUrl();
+
+        if (imageUrl == null || imageUrl.isBlank()) {
+            imageUrl = randomImageService.getRandomTeamImage();
+        }
+
+        team.setImageUrl(imageUrl);
 
         Team savedTeam = teamRepository.save(team);
 
