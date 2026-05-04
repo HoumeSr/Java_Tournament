@@ -349,25 +349,6 @@ function initActionButtons() {
     });
 }
 
-// ========== ПЕРЕХОД НА ПРОФИЛЬ ПРИ КЛИКЕ НА УЧАСТНИКА ==========
-function initMemberClickHandlers() {
-    // Клик по карточке участника (но не по кнопке исключения)
-    $('.member-card').off('click').on('click', function(e) {
-        // Если клик был по кнопке исключения - не переходим
-        if ($(e.target).closest('.btn-kick').length) {
-            return;
-        }
-        
-        const userId = $(this).data('user-id');
-        if (userId) {
-            window.location.href = `/profile/${userId}`;
-        }
-    });
-    
-    // Добавляем стиль курсора для карточек участников
-    $('.member-card').css('cursor', 'pointer');
-}
-
 // ========== ESCAPE HTML ==========
 function escapeHtml(str) {
     if (!str) return '';
@@ -386,5 +367,4 @@ $(document).ready(() => {
     updateAuthButtons();
     initInviteModal();
     initActionButtons();
-    initMemberClickHandlers();
 });

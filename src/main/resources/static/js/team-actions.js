@@ -65,6 +65,91 @@ $(function () {
         }
     }
 
+    // ========== ОБНОВЛЕНИЕ СЧЁТЧИКОВ ==========
+    function updateMembersCount() {
+        const $membersGrid = $('.members-grid');
+        const $membersCountSpan = $('.members-count');
+        const $teamSizeBadge = $('.team-size-badge span');
+        
+        if (!$membersGrid.length) return;
+        
+        const currentCount = $('.member-card:not(.add-member-card)').length;
+        const maxMembers = window.teamData?.maxMembersCount || 
+                           parseInt($('.team-size-badge span').text().split('/')[1]) || 0;
+        
+        if ($membersCountSpan.length) {
+            $membersCountSpan.text(`${currentCount} / ${maxMembers}`);
+        }
+        
+        if ($teamSizeBadge.length) {
+            $teamSizeBadge.text(`${currentCount} / ${maxMembers}`);
+        }
+        
+        if (window.teamData) {
+            window.teamData.currentMembersCount = currentCount;
+        }
+        
+        const $addMemberCard = $('.add-member-card');
+        const $addMemberBtn = $('#addMemberBtn');
+        
+        if (currentCount >= maxMembers) {
+            if ($addMemberCard.length) $addMemberCard.fadeOut();
+            if ($addMemberBtn.length) $addMemberBtn.prop('disabled', true);
+        } else {
+            if ($addMemberCard.length) $addMemberCard.fadeIn();
+            if ($addMemberBtn.length) $addMemberBtn.prop('disabled', false);
+        }
+        
+        const $joinBtn = $('#joinTeamBtn');
+        if ($joinBtn.length) {
+            if (currentCount >= maxMembers) {
+                $joinBtn.prop('disabled', true);
+                $joinBtn.html('<i class="fas fa-ban"></i> Команда заполнена');
+            } else {
+                $joinBtn.prop('disabled', false);
+                $joinBtn.html('<i class="fas fa-sign-in-alt"></i> Вступить в команду');
+            }
+        }
+    }
+
+    // ========== УДАЛЕНИЕ УЧАСТНИКА ==========
+    async function kickMember(userId, $memberCard) {
+        try {
+            await window.api.delete(`/api/teams/${window.teamData.id}/members/${userId}`);
+            
+            const memberName = $memberCard.find('.member-name').text();
+            showToast(`✅ Игрок "${memberName}" исключён из команды`);
+            
+            $memberCard.fadeOut(300, function() {
+                $(this).remove();
+                updateMembersCount();
+                
+                const remainingMembers = $('.member-card:not(.add-member-card)').length;
+                const $emptyMessage = $('.empty-members');
+                
+                if (remainingMembers === 0) {
+                    if ($emptyMessage.length) {
+                        $emptyMessage.show();
+                    } else {
+                        $('.members-grid').after(`
+                            <div class="empty-members">
+                                <i class="fas fa-user-friends"></i>
+                                <p>В команде пока нет участников</p>
+                            </div>
+                        `);
+                    }
+                    $('.members-grid').hide();
+                } else {
+                    if ($emptyMessage.length) $emptyMessage.hide();
+                    $('.members-grid').show();
+                }
+            });
+            
+        } catch (error) {
+            showToast('❌ ' + (error.message || 'Не удалось исключить участника'), true);
+        }
+    }
+
     function initInviteButton() {
         $('#addMemberBtn, #addMemberCard').off('click').on('click', function (event) {
             event.preventDefault();
@@ -77,19 +162,21 @@ $(function () {
     }
 
     function initKickButtons() {
-        $('.btn-kick').off('click').on('click', function (event) {
+        $('.btn-kick').off('click').on('click', async function (event) {
             event.stopPropagation();
             const userId = $(this).data('user-id');
-            if (!confirm('Вы уверены, что хотите исключить этого участника?')) return;
-
-            window.api.delete(`/api/teams/${window.teamData.id}/members/${userId}`)
-                .done(function () {
-                    showToast('✅ Участник исключён из команды');
-                    setTimeout(function () { window.location.reload(); }, 800);
-                })
-                .fail(function (xhr) {
-                    showToast('❌ ' + (xhr.responseJSON?.message || 'Не удалось исключить участника'), true);
-                });
+            const $memberCard = $(this).closest('.member-card');
+            const memberName = $memberCard.find('.member-name').text();
+            
+            if (!confirm(`Вы уверены, что хотите исключить игрока "${memberName}" из команды?`)) return;
+            
+            const $btn = $(this);
+            const originalHtml = $btn.html();
+            $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+            
+            await kickMember(userId, $memberCard);
+            
+            $btn.html(originalHtml).prop('disabled', false);
         });
     }
 
@@ -133,10 +220,25 @@ $(function () {
         });
     }
 
+    // ========== ПЕРЕХОД НА ПРОФИЛЬ ПРИ КЛИКЕ ==========
+    function initMemberClickHandlers() {
+        $('.member-card').off('click').on('click', function(e) {
+            if ($(e.target).closest('.btn-kick').length) return;
+            
+            const userId = $(this).data('user-id');
+            if (userId) {
+                window.location.href = `/profile/${userId}`;
+            }
+        });
+        
+        $('.member-card').css('cursor', 'pointer');
+    }
+
     updateAuthButtons();
     initInviteButton();
     initKickButtons();
     initJoinButton();
     initLeaveButton();
+    initMemberClickHandlers();
     if (typeof initModal === 'function') initModal();
 });
