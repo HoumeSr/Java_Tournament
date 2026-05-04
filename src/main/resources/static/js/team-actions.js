@@ -1,5 +1,7 @@
 /* team-actions.js — действия с DTO через API хелпер */
 $(function () {
+    let teamDetails = null; // Храним полный DTO команды
+
     function showToast(message, isError = false) {
         const $toast = $('#demoToast');
         if (!$toast.length) return;
@@ -65,43 +67,116 @@ $(function () {
         }
     }
 
+    // ========== ЗАГРУЗКА ДАННЫХ КОМАНДЫ ==========
+    async function loadTeamDetails() {
+        const teamId = window.teamData?.id;
+        if (!teamId) return null;
+
+        try {
+            const data = await window.api.get(`/api/teams/${teamId}`);
+            teamDetails = data;
+            
+            // Обновляем window.teamData новыми полями
+            if (window.teamData) {
+                window.teamData.rosterLocked = data.rosterLocked;
+                window.teamData.rosterLockReason = data.rosterLockReason;
+                window.teamData.canLeaveTeam = data.canLeaveTeam;
+                window.teamData.canKickMembers = data.canKickMembers;
+                window.teamData.canInviteMembers = data.canInviteMembers;
+                window.teamData.canAddMembers = data.canAddMembers;
+            }
+            
+            // Показываем блокировку состава, если нужно
+            if (data.rosterLocked && data.rosterLockReason) {
+                showRosterLockedWarning(data.rosterLockReason);
+            }
+            
+            // Инициализируем UI в зависимости от прав
+            initUIByPermissions();
+            
+            return data;
+        } catch (error) {
+            console.error('Error loading team details:', error);
+            return null;
+        }
+    }
+
+    // ========== ПОКАЗ ПРЕДУПРЕЖДЕНИЯ О БЛОКИРОВКЕ ==========
+    function showRosterLockedWarning(reason) {
+        // Удаляем существующее предупреждение
+        $('.roster-locked-warning').remove();
+        
+        const $warning = $(`
+            <div class="roster-locked-warning">
+                <i class="fas fa-lock"></i>
+                <span>${escapeHtml(reason)}</span>
+            </div>
+        `);
+        
+        // Вставляем после team-info-card
+        $('.team-info-card').after($warning);
+        
+        // Добавляем анимацию
+        $warning.hide().fadeIn(300);
+    }
+
+    // ========== ИНИЦИАЛИЗАЦИЯ UI ПО ПРАВАМ ==========
+    function initUIByPermissions() {
+        if (!teamDetails) return;
+        
+        // 1. Кнопка "Покинуть команду"
+        if (!teamDetails.canLeaveTeam) {
+            $('#leaveTeamBtn').hide();
+        }
+        
+        // 2. Кнопки "Исключить участника"
+        if (!teamDetails.canKickMembers) {
+            $('.btn-kick').hide();
+        }
+        
+        // 3. Кнопка "Пригласить участника" и карточка добавления
+        if (!teamDetails.canInviteMembers) {
+            $('#addMemberBtn, #addMemberCard').hide();
+        }
+        
+        // 4. Кнопка "Вступить в команду"
+        if (!teamDetails.canAddMembers) {
+            $('#joinTeamBtn').hide();
+        }
+        
+        // Если состав заблокирован, дополнительно блокируем кнопки визуально
+        if (teamDetails.rosterLocked) {
+            $('#leaveTeamBtn, #joinTeamBtn, .btn-kick, #addMemberBtn, #addMemberCard')
+                .css('opacity', '0.5')
+                .attr('title', teamDetails.rosterLockReason || 'Состав заблокирован');
+        }
+    }
+
     // ========== ОБНОВЛЕНИЕ СЧЁТЧИКОВ ==========
     function updateMembersCount() {
-        const $membersGrid = $('.members-grid');
-        const $membersCountSpan = $('.members-count');
-        const $teamSizeBadge = $('.team-size-badge span');
-        
-        if (!$membersGrid.length) return;
-        
         const currentCount = $('.member-card:not(.add-member-card)').length;
-        const maxMembers = window.teamData?.maxMembersCount || 
-                           parseInt($('.team-size-badge span').text().split('/')[1]) || 0;
+        const maxMembers = teamDetails?.maxMembersCount || window.teamData?.maxMembersCount || 0;
         
-        if ($membersCountSpan.length) {
-            $membersCountSpan.text(`${currentCount} / ${maxMembers}`);
-        }
+        // Обновляем все счётчики
+        $('.members-count, .team-size-badge span, .meta-card strong').each(function() {
+            const $el = $(this);
+            const text = $el.text();
+            if (text.includes('/') || $el.closest('.meta-card').length) {
+                $el.text(`${currentCount} / ${maxMembers}`);
+            }
+        });
         
-        if ($teamSizeBadge.length) {
-            $teamSizeBadge.text(`${currentCount} / ${maxMembers}`);
-        }
-        
+        // Обновляем данные
         if (window.teamData) {
             window.teamData.currentMembersCount = currentCount;
         }
-        
-        const $addMemberCard = $('.add-member-card');
-        const $addMemberBtn = $('#addMemberBtn');
-        
-        if (currentCount >= maxMembers) {
-            if ($addMemberCard.length) $addMemberCard.fadeOut();
-            if ($addMemberBtn.length) $addMemberBtn.prop('disabled', true);
-        } else {
-            if ($addMemberCard.length) $addMemberCard.fadeIn();
-            if ($addMemberBtn.length) $addMemberBtn.prop('disabled', false);
+        if (teamDetails) {
+            teamDetails.currentMembersCount = currentCount;
         }
         
+        // Обновляем кнопку вступления
         const $joinBtn = $('#joinTeamBtn');
-        if ($joinBtn.length) {
+        if ($joinBtn.length && teamDetails?.canAddMembers !== false) {
             if (currentCount >= maxMembers) {
                 $joinBtn.prop('disabled', true);
                 $joinBtn.html('<i class="fas fa-ban"></i> Команда заполнена');
@@ -110,10 +185,29 @@ $(function () {
                 $joinBtn.html('<i class="fas fa-sign-in-alt"></i> Вступить в команду');
             }
         }
+        
+        // Обновляем карточку добавления
+        if (teamDetails?.canInviteMembers !== false) {
+            const $addMemberCard = $('.add-member-card');
+            const $addMemberBtn = $('#addMemberBtn');
+            
+            if (currentCount >= maxMembers) {
+                if ($addMemberCard.length) $addMemberCard.fadeOut();
+                if ($addMemberBtn.length) $addMemberBtn.prop('disabled', true);
+            } else {
+                if ($addMemberCard.length) $addMemberCard.fadeIn();
+                if ($addMemberBtn.length) $addMemberBtn.prop('disabled', false);
+            }
+        }
     }
 
     // ========== УДАЛЕНИЕ УЧАСТНИКА ==========
     async function kickMember(userId, $memberCard) {
+        if (!teamDetails?.canKickMembers) {
+            showToast('❌ Сейчас нельзя исключать участников', true);
+            return;
+        }
+        
         try {
             await window.api.delete(`/api/teams/${window.teamData.id}/members/${userId}`);
             
@@ -146,24 +240,42 @@ $(function () {
             });
             
         } catch (error) {
-            showToast('❌ ' + (error.message || 'Не удалось исключить участника'), true);
+            const errorMsg = error.responseJSON?.message || error.message || 'Не удалось исключить участника';
+            showToast(`❌ ${errorMsg}`, true);
         }
     }
 
+    // ========== ПРИГЛАШЕНИЕ ==========
     function initInviteButton() {
         $('#addMemberBtn, #addMemberCard').off('click').on('click', function (event) {
             event.preventDefault();
+            
+            if (!teamDetails?.canInviteMembers) {
+                const reason = teamDetails?.rosterLockReason || 'Сейчас нельзя приглашать участников';
+                showToast(`❌ ${reason}`, true);
+                return;
+            }
+            
             if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
                 showToast('❌ Команда уже заполнена', true);
                 return;
             }
+            
             if (typeof openInviteModal === 'function') openInviteModal();
         });
     }
 
+    // ========== КНОПКИ УДАЛЕНИЯ ==========
     function initKickButtons() {
         $('.btn-kick').off('click').on('click', async function (event) {
             event.stopPropagation();
+            
+            if (!teamDetails?.canKickMembers) {
+                const reason = teamDetails?.rosterLockReason || 'Сейчас нельзя исключать участников';
+                showToast(`❌ ${reason}`, true);
+                return;
+            }
+            
             const userId = $(this).data('user-id');
             const $memberCard = $(this).closest('.member-card');
             const memberName = $memberCard.find('.member-name').text();
@@ -180,8 +292,15 @@ $(function () {
         });
     }
 
+    // ========== ВСТУПЛЕНИЕ В КОМАНДУ ==========
     function initJoinButton() {
         $('#joinTeamBtn').off('click').on('click', async function () {
+            if (!teamDetails?.canAddMembers) {
+                const reason = teamDetails?.rosterLockReason || 'Сейчас нельзя вступить в команду';
+                showToast(`❌ ${reason}`, true);
+                return;
+            }
+            
             if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
                 showToast('❌ Команда уже заполнена', true);
                 return;
@@ -196,14 +315,22 @@ $(function () {
                 showToast('✅ Вы вступили в команду');
                 setTimeout(function () { window.location.reload(); }, 800);
             } catch (error) {
-                showToast('❌ ' + (error.message || 'Не удалось вступить в команду'), true);
+                const errorMsg = error.responseJSON?.message || error.message || 'Не удалось вступить в команду';
+                showToast(`❌ ${errorMsg}`, true);
                 $button.prop('disabled', false).html('<i class="fas fa-sign-in-alt"></i> Вступить в команду');
             }
         });
     }
 
+    // ========== ВЫХОД ИЗ КОМАНДЫ ==========
     function initLeaveButton() {
         $('#leaveTeamBtn').off('click').on('click', async function () {
+            if (!teamDetails?.canLeaveTeam) {
+                const reason = teamDetails?.rosterLockReason || 'Сейчас нельзя покинуть команду';
+                showToast(`❌ ${reason}`, true);
+                return;
+            }
+            
             if (!confirm('Вы уверены, что хотите покинуть команду?')) return;
             
             const $button = $(this);
@@ -214,7 +341,8 @@ $(function () {
                 showToast('✅ Вы покинули команду');
                 setTimeout(function () { window.location.href = '/teams'; }, 800);
             } catch (error) {
-                showToast('❌ ' + (error.message || 'Не удалось покинуть команду'), true);
+                const errorMsg = error.responseJSON?.message || error.message || 'Не удалось покинуть команду';
+                showToast(`❌ ${errorMsg}`, true);
                 $button.prop('disabled', false).html('<i class="fas fa-sign-out-alt"></i> Покинуть команду');
             }
         });
@@ -234,11 +362,15 @@ $(function () {
         $('.member-card').css('cursor', 'pointer');
     }
 
-    updateAuthButtons();
-    initInviteButton();
-    initKickButtons();
-    initJoinButton();
-    initLeaveButton();
-    initMemberClickHandlers();
-    if (typeof initModal === 'function') initModal();
+    // ========== ЗАПУСК ==========
+    (async function init() {
+        await updateAuthButtons();
+        await loadTeamDetails(); // Загружаем полные данные с флагами
+        initInviteButton();
+        initKickButtons();
+        initJoinButton();
+        initLeaveButton();
+        initMemberClickHandlers();
+        if (typeof initModal === 'function') initModal();
+    })();
 });
