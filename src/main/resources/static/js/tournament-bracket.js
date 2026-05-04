@@ -229,9 +229,8 @@ async function initRegistrationButtons() {
     }
 }
 
-// ========== ГЕНЕРАЦИЯ ТУРНИРНОЙ СЕТКИ ==========
-function generateBracket(maxParticipants) {
-    let teamsCount = maxParticipants;
+function generateBracket(maxParticipants, actualParticipants = null) {
+    let teamsCount = actualParticipants || maxParticipants;
     
     if ((teamsCount & (teamsCount - 1)) !== 0 || teamsCount < 2) {
         let power = 1;
@@ -291,10 +290,30 @@ function generateBracket(maxParticipants) {
         };
         
         for (let i = 0; i < matchesCount; i++) {
+            // Для первого раунда может быть BYE
+            let team1Name = `TBD ${i * 2 + 1}`;
+            let team2Name = `TBD ${i * 2 + 2}`;
+            let team1Id = null;
+            let team2Id = null;
+            
+            // Если это первый раунд и участников меньше, чем слотов
+            if (roundNumber === 1 && actualParticipants) {
+                const totalSlots = teamsCount;
+                const actualCount = actualParticipants;
+                const byeCount = totalSlots - actualCount;
+                
+                // Помечаем BYE для пустых слотов
+                if (i < byeCount) {
+                    team1Name = 'BYE';
+                    team1Id = null;
+                    team2Name = `TBD ${i * 2 + 2}`;
+                }
+            }
+            
             round.matches.push({
                 id: `${roundNumber}_${i}`,
-                team1: { name: `TBD ${i * 2 + 1}`, score: null },
-                team2: { name: `TBD ${i * 2 + 2}`, score: null },
+                team1: { name: team1Name, score: null, id: team1Id, type: null },
+                team2: { name: team2Name, score: null, id: team2Id, type: null },
                 winner: null,
                 finished: false
             });
@@ -314,14 +333,25 @@ async function loadMatchesData(tournamentId) {
     
     try {
         const matches = await window.api.get(`/api/matches/tournament/${tournamentId}`);
-        return matches || null;
+        
+        // Преобразуем данные, чтобы добавить ID участников
+        const enhancedMatches = (matches || []).map(match => ({
+            ...match,
+            participant1Id: match.participant1?.id || match.participant1Id,
+            participant1Type: match.participant1?.type || 
+                (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user'),
+            participant2Id: match.participant2?.id || match.participant2Id,
+            participant2Type: match.participant2?.type ||
+                (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user')
+        }));
+        
+        return enhancedMatches;
     } catch (error) {
         console.error('Error loading matches:', error);
         return null;
     }
 }
 
-// ========== ПРИМЕНЕНИЕ ДАННЫХ МАТЧЕЙ ==========
 function applyMatchesData(rounds, matchesData) {
     if (!matchesData || matchesData.length === 0) return rounds;
     
@@ -339,16 +369,46 @@ function applyMatchesData(rounds, matchesData) {
                 const realMatch = roundMatches[idx] || roundMatches.find(m => m.position === idx);
                 
                 if (realMatch) {
-                    if (realMatch.participant1Name) match.team1.name = realMatch.participant1Name;
-                    if (realMatch.participant1Score !== undefined) match.team1.score = realMatch.participant1Score;
-                    if (realMatch.participant2Name) match.team2.name = realMatch.participant2Name;
-                    if (realMatch.participant2Score !== undefined) match.team2.score = realMatch.participant2Score;
-                    
-                    if (realMatch.winnerName) {
-                        match.winner = realMatch.winnerName === match.team1.name ? 'team1' : 'team2';
+                    // Проверяем, есть ли BYE
+                    if (realMatch.participant1Name === 'BYE' || !realMatch.participant1Id) {
+                        match.team1.name = 'BYE';
+                        match.team1.id = null;
+                        // Второй участник автоматически проходит
+                        if (realMatch.participant2Id) {
+                            match.winner = 'team2';
+                            match.finished = true;
+                        }
+                    } else if (realMatch.participant2Name === 'BYE' || !realMatch.participant2Id) {
+                        match.team2.name = 'BYE';
+                        match.team2.id = null;
+                        // Первый участник автоматически проходит
+                        if (realMatch.participant1Id) {
+                            match.winner = 'team1';
+                            match.finished = true;
+                        }
                     }
                     
-                    match.finished = realMatch.status === 'FINISHED';
+                    // Обычная обработка, если есть оба участника
+                    if (realMatch.participant1Name && realMatch.participant1Name !== 'BYE') {
+                        match.team1.name = realMatch.participant1Name;
+                        match.team1.id = realMatch.participant1Id;
+                        match.team1.type = realMatch.participant1Type || 
+                            (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user');
+                    }
+                    if (realMatch.participant1Score !== undefined) match.team1.score = realMatch.participant1Score;
+                    
+                    if (realMatch.participant2Name && realMatch.participant2Name !== 'BYE') {
+                        match.team2.name = realMatch.participant2Name;
+                        match.team2.id = realMatch.participant2Id;
+                        match.team2.type = realMatch.participant2Type ||
+                            (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user');
+                    }
+                    if (realMatch.participant2Score !== undefined) match.team2.score = realMatch.participant2Score;
+                    
+                    if (realMatch.winnerName && !match.winner) {
+                        match.winner = realMatch.winnerName === match.team1.name ? 'team1' : 'team2';
+                        match.finished = realMatch.status === 'FINISHED';
+                    }
                 }
             });
         }
@@ -357,16 +417,31 @@ function applyMatchesData(rounds, matchesData) {
     return rounds;
 }
 
-// ========== РЕНДЕР СЕТКИ ==========
 async function renderBracket(maxParticipants, tournamentId) {
     const $container = $('#bracketContainer');
     if (!$container.length) return;
     
     $container.html('<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Загрузка сетки...</div>');
     
-    const rounds = generateBracket(maxParticipants);
+    // Получаем реальное количество участников
+    const actualParticipants = window.actualParticipantsCount || 0;
+    const tournamentStatus = window.tournamentData?.status;
     
-    if (tournamentId) {
+    // Для DRAFT и REGISTRATION_OPEN используем maxParticipants для отображения сетки
+    // даже если нет матчей
+    let rounds;
+    
+    if (tournamentStatus === 'DRAFT' || tournamentStatus === 'REGISTRATION_OPEN') {
+        // Рисуем сетку на основе максимального количества участников
+        rounds = generateBracket(maxParticipants, null);
+    } else {
+        // Для начатых турниров используем реальное количество
+        const size = actualParticipants > 0 ? actualParticipants : maxParticipants;
+        rounds = generateBracket(size, actualParticipants);
+    }
+    
+    // Пытаемся загрузить матчи, если они есть
+    if (tournamentId && (tournamentStatus === 'IN_PROGRESS' || tournamentStatus === 'FINISHED')) {
         const matchesData = await loadMatchesData(tournamentId);
         if (matchesData && matchesData.length > 0) {
             applyMatchesData(rounds, matchesData);
@@ -396,38 +471,98 @@ function renderBracketHTML(container, rounds) {
         
         round.matches.forEach((match) => {
             const matchDiv = document.createElement('div');
-            matchDiv.className = 'match';
-            if (match.finished) matchDiv.classList.add('finished');
+            
+            // Проверяем, есть ли BYE (автоматический проход)
+            const isBye = match.team1.name === 'BYE' || match.team2.name === 'BYE' ||
+                         (!match.team1.id && match.team1.name.includes('TBD')) && match.team2.id;
+            
+            if (isBye) {
+                matchDiv.className = 'match bye-match';
+            } else {
+                matchDiv.className = 'match';
+                if (match.finished) matchDiv.classList.add('finished');
+            }
             
             const isTeam1Winner = match.winner === 'team1';
             const isTeam2Winner = match.winner === 'team2';
             const isFinished = match.finished;
             
-            const team1Icon = match.team1.name.includes('TBD') ? 'fa-question-circle' : 'fa-users';
-            const team2Icon = match.team2.name.includes('TBD') ? 'fa-question-circle' : 'fa-users';
+            // Определяем имя победителя
+            let winnerName = null;
+            if (isFinished && !isBye) {
+                if (isTeam1Winner && match.team1.name !== 'BYE') {
+                    winnerName = match.team1.name;
+                } else if (isTeam2Winner && match.team2.name !== 'BYE') {
+                    winnerName = match.team2.name;
+                }
+            }
             
-            matchDiv.innerHTML = `
+            // Определяем, кто проходит по BYE
+            const advancingTeam = !match.team1.id && match.team2.id ? match.team2 : 
+                                 (match.team1.id && !match.team2.id ? match.team1 : null);
+            
+            const team1Icon = match.team1.name === 'BYE' ? 'fa-sleeping' : 
+                             (match.team1.name.includes('TBD') ? 'fa-question-circle' : 
+                             (window.tournamentData?.participantType === 'TEAM' ? 'fa-users' : 'fa-user'));
+            
+            const team2Icon = match.team2.name === 'BYE' ? 'fa-sleeping' :
+                             (match.team2.name.includes('TBD') ? 'fa-question-circle' :
+                             (window.tournamentData?.participantType === 'TEAM' ? 'fa-users' : 'fa-user'));
+            
+            // Сохраняем ID и тип
+            const team1Id = match.team1.id || null;
+            const team2Id = match.team2.id || null;
+            const team1Type = match.team1.type || (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user');
+            const team2Type = match.team2.type || (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user');
+            
+            // Генерируем HTML для матча
+            let matchHtml = `
                 <div class="match-teams">
-                    <div class="team ${isFinished ? (isTeam1Winner ? 'winner' : 'loser') : ''}">
+                    <div class="team ${isFinished && !isBye ? (isTeam1Winner ? 'winner' : 'loser') : ''} ${match.team1.name === 'BYE' ? 'bye-team' : ''}" 
+                         data-id="${team1Id || ''}" 
+                         data-type="${team1Type}"
+                         data-name="${escapeHtml(match.team1.name)}">
                         <div class="team-avatar"><i class="fas ${team1Icon}"></i></div>
-                        <span class="team-name">${escapeHtml(match.team1.name)}</span>
-                        ${match.team1.score !== null ? `<span class="team-score">${match.team1.score}</span>` : ''}
-                        ${isFinished && isTeam1Winner ? '<span class="winner-badge"><i class="fas fa-crown"></i></span>' : ''}
+                        <span class="team-name">${match.team1.name === 'BYE' ? 'BYE' : escapeHtml(match.team1.name)}</span>
+                        ${match.team1.score !== null && !isBye ? `<span class="team-score">${match.team1.score}</span>` : ''}
+                        ${isFinished && !isBye && isTeam1Winner ? '<span class="winner-badge"><i class="fas fa-crown"></i></span>' : ''}
                     </div>
                     <div class="match-divider-line"></div>
-                    <div class="team ${isFinished ? (isTeam2Winner ? 'winner' : 'loser') : ''}">
+                    <div class="team ${isFinished && !isBye ? (isTeam2Winner ? 'winner' : 'loser') : ''} ${match.team2.name === 'BYE' ? 'bye-team' : ''}"
+                         data-id="${team2Id || ''}"
+                         data-type="${team2Type}"
+                         data-name="${escapeHtml(match.team2.name)}">
                         <div class="team-avatar"><i class="fas ${team2Icon}"></i></div>
-                        <span class="team-name">${escapeHtml(match.team2.name)}</span>
-                        ${match.team2.score !== null ? `<span class="team-score">${match.team2.score}</span>` : ''}
-                        ${isFinished && isTeam2Winner ? '<span class="winner-badge"><i class="fas fa-crown"></i></span>' : ''}
+                        <span class="team-name">${match.team2.name === 'BYE' ? 'BYE' : escapeHtml(match.team2.name)}</span>
+                        ${match.team2.score !== null && !isBye ? `<span class="team-score">${match.team2.score}</span>` : ''}
+                        ${isFinished && !isBye && isTeam2Winner ? '<span class="winner-badge"><i class="fas fa-crown"></i></span>' : ''}
                     </div>
                 </div>
                 <div class="match-status">
-                    <span class="${match.finished ? 'status-finished' : 'status-pending'}">
-                        ${match.finished ? '✓ Победитель определён' : '⏳ Ожидает'}
-                    </span>
-                </div>
             `;
+            
+            if (isBye && advancingTeam) {
+                matchHtml += `
+                    <span class="status-bye">
+                        <i class="fas fa-forward"></i> ${escapeHtml(advancingTeam.name)} проходит дальше
+                    </span>
+                `;
+            } else if (isFinished && winnerName) {
+                matchHtml += `
+                    <span class="status-winner">
+                        <i class="fas fa-trophy"></i> ${escapeHtml(winnerName)} выиграл
+                    </span>
+                `;
+            } else {
+                matchHtml += `
+                    <span class="status-pending">
+                        <i class="fas fa-clock"></i> Ожидает
+                    </span>
+                `;
+            }
+            
+            matchHtml += `</div>`;
+            matchDiv.innerHTML = matchHtml;
             
             matchesContainer.appendChild(matchDiv);
         });
@@ -438,6 +573,37 @@ function renderBracketHTML(container, rounds) {
     
     container.innerHTML = '';
     container.appendChild(bracketDiv);
+    
+    attachBracketClickHandlers();
+}
+
+function attachBracketClickHandlers() {
+    const isTeamTournament = window.tournamentData?.participantType === 'TEAM';
+    
+    $('.team').off('click').on('click', function(e) {
+        e.stopPropagation();
+        
+        const $team = $(this);
+        const id = $team.data('id');
+        const type = $team.data('type');
+        const name = $team.data('name');
+        
+        // Пропускаем TBD (неопределённые команды/игроки)
+        if (!id || name === 'TBD' || name.includes('TBD')) {
+            return;
+        }
+        
+        if (type === 'team' || isTeamTournament) {
+            // Переход на страницу команды
+            window.location.href = `/teams/${id}`;
+        } else {
+            // Переход на страницу пользователя
+            window.location.href = `/profile/${id}`;
+        }
+    });
+    
+    // Добавляем стиль pointer для кликабельных элементов
+    $('.team[data-id]:not([data-id=""])').css('cursor', 'pointer');
 }
 
 // ========== РИСОВАНИЕ ЛИНИЙ ==========

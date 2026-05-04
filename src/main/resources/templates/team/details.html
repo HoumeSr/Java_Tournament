@@ -100,7 +100,7 @@
             </div>
 
             <div class="members-grid">
-                <div th:each="member : ${team.members}" class="member-card">
+                <div th:each="member : ${team.members}" class="member-card" th:attr="data-user-id=${member.userId}">
                     <div class="member-main">
                         <div class="member-avatar">
                             <img th:if="${member.imageUrl}" th:src="${member.imageUrl}" alt="avatar">
@@ -111,8 +111,8 @@
                             <div class="member-top-row">
                                 <span class="member-name" th:text="${member.username}">Username</span>
                                 <span class="member-role"
-                                      th:classappend="'role-' + ${#strings.toLowerCase(member.role)}"
-                                      th:text="${member.role}">
+                                    th:classappend="'role-' + ${#strings.toLowerCase(member.role)}"
+                                    th:text="${member.role}">
                                     MEMBER
                                 </span>
                             </div>

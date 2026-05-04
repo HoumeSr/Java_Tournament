@@ -189,13 +189,13 @@ const NotificationsModule = (function() {
         } else {
             pendingInvites.forEach(notification => {
                 const $item = $(`
-                    <div class="notification-item" data-id="${notification.id}">
+                    <div class="notification-item" data-id="${notification.id}" data-team-id="${notification.teamId}">
                         <div class="notification-icon">
                             <i class="fas fa-users"></i>
                         </div>
                         <div class="notification-content">
                             <div class="notification-message">
-                                Приглашение в команду <strong>${escapeHtml(notification.teamName || 'команду')}</strong>
+                                Приглашение в команду <strong class="team-name-clickable">${escapeHtml(notification.teamName || 'команду')}</strong>
                             </div>
                             <div class="notification-time">
                                 <i class="far fa-clock"></i> ${formatDate(notification.createdAt)}
@@ -207,6 +207,25 @@ const NotificationsModule = (function() {
                         </div>
                     </div>
                 `);
+
+                // Клик по названию команды
+                $item.find('.team-name-clickable').off('click').on('click', (e) => {
+                    e.stopPropagation();
+                    const teamId = notification.teamId;
+                    if (teamId) {
+                        window.location.href = `/teams/${teamId}`;
+                    }
+                });
+                
+                // Клик по всей карточке (кроме кнопок)
+                $item.off('click').on('click', (e) => {
+                    if (!$(e.target).closest('.btn-accept, .btn-decline').length) {
+                        const teamId = notification.teamId;
+                        if (teamId) {
+                            window.location.href = `/teams/${teamId}`;
+                        }
+                    }
+                });
                 
                 $item.find('.btn-accept').off('click').on('click', (e) => {
                     e.stopPropagation();

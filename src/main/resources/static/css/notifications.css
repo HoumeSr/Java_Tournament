@@ -438,3 +438,27 @@
 .notifications-panel.panel-top {
     animation: slideUpDark 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* В notifications.css добавьте */
+.notification-content .team-name-clickable {
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+}
+
+.notification-content .team-name-clickable:hover {
+    color: var(--accent-hover);
+    text-decoration-color: var(--accent);
+}
+
+.notification-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+    background: rgba(124, 58, 237, 0.08);
+    transform: translateX(2px);
+}
