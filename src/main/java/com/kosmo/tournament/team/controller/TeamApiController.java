@@ -25,6 +25,8 @@ import com.kosmo.tournament.team.dto.TeamFullDTO;
 import com.kosmo.tournament.team.dto.TeamMemberDTO;
 import com.kosmo.tournament.team.dto.TeamShortDTO;
 import com.kosmo.tournament.team.service.TeamService;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/teams")
@@ -92,7 +94,32 @@ public class TeamApiController {
         }
         return teamService.addMember(id, dto, authentication.getName());
     }
+    
+    @PostMapping(value = "/update-logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateLogo(@RequestParam Long teamId,
+                                        @RequestParam("file") MultipartFile file,
+                                        Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Необходимо авторизоваться"));
+        }
 
+        try {
+            String imageUrl = teamService.updateLogo(teamId, file, authentication.getName());
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Логотип команды обновлён",
+                    "imageUrl", imageUrl,
+                    "url", imageUrl
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
+    }
     /**
      * Старый фронт team-profile.js отправляет application/x-www-form-urlencoded:
      * POST /api/teams/join, body: teamId=123.

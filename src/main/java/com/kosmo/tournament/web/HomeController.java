@@ -22,6 +22,8 @@ public class HomeController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private static final String DEFAULT_IMAGE_URL =
+        "http://localhost:9000/images/profiles/DEFAULT_IMAGE.png";
 
     public HomeController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -91,6 +93,7 @@ public class HomeController {
 
         String passwordHash = passwordEncoder.encode(password);
         User newUser = new User(username, email, passwordHash);
+        newUser.setImageUrl(DEFAULT_IMAGE_URL);
         userRepository.save(newUser);
 
         return "redirect:/login?success=true";
@@ -162,6 +165,7 @@ public class HomeController {
 
         String passwordHash = passwordEncoder.encode(password);
         User newUser = new User(username, email, passwordHash);
+        newUser.setImageUrl(DEFAULT_IMAGE_URL);
         userRepository.save(newUser);
 
         response.put("success", true);
@@ -204,7 +208,7 @@ public class HomeController {
         userMap.put("id", user.getId());
         userMap.put("username", user.getUsername());
         userMap.put("role", user.getRole());
-        userMap.put("imageUrl", user.getImageUrl() != null ? user.getImageUrl() : "DEFAULT_USER_IMAGE.jpg");
+        userMap.put("imageUrl", user.getImageUrl() != null ? user.getImageUrl() : DEFAULT_IMAGE_URL);
 
         response.put("user", userMap);
 
