@@ -334,15 +334,16 @@ async function loadMatchesData(tournamentId) {
     try {
         const matches = await window.api.get(`/api/matches/tournament/${tournamentId}`);
         
-        // Преобразуем данные, чтобы добавить ID участников
         const enhancedMatches = (matches || []).map(match => ({
             ...match,
             participant1Id: match.participant1?.id || match.participant1Id,
             participant1Type: match.participant1?.type || 
                 (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user'),
+            participant1ImageUrl: match.participant1?.imageUrl || match.participant1ImageUrl,
             participant2Id: match.participant2?.id || match.participant2Id,
             participant2Type: match.participant2?.type ||
-                (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user')
+                (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user'),
+            participant2ImageUrl: match.participant2?.imageUrl || match.participant2ImageUrl  // ← Добавить эту строку
         }));
         
         return enhancedMatches;
@@ -352,7 +353,40 @@ async function loadMatchesData(tournamentId) {
     }
 }
 
-function applyMatchesData(rounds, matchesData) {
+const teamImageCache = {};
+const userImageCache = {};
+
+async function loadTeamImageUrl(teamId) {
+    if (!teamId) return null;
+    if (teamImageCache[teamId]) return teamImageCache[teamId];
+    
+    try {
+        const team = await window.api.get(`/api/teams/${teamId}`);
+        const imageUrl = team.imageUrl || null;
+        teamImageCache[teamId] = imageUrl;
+        return imageUrl;
+    } catch (error) {
+        console.error(`Error loading team ${teamId} image:`, error);
+        return null;
+    }
+}
+
+async function loadUserImageUrl(userId) {
+    if (!userId) return null;
+    if (userImageCache[userId]) return userImageCache[userId];
+    
+    try {
+        const user = await window.api.get(`/api/users/${userId}`);
+        const imageUrl = user.imageUrl || null;
+        userImageCache[userId] = imageUrl;
+        return imageUrl;
+    } catch (error) {
+        console.error(`Error loading user ${userId} image:`, error);
+        return null;
+    }
+}
+
+async function applyMatchesDataWithImages(rounds, matchesData) {
     if (!matchesData || matchesData.length === 0) return rounds;
     
     const matchesByRound = {};
@@ -362,18 +396,40 @@ function applyMatchesData(rounds, matchesData) {
         matchesByRound[roundNumber].push(match);
     });
     
-    rounds.forEach(round => {
+    for (const round of rounds) {
         const roundMatches = matchesByRound[round.number];
         if (roundMatches) {
-            round.matches.forEach((match, idx) => {
+            for (let idx = 0; idx < round.matches.length; idx++) {
+                const match = round.matches[idx];
                 const realMatch = roundMatches[idx] || roundMatches.find(m => m.position === idx);
                 
                 if (realMatch) {
-                    // Проверяем, есть ли BYE
+                    // Загружаем imageUrl для participant1
+                    if (realMatch.participant1Id) {
+                        let imageUrl = null;
+                        if (realMatch.participant1Type === 'team') {
+                            imageUrl = await loadTeamImageUrl(realMatch.participant1Id);
+                        } else {
+                            imageUrl = await loadUserImageUrl(realMatch.participant1Id);
+                        }
+                        match.team1.imageUrl = imageUrl;
+                    }
+                    
+                    // Загружаем imageUrl для participant2
+                    if (realMatch.participant2Id) {
+                        let imageUrl = null;
+                        if (realMatch.participant2Type === 'team') {
+                            imageUrl = await loadTeamImageUrl(realMatch.participant2Id);
+                        } else {
+                            imageUrl = await loadUserImageUrl(realMatch.participant2Id);
+                        }
+                        match.team2.imageUrl = imageUrl;
+                    }
+                    
+                    // Остальная логика applyMatchesData...
                     if (realMatch.participant1Name === 'BYE' || !realMatch.participant1Id) {
                         match.team1.name = 'BYE';
                         match.team1.id = null;
-                        // Второй участник автоматически проходит
                         if (realMatch.participant2Id) {
                             match.winner = 'team2';
                             match.finished = true;
@@ -381,27 +437,23 @@ function applyMatchesData(rounds, matchesData) {
                     } else if (realMatch.participant2Name === 'BYE' || !realMatch.participant2Id) {
                         match.team2.name = 'BYE';
                         match.team2.id = null;
-                        // Первый участник автоматически проходит
                         if (realMatch.participant1Id) {
                             match.winner = 'team1';
                             match.finished = true;
                         }
                     }
                     
-                    // Обычная обработка, если есть оба участника
                     if (realMatch.participant1Name && realMatch.participant1Name !== 'BYE') {
                         match.team1.name = realMatch.participant1Name;
                         match.team1.id = realMatch.participant1Id;
-                        match.team1.type = realMatch.participant1Type || 
-                            (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user');
+                        match.team1.type = realMatch.participant1Type;
                     }
                     if (realMatch.participant1Score !== undefined) match.team1.score = realMatch.participant1Score;
                     
                     if (realMatch.participant2Name && realMatch.participant2Name !== 'BYE') {
                         match.team2.name = realMatch.participant2Name;
                         match.team2.id = realMatch.participant2Id;
-                        match.team2.type = realMatch.participant2Type ||
-                            (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user');
+                        match.team2.type = realMatch.participant2Type;
                     }
                     if (realMatch.participant2Score !== undefined) match.team2.score = realMatch.participant2Score;
                     
@@ -410,9 +462,9 @@ function applyMatchesData(rounds, matchesData) {
                         match.finished = realMatch.status === 'FINISHED';
                     }
                 }
-            });
+            }
         }
-    });
+    }
     
     return rounds;
 }
@@ -444,7 +496,7 @@ async function renderBracket(maxParticipants, tournamentId) {
     if (tournamentId && (tournamentStatus === 'IN_PROGRESS' || tournamentStatus === 'FINISHED')) {
         const matchesData = await loadMatchesData(tournamentId);
         if (matchesData && matchesData.length > 0) {
-            applyMatchesData(rounds, matchesData);
+            rounds = await applyMatchesDataWithImages(rounds, matchesData);
         }
     }
     
@@ -455,6 +507,47 @@ async function renderBracket(maxParticipants, tournamentId) {
 function renderBracketHTML(container, rounds) {
     const bracketDiv = document.createElement('div');
     bracketDiv.className = 'bracket';
+
+    function getAvatarHtml(team, participantType) {
+        const imageUrl = team.imageUrl;
+        const name = team.name;
+        const isBye = name === 'BYE';
+        const isTbd = name && name.includes('TBD');
+        
+        if (isBye) {
+            return '<div class="team-avatar"><i class="fas fa-sleeping"></i></div>';
+        }
+        
+        if (isTbd) {
+            return '<div class="team-avatar"><i class="fas fa-question-circle"></i></div>';
+        }
+        
+        if (imageUrl && imageUrl !== 'null' && imageUrl !== '') {
+            // Очищаем URL от лишних символов и экранируем
+            let cleanUrl = String(imageUrl).trim();
+            // Убираем возможные кавычки из URL
+            cleanUrl = cleanUrl.replace(/['"]/g, '');
+            
+            // Создаем элемент через jQuery, чтобы избежать проблем с экранированием
+            const $avatar = $('<div>').addClass('team-avatar');
+            const $img = $('<img>')
+                .attr('src', cleanUrl)
+                .addClass('avatar-img')
+                .on('error', function() {
+                    const $this = $(this);
+                    const defaultIcon = participantType === 'TEAM' ? 'fa-users' : 'fa-user';
+                    $this.remove();
+                    $avatar.html(`<i class="fas ${defaultIcon}"></i>`);
+                    $avatar.css('background', 'linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(96, 165, 250, 0.1))');
+                });
+            
+            $avatar.append($img);
+            return $avatar[0].outerHTML;
+        }
+        
+        const defaultIcon = participantType === 'TEAM' ? 'fa-users' : 'fa-user';
+        return `<div class="team-avatar"><i class="fas ${defaultIcon}"></i></div>`;
+    }
     
     rounds.forEach((round, roundIdx) => {
         const roundDiv = document.createElement('div');
@@ -514,15 +607,18 @@ function renderBracketHTML(container, rounds) {
             const team2Id = match.team2.id || null;
             const team1Type = match.team1.type || (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user');
             const team2Type = match.team2.type || (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user');
+
+            const team1Avatar = getAvatarHtml(match.team1, window.tournamentData?.participantType);
+            const team2Avatar = getAvatarHtml(match.team2, window.tournamentData?.participantType);
             
-            // Генерируем HTML для матча
             let matchHtml = `
                 <div class="match-teams">
                     <div class="team ${isFinished && !isBye ? (isTeam1Winner ? 'winner' : 'loser') : ''} ${match.team1.name === 'BYE' ? 'bye-team' : ''}" 
                          data-id="${team1Id || ''}" 
                          data-type="${team1Type}"
-                         data-name="${escapeHtml(match.team1.name)}">
-                        <div class="team-avatar"><i class="fas ${team1Icon}"></i></div>
+                         data-name="${escapeHtml(match.team1.name)}"
+                         data-image="${escapeHtml(match.team1.imageUrl || '')}">
+                        ${team1Avatar}
                         <span class="team-name">${match.team1.name === 'BYE' ? 'BYE' : escapeHtml(match.team1.name)}</span>
                         ${match.team1.score !== null && !isBye ? `<span class="team-score">${match.team1.score}</span>` : ''}
                         ${isFinished && !isBye && isTeam1Winner ? '<span class="winner-badge"><i class="fas fa-crown"></i></span>' : ''}
@@ -531,8 +627,9 @@ function renderBracketHTML(container, rounds) {
                     <div class="team ${isFinished && !isBye ? (isTeam2Winner ? 'winner' : 'loser') : ''} ${match.team2.name === 'BYE' ? 'bye-team' : ''}"
                          data-id="${team2Id || ''}"
                          data-type="${team2Type}"
-                         data-name="${escapeHtml(match.team2.name)}">
-                        <div class="team-avatar"><i class="fas ${team2Icon}"></i></div>
+                         data-name="${escapeHtml(match.team2.name)}"
+                         data-image="${escapeHtml(match.team2.imageUrl || '')}">
+                        ${team2Avatar}
                         <span class="team-name">${match.team2.name === 'BYE' ? 'BYE' : escapeHtml(match.team2.name)}</span>
                         ${match.team2.score !== null && !isBye ? `<span class="team-score">${match.team2.score}</span>` : ''}
                         ${isFinished && !isBye && isTeam2Winner ? '<span class="winner-badge"><i class="fas fa-crown"></i></span>' : ''}

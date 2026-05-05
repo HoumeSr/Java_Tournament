@@ -257,7 +257,7 @@ body {
 }
 
 .card-banner {
-    height: 130px;
+    height: 300px;
     background-size: cover;
     background-position: center;
     position: relative;
@@ -520,43 +520,6 @@ body {
     color: #0a0c10;
 }
 
-/* ========== АДАПТИВНОСТЬ ========== */
-@media (max-width: 700px) {
-    .navbar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .logo-area {
-        justify-content: space-between;
-    }
-    
-    .auth-buttons {
-        justify-content: flex-end;
-    }
-    
-    .container {
-        padding: 0 1.2rem;
-    }
-    
-    .modern-footer {
-        padding: 1.5rem;
-    }
-    
-    .footer-content {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .footer-info {
-        align-items: center;
-    }
-    
-    .footer-social {
-        justify-content: center;
-    }
-}
-
 /* ========== КОЛОКОЛЬЧИК УВЕДОМЛЕНИЙ ========== */
 .notification-wrapper {
     position: relative;
@@ -783,17 +746,6 @@ body {
 
 .empty-notifications p {
     font-size: 0.85rem;
-}
-
-/* Адаптив */
-@media (max-width: 768px) {
-    .notifications-panel {
-        position: fixed;
-        top: 70px;
-        right: 10px;
-        left: 10px;
-        width: auto;
-    }
 }
 
 /* ========== КАРТОЧКА ТУРНИРА (БЕЗ ФОТОГРАФИЙ) ========== */
@@ -1105,13 +1057,6 @@ body {
     gap: 6px;
 }
 
-@media (max-width: 600px) {
-    .page-btn {
-        padding: 6px 12px;
-        font-size: 12px;
-    }
-}
-
 /* Кнопка фильтра по статусу */
 .status-filter-container {
     margin-bottom: 1.5rem;
@@ -1154,4 +1099,91 @@ body {
 .status-filter-btn.active:hover {
     background: #dc2626;
     transform: scale(0.98);
+}
+
+/* В home.css добавьте */
+.card-banner {
+    height: 300px;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 0.8rem;
+    overflow: hidden;
+}
+
+.banner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+    z-index: 1;
+}
+
+.card-banner .game-icon-banner,
+.card-banner .status-badge-banner {
+    position: relative;
+    z-index: 2;
+}
+
+.game-icon-banner {
+    font-size: 2rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    background: rgba(0,0,0,0.4);
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Замените существующий .card-banner на этот */
+.card-banner {
+    height: 300px;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 0.8rem;
+    overflow: hidden;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+/* Уберите или закомментируйте старые ::before и ::after, которые мешают */
+.card-banner::before,
+.card-banner::after {
+    display: none; /* Отключаем старые декоративные элементы */
+}
+
+.banner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,0.3), rgba(0,0,0,0.5));
+    z-index: 1;
+}
+
+.card-banner .game-icon-banner,
+.card-banner .status-badge-banner {
+    position: relative;
+    z-index: 2;
+}
+
+.game-icon-banner {
+    font-size: 1.5rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    background: rgba(0,0,0,0.5);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

@@ -1,5 +1,5 @@
 $(function () {
-    const POWERS_OF_TWO = [2, 4, 8, 16, 32, 64];
+    const POWERS_OF_TWO = [2, 4, 8, 16, 32];
     let gameTypes = [];
 
     function showToast(message, isError = false) {

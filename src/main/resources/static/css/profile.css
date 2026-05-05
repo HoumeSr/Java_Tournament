@@ -555,83 +555,6 @@ body {
     color: inherit;
 }
 
-/* Адаптив */
-@media (max-width: 700px) {
-    .modern-footer {
-        padding: 1.5rem;
-    }
-    
-    .footer-content {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .footer-info {
-        align-items: center;
-    }
-    
-    .footer-social {
-        justify-content: center;
-    }
-}
-
-/* ========== АДАПТИВ ========== */
-@media (max-width: 900px) {
-    .profile-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .profile-sidebar {
-        order: 2;
-    }
-    
-    .profile-main {
-        order: 1;
-    }
-}
-
-@media (max-width: 700px) {
-    .navbar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .logo-area {
-        justify-content: space-between;
-    }
-    
-    .container {
-        padding: 0 1rem;
-    }
-    
-    .info-row {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .info-label {
-        width: auto;
-    }
-    
-    .edit-actions {
-        flex-direction: column;
-    }
-    
-    .password-card {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .footer-content {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .footer-info {
-        align-items: center;
-    }
-}
-
 /* ========== УВЕДОМЛЕНИЯ ========== */
 .demo-toast {
     position: fixed;
@@ -651,15 +574,6 @@ body {
     white-space: nowrap;
     opacity: 0;           /* ← добавляем */
     visibility: hidden;   /* ← добавляем */
-}
-
-@media (max-width: 600px) {
-    .demo-toast {
-        white-space: normal;
-        text-align: center;
-        max-width: 90%;
-        font-size: 0.8rem;
-    }
 }
 
 .btn-edit-sidebar {
@@ -1416,29 +1330,6 @@ body {
     margin-top: 10px;
 }
 
-/* Адаптив для мобильных устройств - на маленьких экранах переключаем в колонку */
-@media (max-width: 480px) {
-    .country-selector {
-        flex-direction: column;
-        width: 100%;
-    }
-    
-    .country-option {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .country-actions {
-        flex-direction: column;
-    }
-    
-    .country-actions .btn-primary,
-    .country-actions .btn-outline {
-        width: 100%;
-        justify-content: center;
-    }
-}
-
 /* Анимация при появлении */
 @keyframes slideDown {
     from {
@@ -1508,19 +1399,6 @@ body {
 
 .country-option.selected .country-flag {
     transform: scale(1.05);
-}
-
-/* Адаптив для мобильных */
-@media (max-width: 480px) {
-    .country-options {
-        flex-direction: column;
-        width: 100%;
-    }
-    
-    .country-option {
-        width: 100%;
-        justify-content: center;
-    }
 }
 
 /* Отображение страны со флагом */
@@ -1802,59 +1680,6 @@ body {
 /* Скрываем старые кнопки */
 .rating-carousel-container .carousel-btn {
     display: none;
-}
-
-/* Адаптив */
-@media (max-width: 600px) {
-    .rating-card-mini {
-        padding: 0.8rem;
-    }
-    
-    .rating-card-mini-game i {
-        font-size: 1.4rem;
-        width: 28px;
-    }
-    
-    .rating-card-mini-game span {
-        font-size: 0.9rem;
-    }
-    
-    .rating-stat-mini-value {
-        font-size: 1rem;
-    }
-    
-    .rating-stat-mini-label {
-        font-size: 0.55rem;
-    }
-    
-    .rating-stat-mini-label i {
-        font-size: 0.6rem;
-    }
-    
-    .carousel-btn-mini {
-        width: 30px;
-        height: 30px;
-        font-size: 0.7rem;
-    }
-    
-    .rating-winrate-mini-value {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.8rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .rating-card-mini-stats {
-        gap: 0.5rem;
-    }
-    
-    .rating-stat-mini {
-        padding: 0.3rem;
-    }
-    
-    .rating-stat-mini-value {
-        font-size: 0.9rem;
-    }
 }
 
 /* profile.css */

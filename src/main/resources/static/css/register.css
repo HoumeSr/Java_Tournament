@@ -251,37 +251,6 @@ body {
   text-decoration: underline;
 }
 
-@media (max-width: 900px) {
-  body {
-    overflow: auto;
-    padding: 1rem;
-    align-items: flex-start;
-  }
-  .register-container {
-    flex-direction: column;
-    height: auto;
-    max-width: 95vw;
-    min-height: auto;
-    border-radius: 1.5rem;
-  }
-  .hero-panel {
-    min-height: 320px;
-    padding: 1.5rem;
-  }
-  .hero-content h1 {
-    font-size: 1.8rem;
-  }
-  .hero-content p {
-    font-size: 0.85rem;
-  }
-  .form-panel {
-    padding: 1.8rem;
-  }
-  .slider-dots {
-    bottom: 1rem;
-  }
-}
-
 @keyframes fadeInUp {
   from {
     opacity: 0;
