@@ -170,7 +170,7 @@ public class UserService {
 
         if (dto.getImageUrl() != null) {
             String newImageUrl = dto.getImageUrl().trim();
-            user.setImageUrl(newImageUrl.isBlank() ? null : newImageUrl);
+            user.setImageUrl(newImageUrl.isBlank() ? DEFAULT_IMAGE_URL : newImageUrl);
         }
 
         User saved = userRepository.save(user);

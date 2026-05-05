@@ -62,6 +62,15 @@ public class FileStorageService {
         upload(file, objectName);
         return buildPublicUrl(objectName);
     }
+    public String uploadTeamLogo(MultipartFile file, Long teamId) {
+        validateImage(file);
+
+        String extension = resolveExtension(file);
+        String objectName = "teams/team-" + teamId + extension;
+
+        upload(file, objectName);
+        return buildPublicUrl(objectName);
+    }
 
     /**
      * Совместимость со старым кодом.

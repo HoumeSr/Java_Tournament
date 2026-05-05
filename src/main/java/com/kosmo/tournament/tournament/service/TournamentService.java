@@ -198,7 +198,7 @@ public class TournamentService {
         tournament.setRegistrationDeadline(dto.getRegistrationDeadline());
         tournament.setMaxParticipants(dto.getMaxParticipants());
         tournament.setMinParticipants(dto.getMinParticipants());
-        tournament.setImageUrl(dto.getImageUrl());
+        tournament.setImageUrl(resolveTournamentImageUrl(dto.getImageUrl(), gameType));
 
         Tournament saved = tournamentRepository.save(tournament);
         return toFullDTO(saved, true);
@@ -234,11 +234,6 @@ public class TournamentService {
             tournament.setAccess(dto.getAccess().toUpperCase());
         }
 
-        if (dto.getGameTypeId() != null) {
-            GameType gameType = gameTypeRepository.findById(dto.getGameTypeId())
-                    .orElseThrow(() -> new RuntimeException("Game type not found"));
-            tournament.setGameType(gameType);
-        }
 
         if (dto.getStartDate() != null) {
             tournament.setStartDate(dto.getStartDate());
@@ -276,7 +271,16 @@ public class TournamentService {
         }
 
         if (dto.getImageUrl() != null) {
-            tournament.setImageUrl(dto.getImageUrl());
+            tournament.setImageUrl(resolveTournamentImageUrl(dto.getImageUrl(), tournament.getGameType()));
+        }
+        if (dto.getGameTypeId() != null) {
+            GameType gameType = gameTypeRepository.findById(dto.getGameTypeId())
+                    .orElseThrow(() -> new RuntimeException("Game type not found"));
+            tournament.setGameType(gameType);
+
+            if (tournament.getImageUrl() == null || tournament.getImageUrl().isBlank()) {
+                tournament.setImageUrl(gameType.getImageUrl());
+            }
         }
 
         Tournament saved = tournamentRepository.save(tournament);
@@ -918,7 +922,7 @@ public class TournamentService {
         dto.setOrganizerUsername(tournament.getOrganizer() != null ? tournament.getOrganizer().getUsername() : null);
         dto.setCurrentParticipantsCount(getCurrentParticipantsCount(tournament));
         dto.setMaxParticipants(tournament.getMaxParticipants());
-        dto.setImageUrl(tournament.getImageUrl());
+        dto.setImageUrl(resolveTournamentImageUrl(tournament.getImageUrl(), tournament.getGameType()));
         return dto;
     }
 
@@ -940,7 +944,7 @@ public class TournamentService {
         dto.setMinParticipants(tournament.getMinParticipants());
         dto.setCurrentParticipantsCount(getCurrentParticipantsCount(tournament));
         dto.setCreatedAt(tournament.getCreatedAt());
-        dto.setImageUrl(tournament.getImageUrl());
+        dto.setImageUrl(resolveTournamentImageUrl(tournament.getImageUrl(), tournament.getGameType()));
         dto.setOwner(owner);
         return dto;
     }
@@ -955,5 +959,16 @@ public class TournamentService {
         dto.setCurrentMembersCount((int) teamMemberRepository.countByTeamId(team.getId()));
         dto.setMaxMembersCount(team.getGameType() != null ? team.getGameType().getMaxPlayers() : 1);
         return dto;
+    }
+    private String resolveTournamentImageUrl(String imageUrl, GameType gameType) {
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            return imageUrl.trim();
+        }
+
+        if (gameType != null && gameType.getImageUrl() != null && !gameType.getImageUrl().isBlank()) {
+            return gameType.getImageUrl().trim();
+        }
+
+        return null;
     }
 }
