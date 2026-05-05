@@ -107,7 +107,48 @@
                         <option value="">— Загрузка игр... —</option>
                     </select>
                 </div>
-            </div>
+
+                <!-- БЛОК С ЛОГОТИПОМ -->
+                <div class="form-group logo-form-group">
+                    <label for="modalTeamLogo">
+                        <i class="fas fa-image"></i> Логотип команды
+                        <span class="optional">(необязательно)</span>
+                    </label>
+                    
+                    <div class="logo-selection-area">
+                        <div class="logo-preview-wrapper">
+                            <div class="logo-preview" id="logoPreview">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="logo-preview-hint">
+                                <i class="fas fa-info-circle"></i>
+                                <span>PNG, JPG, WEBP до 5MB</span>
+                            </div>
+                        </div>
+                        
+                        <div class="logo-options">
+                            <input type="file" 
+                                id="modalTeamLogo" 
+                                accept="image/jpeg,image/png,image/webp"
+                                style="display: none;">
+                            
+                            <button type="button" class="btn-upload-logo" id="uploadLogoBtn">
+                                <i class="fas fa-cloud-upload-alt"></i> 
+                                <span>Загрузить</span>
+                            </button>
+                            
+                            <button type="button" class="btn-clear-logo" id="clearLogoBtn">
+                                <i class="fas fa-trash-alt"></i> 
+                                <span>Очистить</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="input-hint logo-hint">
+                        <i class="fas fa-dice-d6"></i>
+                        Если не загрузить логотип, будет установлен случайный из библиотеки
+                    </div>
+                </div>
 
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" id="cancelModalBtn">

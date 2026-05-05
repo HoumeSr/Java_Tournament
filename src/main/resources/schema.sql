@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS "GameTypes" (
     "code" TEXT NOT null UNIQUE, -- Укороченное название
     "description" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT FALSE,
-    "imageUrl" TEXT DEFAULT 'DEFAULT_GAME_IMAGE.jpg',
+    "imageUrl" TEXT,
     "maxPlayers" INTEGER NOT NULL DEFAULT 1, -- максимальное количество игроков в команде по умолчанию равно 1
     PRIMARY KEY("id")
 );
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS "Team" (
     "captainId" INTEGER,
     "idGameType" INTEGER NOT NULL DEFAULT 1,
     "accessType" TEXT NOT NULL DEFAULT 'OPEN',
-    "imageUrl" TEXT DEFAULT 'DEFAULT_TEAM_IMAGE.jpg',
+    "imageUrl" TEXT,
     PRIMARY KEY("id"),
     CONSTRAINT "fk_team_captain" FOREIGN KEY ("captainId") REFERENCES "User"("id") ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT "fk_team_game_type" FOREIGN KEY ("idGameType") REFERENCES "GameTypes"("id") ON UPDATE CASCADE ON DELETE NO ACTION

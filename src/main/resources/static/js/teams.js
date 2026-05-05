@@ -9,7 +9,10 @@ $(function () {
     let currentPage = 0;
     let totalPages = 0;
     let totalElements = 0;
-    let pageSize = 9;
+    let pageSize = 12;
+
+    let selectedLogoFile = null;
+    let selectedLogoUrl = null;
 
     function showToast(message, isError = false) {
         const $toast = $('#demoToast');
@@ -255,9 +258,24 @@ $(function () {
         const cards = teamsList.map(function (team) {
             const isMine = team.listType === 'my';
             const count = `${team.currentMembersCount || 0} / ${team.maxMembersCount || 1}`;
+            
+            // Получаем URL картинки команды
+            let imageUrl = null;
+            if (team.imageUrl) {
+                imageUrl = team.imageUrl;
+            } else if (team.imageUrl === undefined && team.id) {
+                // Если imageUrl не пришёл, можно использовать дефолтный или попробовать другой эндпоинт
+                imageUrl = null;
+            }
+            
             return `
                 <div class="team-card" data-team-id="${team.id}">
-                    <div class="team-card-avatar"><i class="fas fa-users"></i></div>
+                    <div class="team-card-avatar">
+                        ${imageUrl 
+                            ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(team.name)}" class="team-avatar-img" onerror="this.onerror=null; this.src='/images/default-team.png'">` 
+                            : `<i class="fas fa-users"></i>`
+                        }
+                    </div>
                     <div class="team-card-body">
                         <div class="team-card-top">
                             <h3>${escapeHtml(team.name)}</h3>
@@ -280,6 +298,7 @@ $(function () {
         }).join('');
 
         $container.html(cards);
+        
         $('.team-card').off('click').on('click', function () { 
             window.location.href = '/teams/' + $(this).data('team-id'); 
         });
@@ -328,6 +347,96 @@ $(function () {
         }
     }
 
+    async function uploadTeamLogo(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            const response = await window.api.post('/api/teams/upload-logo', formData);
+            return response.imageUrl;
+        } catch (error) {
+            console.error('Error uploading logo:', error);
+            throw error;
+        }
+    }
+
+    // Установка превью логотипа
+    function setTeamLogoPreview(file, $previewContainer) {
+        if (!file || !$previewContainer.length) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            $previewContainer.html(`<img src="${e.target.result}" alt="Логотип" style="width: 100%; height: 100%; object-fit: cover;">`);
+            $previewContainer.addClass('has-image');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Очистка превью логотипа
+    function clearTeamLogoPreview($previewContainer) {
+        $previewContainer.html('<i class="fas fa-users"></i>').removeClass('has-image');
+    }
+
+    function initLogoSelection() {
+        const $logoInput = $('#modalTeamLogo');
+        const $logoPreview = $('#logoPreview');
+        const $uploadBtn = $('#uploadLogoBtn');
+        const $clearBtn = $('#clearLogoBtn');
+        
+        let selectedLogoFile = null;
+        let selectedLogoUrl = null;
+        
+        // Загрузка файла
+        $uploadBtn.off('click').on('click', () => {
+            $logoInput.trigger('click');
+        });
+        
+        $logoInput.off('change').on('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('❌ Файл должен быть до 2MB', true);
+                return;
+            }
+            
+            const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            if (!allowed.includes(file.type)) {
+                showToast('❌ Разрешены только JPG, PNG, WEBP, GIF', true);
+                return;
+            }
+            
+            selectedLogoFile = file;
+            selectedLogoUrl = null;
+            
+            // Показываем превью
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $logoPreview.html(`<img src="${e.target.result}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">`).addClass('has-image');
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Очистить логотип
+        $clearBtn.off('click').on('click', () => {
+            selectedLogoFile = null;
+            selectedLogoUrl = null;
+            $logoInput.val('');
+            $logoPreview.html('<i class="fas fa-users"></i>').removeClass('has-image');
+            showToast('Логотип удалён, будет установлен случайный');
+        });
+        
+        // Сохраняем выбранные данные в замыкании для использования при отправке
+        window.selectedTeamLogo = {
+            getFile: () => selectedLogoFile,
+            getUrl: () => selectedLogoUrl,
+            clear: () => {
+                selectedLogoFile = null;
+                selectedLogoUrl = null;
+            }
+        };
+    }
+
     async function openCreateTeamModal() {
         try {
             const data = await window.api.get('/api/auth/check');
@@ -337,6 +446,12 @@ $(function () {
                 return;
             }
             $('#modalCreateTeamForm')[0]?.reset();
+            
+            // Сброс логотипа
+            if (window.selectedTeamLogo) window.selectedTeamLogo.clear();
+            $('#modalTeamLogo').val('');
+            $('#logoPreview').html('<i class="fas fa-users"></i>').removeClass('has-image');
+            
             $('#createTeamModal').css('display', 'flex');
             $('body').css('overflow', 'hidden');
         } catch (error) {
@@ -344,6 +459,8 @@ $(function () {
             showToast('❌ Ошибка проверки авторизации', true);
         }
     }
+
+    
 
     function closeCreateTeamModal() {
         $('#createTeamModal').hide();
@@ -368,20 +485,44 @@ $(function () {
             $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Создание...');
 
             try {
+                let imageUrl = null;
+                
+                // Если пользователь загрузил файл - загружаем в MinIO
+                if (window.selectedTeamLogo && window.selectedTeamLogo.getFile()) {
+                    const file = window.selectedTeamLogo.getFile();
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const uploadResponse = await window.api.post('/api/teams/upload-logo', formData);
+                    imageUrl = uploadResponse.imageUrl;
+                } 
+                // Если выбран случайный логотип из библиотеки
+                else if (window.selectedTeamLogo && window.selectedTeamLogo.getUrl()) {
+                    imageUrl = window.selectedTeamLogo.getUrl();
+                }
+                
                 const team = await window.api.post('/api/teams', { 
                     name: name, 
                     gameTypeId: gameTypeId, 
-                    imageUrl: null 
+                    imageUrl: imageUrl 
                 });
+                
                 showToast('✅ Команда успешно создана');
                 closeCreateTeamModal();
-                setTimeout(function () { window.location.href = '/teams/' + team.id; }, 800);
+                
+                // Очищаем выбранный логотип
+                if (window.selectedTeamLogo) window.selectedTeamLogo.clear();
+                
+                setTimeout(function () { 
+                    window.location.href = '/teams/' + team.id; 
+                }, 800);
             } catch (error) {
                 showToast('❌ ' + (error.message || 'Не удалось создать команду'), true);
             } finally {
                 $button.prop('disabled', false).html('<i class="fas fa-check"></i> Создать команду');
             }
         });
+        
+        initLogoSelection();
     }
 
     // Асинхронная инициализация

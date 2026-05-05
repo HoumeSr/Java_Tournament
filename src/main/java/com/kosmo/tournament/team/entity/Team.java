@@ -48,7 +48,6 @@ public class Team {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
-        if (imageUrl == null) imageUrl = "DEFAULT_TEAM_IMAGE.jpg";
     }
 
     public Long getId() { return id; }

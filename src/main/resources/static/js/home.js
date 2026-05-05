@@ -7,7 +7,7 @@ $(document).ready(function() {
     // Пагинация
     let currentPage = 0;
     let totalPages = 0;
-    let pageSize = 3;
+    let pageSize = 6;
     let totalElements = 0;
     let currentStatusFilter = 'all';
 
@@ -175,6 +175,7 @@ $(document).ready(function() {
                 participantType: t.participantType,
                 gameName: t.gameName,
                 organizerUsername: t.organizerUsername,
+                imageUrl: t.imageUrl
             }));
             
             // Обновляем пагинацию
@@ -341,45 +342,40 @@ $(document).ready(function() {
                 window.location.href = `/tournaments/${t.id}`;
             });
 
-            // Разные градиенты для разных игр
-            const gradients = [
-                'linear-gradient(135deg, #1e1b2e 0%, #2d1b4e 100%)',
-                'linear-gradient(135deg, #1a1a2e 0%, #1b2d45 100%)',
-                'linear-gradient(135deg, #1e1b2e 0%, #2d1b2e 100%)',
-                'linear-gradient(135deg, #16213e 0%, #1e3a5f 100%)'
-            ];
-            const gradient = gradients[t.id % gradients.length];
-            
-            // Получаем иконку для игры
+            const imageUrl = t.imageUrl;
             const gameIcon = getGameIcon(t.gameName);
+            const statusClass = getStatusClass(t.status);
+            const statusText = getStatusText(t.status);
             
-            // Статус для баннера
-            let statusClass = '';
-            let statusText = '';
-            switch(t.status) {
-                case 'REGISTRATION_OPEN':
-                    statusClass = 'open';
-                    statusText = '🔥 Регистрация открыта';
-                    break;
-                case 'IN_PROGRESS':
-                    statusClass = 'in-progress';
-                    statusText = '⚡ Турнир идёт';
-                    break;
-                case 'FINISHED':
-                    statusClass = 'finished';
-                    statusText = '🏆 Турнир завершён';
-                    break;
-                default:
-                    statusClass = '';
-                    statusText = getStatusText(t.status);
-            }
+            let $banner;
             
-            const $banner = $('<div>').addClass('card-banner')
-                .css('background', gradient)
-                .html(`
+            // Если есть картинка - используем её
+            if (imageUrl && imageUrl !== 'null') {
+                $banner = $('<div>').addClass('card-banner').css({
+                    'background-image': `url("${escapeHtml(imageUrl)}")`,
+                    'background-size': 'contain',
+                    'background-position': 'center'
+                });
+                $banner.html(`
+                    <div class="banner-overlay"></div>
                     <div class="game-icon-banner">${gameIcon}</div>
                     <span class="status-badge-banner ${statusClass}">${statusText}</span>
                 `);
+            } else {
+                // Если картинки нет - используем градиент
+                const gradients = [
+                    'linear-gradient(135deg, #1e1b2e 0%, #2d1b4e 100%)',
+                    'linear-gradient(135deg, #1a1a2e 0%, #1b2d45 100%)',
+                    'linear-gradient(135deg, #1e1b2e 0%, #2d1b2e 100%)',
+                    'linear-gradient(135deg, #16213e 0%, #1e3a5f 100%)'
+                ];
+                const gradient = gradients[t.id % gradients.length];
+                $banner = $('<div>').addClass('card-banner').css('background', gradient);
+                $banner.html(`
+                    <div class="game-icon-banner">${gameIcon}</div>
+                    <span class="status-badge-banner ${statusClass}">${statusText}</span>
+                `);
+            }
 
             const $content = $('<div>').addClass('card-content').html(`
                 <div class="tourney-name">${escapeHtml(t.title)}</div>
@@ -405,6 +401,18 @@ $(document).ready(function() {
             $card.append($banner, $content, $footer);
             $grid.append($card);
         });
+    }
+
+    // Добавьте эту функцию, если её нет
+    function getStatusClass(status) {
+        switch(status) {
+            case 'REGISTRATION_OPEN': return 'open';
+            case 'IN_PROGRESS': return 'in-progress';
+            case 'FINISHED': return 'finished';
+            case 'DRAFT': return 'draft';
+            case 'CANCELLED': return 'cancelled';
+            default: return '';
+        }
     }
     
     // Авторизация - используем api.get

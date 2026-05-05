@@ -139,11 +139,6 @@ $(function () {
             $('#addMemberBtn, #addMemberCard').hide();
         }
         
-        // 4. Кнопка "Вступить в команду"
-        if (!teamDetails.canAddMembers) {
-            $('#joinTeamBtn').hide();
-        }
-        
         // Если состав заблокирован, дополнительно блокируем кнопки визуально
         if (teamDetails.rosterLocked) {
             $('#leaveTeamBtn, #joinTeamBtn, .btn-kick, #addMemberBtn, #addMemberCard')
@@ -294,13 +289,7 @@ $(function () {
 
     // ========== ВСТУПЛЕНИЕ В КОМАНДУ ==========
     function initJoinButton() {
-        $('#joinTeamBtn').off('click').on('click', async function () {
-            if (!teamDetails?.canAddMembers) {
-                const reason = teamDetails?.rosterLockReason || 'Сейчас нельзя вступить в команду';
-                showToast(`❌ ${reason}`, true);
-                return;
-            }
-            
+        $('#joinTeamBtn').off('click').on('click', async function () {           
             if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
                 showToast('❌ Команда уже заполнена', true);
                 return;

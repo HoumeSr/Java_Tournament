@@ -256,7 +256,7 @@ public class HomeController {
         userMap.put("id", user.getId());
         userMap.put("username", user.getUsername());
         userMap.put("role", user.getRole());
-        userMap.put("imageUrl", user.getImageUrl() != null ? user.getImageUrl() : "DEFAULT_USER_IMAGE.jpg");
+        userMap.put("imageUrl", user.getImageUrl());
 
         response.put("authenticated", true);
         response.put("user", userMap);

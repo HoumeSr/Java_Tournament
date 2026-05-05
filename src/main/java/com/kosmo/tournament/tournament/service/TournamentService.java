@@ -2,7 +2,6 @@ package com.kosmo.tournament.tournament.service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +19,7 @@ import com.kosmo.tournament.match.entity.MatchTeam;
 import com.kosmo.tournament.match.repository.MatchSoloRepository;
 import com.kosmo.tournament.match.repository.MatchTeamRepository;
 import com.kosmo.tournament.rating.service.RatingService;
+import com.kosmo.tournament.storage.service.RandomImageService;
 import com.kosmo.tournament.team.dto.TeamShortDTO;
 import com.kosmo.tournament.team.entity.Team;
 import com.kosmo.tournament.team.entity.TeamMember;
@@ -54,6 +54,7 @@ public class TournamentService {
     private final MatchSoloRepository matchSoloRepository;
     private final MatchTeamRepository matchTeamRepository;
     private final RatingService ratingService;
+    private final RandomImageService randomImageService;
 
     public TournamentService(TournamentRepository tournamentRepository,
                              UserRepository userRepository,
@@ -64,7 +65,8 @@ public class TournamentService {
                              TournamentTeamParticipantRepository teamParticipantRepository,
                              MatchSoloRepository matchSoloRepository,
                              MatchTeamRepository matchTeamRepository,
-                             RatingService ratingService) {
+                             RatingService ratingService,
+                             RandomImageService randomImageService) {
         this.tournamentRepository = tournamentRepository;
         this.userRepository = userRepository;
         this.gameTypeRepository = gameTypeRepository;
@@ -75,6 +77,7 @@ public class TournamentService {
         this.matchSoloRepository = matchSoloRepository;
         this.matchTeamRepository = matchTeamRepository;
         this.ratingService = ratingService;
+        this.randomImageService = randomImageService;
     }
 
     public List<TournamentShortDTO> getAllTournaments() {
@@ -198,7 +201,13 @@ public class TournamentService {
         tournament.setRegistrationDeadline(dto.getRegistrationDeadline());
         tournament.setMaxParticipants(dto.getMaxParticipants());
         tournament.setMinParticipants(dto.getMinParticipants());
-        tournament.setImageUrl(resolveTournamentImageUrl(dto.getImageUrl(), gameType));
+        String imageUrl = dto.getImageUrl();
+
+        if (imageUrl == null || imageUrl.isBlank()) {
+            imageUrl = randomImageService.getRandomTournamentImage();
+        }
+
+        tournament.setImageUrl(imageUrl);
 
         Tournament saved = tournamentRepository.save(tournament);
         return toFullDTO(saved, true);

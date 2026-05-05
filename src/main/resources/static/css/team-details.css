@@ -1114,153 +1114,6 @@ main.container {
     transform: scale(1.1);
 }
 
-/* ========== АДАПТИВ ========== */
-@media (max-width: 900px) {
-    .team-main-row {
-        align-items: flex-start;
-    }
-
-    .team-meta-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-    .navbar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .logo-area {
-        justify-content: space-between;
-    }
-
-    .nav-links {
-        gap: 1rem;
-        flex-wrap: wrap;
-    }
-
-    .auth-buttons {
-        justify-content: flex-end;
-    }
-
-    main.container {
-        padding: 0 1rem;
-    }
-
-    .team-info-card {
-        padding: 1.3rem;
-    }
-
-    .team-main-row {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-
-    .team-title-row {
-        width: 100%;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .team-avatar {
-        width: 108px;
-        height: 108px;
-        border-radius: 28px;
-    }
-
-    .team-meta-grid {
-        width: 100%;
-    }
-
-    .meta-card {
-        text-align: left;
-    }
-
-    .members-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .member-card {
-        align-items: flex-start;
-    }
-
-    .member-main {
-        align-items: flex-start;
-    }
-
-    .member-top-row {
-        flex-wrap: wrap;
-    }
-
-    .demo-toast {
-        white-space: normal;
-        text-align: center;
-        max-width: 90%;
-        font-size: 0.8rem;
-    }
-
-    .modern-footer {
-        padding: 1.5rem;
-    }
-
-    .footer-content {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .footer-info {
-        align-items: center;
-    }
-
-    .footer-social {
-        justify-content: center;
-    }
-}
-
-@media (max-width: 480px) {
-    main.container {
-        margin: 1rem auto;
-        padding: 0 0.8rem;
-    }
-
-    .members-section {
-        padding: 1rem;
-    }
-
-    .members-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .member-card {
-        padding: 0.85rem;
-    }
-
-    .member-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 16px;
-    }
-
-    .btn-kick,
-    .btn-add {
-        width: 34px;
-        height: 34px;
-        border-radius: 12px;
-    }
-
-    .modal-footer {
-        flex-direction: column;
-    }
-
-    .btn-cancel,
-    .btn-submit {
-        width: 100%;
-    }
-}
-
 /* Предупреждение о блокировке состава */
 .roster-locked-warning {
     background: rgba(245, 158, 11, 0.15);
@@ -1289,4 +1142,14 @@ main.container {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+.team-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.team-avatar {
+    overflow: hidden;
 }

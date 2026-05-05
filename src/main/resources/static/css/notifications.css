@@ -83,22 +83,6 @@
     }
 }
 
-/* или используем JS для динамического определения, но можно добавить медиа-запрос */
-@media (max-height: 600px) {
-    .notifications-panel {
-        top: auto;
-        bottom: calc(100% + 12px);
-    }
-    
-    .notifications-panel::before {
-        top: auto;
-        bottom: -8px;
-        border-left: 1px solid rgba(255, 255, 255, 0.08);
-        border-top: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-}
-
 @keyframes slideDownDark {
     from {
         opacity: 0;
@@ -316,43 +300,6 @@
     transform: rotate(45deg);
     border-left: 1px solid rgba(255, 255, 255, 0.08);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* Адаптив для мобильных устройств */
-@media (max-width: 640px) {
-    .notifications-panel {
-        width: calc(100vw - 32px);
-        right: -8px; /* корректировка для мобильных */
-        left: auto;
-        max-height: 460px;
-    }
-    
-    .notifications-panel::before {
-        right: 16px;
-    }
-    
-    .notifications-panel .notification-actions {
-        flex-direction: column;
-        gap: 6px;
-    }
-    
-    .notifications-panel .notification-actions button {
-        padding: 5px 10px;
-        font-size: 11px;
-    }
-    
-    .notifications-panel .notification-item {
-        padding: 12px;
-    }
-    
-    .notifications-panel .notification-icon {
-        width: 38px;
-        height: 38px;
-    }
-    
-    .notifications-panel .notification-icon i {
-        font-size: 16px;
-    }
 }
 
 /* Анимация появления новых уведомлений */

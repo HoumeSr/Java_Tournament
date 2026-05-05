@@ -1,9 +1,9 @@
 (function() {
     const images = [
-        "/images/image1.webp",
-        "/images/image2.jpg",
-        "/images/image3.jpg",
-        "/images/image4.jpg"
+        "/images/games/image1.webp",
+        "/images/games/image2.jpg",
+        "/images/games/image3.jpg",
+        "/images/games/image4.jpg"
     ];
 
     let currentIndex = 0;

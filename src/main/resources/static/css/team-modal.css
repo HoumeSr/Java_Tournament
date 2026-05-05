@@ -402,37 +402,3 @@
     cursor: not-allowed;
     transform: none;
 }
-
-@media (max-width: 640px) {
-    .modal-container {
-        width: 95%;
-        max-width: none;
-        margin: 16px;
-    }
-    
-    .modal-header {
-        padding: 20px;
-    }
-    
-    .modal-body {
-        padding: 20px;
-    }
-    
-    .modal-footer {
-        padding: 16px 20px;
-        flex-direction: column;
-    }
-    
-    .modal-header h2 {
-        font-size: 18px;
-    }
-    
-    .modal-header-icon {
-        width: 36px;
-        height: 36px;
-    }
-    
-    .modal-header-icon i {
-        font-size: 18px;
-    }
-}

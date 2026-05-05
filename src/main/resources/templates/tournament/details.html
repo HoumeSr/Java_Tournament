@@ -51,9 +51,6 @@
     <div th:if="${tournament != null}">
         <div class="tournament-info">
             <div class="tournament-header-info">
-                <div class="tournament-image" th:if="${tournament.imageUrl}">
-                    <img th:src="${tournament.imageUrl}" alt="Tournament image">
-                </div>
                 <div class="tournament-details">
                     <h1>
                         <i class="fas fa-trophy"></i> 
@@ -115,9 +112,6 @@
                                 th:if="${tournament.status == 'REGISTRATION_OPEN'}" 
                                 id="startTournamentBtn">
                             <i class="fas fa-play"></i> Старт
-                        </button>
-                        <button class="mgmt-btn delete-btn" th:if="${tournament.status == 'DRAFT'}" id="deleteTournamentBtn">
-                            <i class="fas fa-trash"></i> Удалить
                         </button>
                     </div>
                 </div>

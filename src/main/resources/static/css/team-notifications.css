@@ -229,20 +229,3 @@
     margin: 0;
     font-size: 14px;
 }
-
-@media (max-width: 640px) {
-    .notifications-dropdown {
-        width: calc(100vw - 32px);
-        right: 16px;
-        left: 16px;
-    }
-    
-    .notification-actions {
-        flex-direction: column;
-        gap: 8px;
-    }
-    
-    .notification-actions button {
-        width: 100%;
-    }
-}
