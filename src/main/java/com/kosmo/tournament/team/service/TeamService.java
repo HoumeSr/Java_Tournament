@@ -28,6 +28,8 @@ import com.kosmo.tournament.tournament.model.TournamentStatus;
 import com.kosmo.tournament.tournament.repository.TournamentTeamParticipantRepository;
 import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
+import org.springframework.web.multipart.MultipartFile;
+import com.kosmo.tournament.storage.service.FileStorageService;
 
 @Service
 public class TeamService {
@@ -39,6 +41,7 @@ public class TeamService {
     private final GameTypeRepository gameTypeRepository;
     private final TournamentTeamParticipantRepository tournamentTeamParticipantRepository;
     private final RandomImageService randomImageService;
+    private final FileStorageService fileStorageService;
 
     public TeamService(TeamRepository teamRepository,
                        TeamMemberRepository teamMemberRepository,
@@ -47,6 +50,7 @@ public class TeamService {
                        GameTypeRepository gameTypeRepository,
                        TournamentTeamParticipantRepository tournamentTeamParticipantRepository,
                        RandomImageService randomImageService) {
+                       FileStorageService fileStorageService) {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.userRepository = userRepository;
@@ -54,6 +58,7 @@ public class TeamService {
         this.gameTypeRepository = gameTypeRepository;
         this.tournamentTeamParticipantRepository = tournamentTeamParticipantRepository;
         this.randomImageService = randomImageService;
+        this.fileStorageService = fileStorageService;
     }
 
     public List<TeamShortDTO> getAllTeams() {
@@ -172,13 +177,9 @@ public class TeamService {
         team.setName(dto.getName());
         team.setCaptain(captain);
         team.setGameType(gameType);
-        String imageUrl = dto.getImageUrl();
-
-        if (imageUrl == null || imageUrl.isBlank()) {
-            imageUrl = randomImageService.getRandomTeamImage();
-        }
-
-        team.setImageUrl(imageUrl);
+        team.setImageUrl(dto.getImageUrl() != null && !dto.getImageUrl().isBlank()
+            ? dto.getImageUrl().trim()
+            : "DEFAULT_TEAM_IMAGE.jpg");
 
         Team savedTeam = teamRepository.save(team);
 
@@ -191,7 +192,29 @@ public class TeamService {
 
         return toFullDTO(savedTeam, true, true);
     }
+    @Transactional
+    public String updateLogo(Long teamId, MultipartFile file, String currentUsername) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found"));
 
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("Current user not found"));
+
+        boolean isCaptain = team.getCaptain() != null
+                && team.getCaptain().getId().equals(currentUser.getId());
+
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(currentUser.getRole());
+
+        if (!isCaptain && !isAdmin) {
+            throw new RuntimeException("Only team captain can update logo");
+        }
+
+        String imageUrl = fileStorageService.uploadTeamLogo(file, team.getId());
+        team.setImageUrl(imageUrl);
+        teamRepository.save(team);
+
+        return imageUrl;
+    }
     @Transactional
     public TeamFullDTO addCurrentUserToTeam(Long teamId, String currentUsername) {
         User currentUser = userRepository.findByUsername(currentUsername)
