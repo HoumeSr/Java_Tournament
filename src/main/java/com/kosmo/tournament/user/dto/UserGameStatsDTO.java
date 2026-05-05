@@ -59,7 +59,7 @@ public class UserGameStatsDTO {
         this.winRate = winRate;
     }
 
-    // Совместимость со старым фронтом
+    
     public Integer getMatchCount() {
         return totalMatches;
     }

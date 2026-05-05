@@ -22,8 +22,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    SessionAuthenticationFilter sessionAuthenticationFilter) throws Exception {
         http
-                // Пока оставлено как было в проекте, чтобы не сломать существующие fetch/ajax-формы.
-                // Следующий шаг — включить CSRF и передавать токен во всех POST/PUT/DELETE запросах.
+                
+                
                 .csrf(AbstractHttpConfigurer::disable)
                 .addFilterBefore(sessionAuthenticationFilter, AnonymousAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth

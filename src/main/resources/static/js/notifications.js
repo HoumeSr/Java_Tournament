@@ -1,4 +1,4 @@
-// ========== МОДУЛЬ УВЕДОМЛЕНИЙ ==========
+
 const NotificationsModule = (function() {
     let notifications = [];
     let notificationsPanelOpen = false;
@@ -7,7 +7,7 @@ const NotificationsModule = (function() {
     let scrollHandler = null;
     let resizeHandler = null;
 
-    // Вспомогательные функции
+    
     function showToast(message, isError = false) {
         const $toast = $('#demoToast');
         if (!$toast.length) return;
@@ -37,7 +37,7 @@ const NotificationsModule = (function() {
         return date.toLocaleDateString('ru-RU');
     }
 
-    // Загрузка уведомлений через api
+    
     async function loadNotifications() {
         try {
             const data = await window.api.get('/api/notifications/my');
@@ -47,13 +47,13 @@ const NotificationsModule = (function() {
             
             updateNotificationBell();
             
-            // Анимация при появлении новых уведомлений
+            
             if (newCount > oldCount && newCount > 0) {
                 const $bell = $('.notification-bell');
                 $bell.addClass('new-notification');
                 setTimeout(() => $bell.removeClass('new-notification'), 800);
                 
-                // Если панель открыта, обновляем её
+                
                 if (notificationsPanelOpen) {
                     updatePanelPosition();
                 }
@@ -129,7 +129,7 @@ const NotificationsModule = (function() {
         }
     }
 
-    // Действия с уведомлениями через api
+    
     async function acceptInvite(notificationId, teamId) {
         try {
             await window.api.post(`/api/teams/invite/${notificationId}/accept`);
@@ -161,7 +161,7 @@ const NotificationsModule = (function() {
         }
     }
 
-    // Рендер панели
+    
     function renderNotificationsPanel() {
         $('.notifications-panel').remove();
         
@@ -208,7 +208,7 @@ const NotificationsModule = (function() {
                     </div>
                 `);
 
-                // Клик по названию команды
+                
                 $item.find('.team-name-clickable').off('click').on('click', (e) => {
                     e.stopPropagation();
                     const teamId = notification.teamId;
@@ -217,7 +217,7 @@ const NotificationsModule = (function() {
                     }
                 });
                 
-                // Клик по всей карточке (кроме кнопок)
+                
                 $item.off('click').on('click', (e) => {
                     if (!$(e.target).closest('.btn-accept, .btn-decline').length) {
                         const teamId = notification.teamId;
@@ -277,7 +277,7 @@ const NotificationsModule = (function() {
         }
     }
 
-    // Инициализация
+    
     function init() {
         $(document).off('click', '#notificationBell').on('click', '#notificationBell', function(e) {
             e.stopPropagation();
@@ -304,7 +304,7 @@ const NotificationsModule = (function() {
         notificationsPanelOpen = false;
     }
 
-    // Публичное API
+    
     return {
         init: init,
         destroy: destroy,
@@ -314,5 +314,5 @@ const NotificationsModule = (function() {
     };
 })();
 
-// Экспортируем для использования в других модулях
+
 window.NotificationsModule = NotificationsModule;

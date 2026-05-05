@@ -658,7 +658,7 @@ public class TournamentService {
                 match.setTournament(tournament);
                 match.setRoundNumber(roundNumber);
                 match.setStatus("SCHEDULED");
-                // Не устанавливаем player1 и player2 здесь
+                
                 allMatches.add(match);
             }
             roundMatches /= 2;

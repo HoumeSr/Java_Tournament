@@ -2,7 +2,9 @@ package com.kosmo.tournament.tournament.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.kosmo.tournament.tournament.dto.TournamentFullDTO;
 import com.kosmo.tournament.tournament.service.TournamentService;
@@ -42,7 +44,7 @@ public class TournamentController {
                 return "tournament/details";
             }
             
-            // Проверяем, является ли текущий пользователь организатором
+            
             boolean isOwner = false;
             if (authentication != null && tournament.getOrganizerUsername() != null) {
                 isOwner = tournament.getOrganizerUsername().equals(currentUsername);
@@ -76,7 +78,7 @@ public class TournamentController {
                 return "redirect:/tournaments?notFound";
             }
             
-            // Проверяем права доступа (только организатор)
+            
             if (tournament.getOrganizerUsername() == null || 
                 !tournament.getOrganizerUsername().equals(currentUsername)) {
                 return "redirect:/tournaments/" + id + "?accessDenied";

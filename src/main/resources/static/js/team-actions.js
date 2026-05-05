@@ -1,6 +1,6 @@
 /* team-actions.js — действия с DTO через API хелпер */
 $(function () {
-    let teamDetails = null; // Храним полный DTO команды
+    let teamDetails = null; 
 
     function showToast(message, isError = false) {
         const $toast = $('#demoToast');
@@ -67,7 +67,7 @@ $(function () {
         }
     }
 
-    // ========== ЗАГРУЗКА ДАННЫХ КОМАНДЫ ==========
+    
     async function loadTeamDetails() {
         const teamId = window.teamData?.id;
         if (!teamId) return null;
@@ -76,7 +76,7 @@ $(function () {
             const data = await window.api.get(`/api/teams/${teamId}`);
             teamDetails = data;
             
-            // Обновляем window.teamData новыми полями
+            
             if (window.teamData) {
                 window.teamData.rosterLocked = data.rosterLocked;
                 window.teamData.rosterLockReason = data.rosterLockReason;
@@ -86,12 +86,12 @@ $(function () {
                 window.teamData.canAddMembers = data.canAddMembers;
             }
             
-            // Показываем блокировку состава, если нужно
+            
             if (data.rosterLocked && data.rosterLockReason) {
                 showRosterLockedWarning(data.rosterLockReason);
             }
             
-            // Инициализируем UI в зависимости от прав
+            
             initUIByPermissions();
             
             return data;
@@ -101,9 +101,9 @@ $(function () {
         }
     }
 
-    // ========== ПОКАЗ ПРЕДУПРЕЖДЕНИЯ О БЛОКИРОВКЕ ==========
+    
     function showRosterLockedWarning(reason) {
-        // Удаляем существующее предупреждение
+        
         $('.roster-locked-warning').remove();
         
         const $warning = $(`
@@ -113,33 +113,33 @@ $(function () {
             </div>
         `);
         
-        // Вставляем после team-info-card
+        
         $('.team-info-card').after($warning);
         
-        // Добавляем анимацию
+        
         $warning.hide().fadeIn(300);
     }
 
-    // ========== ИНИЦИАЛИЗАЦИЯ UI ПО ПРАВАМ ==========
+    
     function initUIByPermissions() {
         if (!teamDetails) return;
         
-        // 1. Кнопка "Покинуть команду"
+        
         if (!teamDetails.canLeaveTeam) {
             $('#leaveTeamBtn').hide();
         }
         
-        // 2. Кнопки "Исключить участника"
+        
         if (!teamDetails.canKickMembers) {
             $('.btn-kick').hide();
         }
         
-        // 3. Кнопка "Пригласить участника" и карточка добавления
+        
         if (!teamDetails.canInviteMembers) {
             $('#addMemberBtn, #addMemberCard').hide();
         }
         
-        // Если состав заблокирован, дополнительно блокируем кнопки визуально
+        
         if (teamDetails.rosterLocked) {
             $('#leaveTeamBtn, #joinTeamBtn, .btn-kick, #addMemberBtn, #addMemberCard')
                 .css('opacity', '0.5')
@@ -147,12 +147,12 @@ $(function () {
         }
     }
 
-    // ========== ОБНОВЛЕНИЕ СЧЁТЧИКОВ ==========
+    
     function updateMembersCount() {
         const currentCount = $('.member-card:not(.add-member-card)').length;
         const maxMembers = teamDetails?.maxMembersCount || window.teamData?.maxMembersCount || 0;
         
-        // Обновляем все счётчики
+        
         $('.members-count, .team-size-badge span, .meta-card strong').each(function() {
             const $el = $(this);
             const text = $el.text();
@@ -161,7 +161,7 @@ $(function () {
             }
         });
         
-        // Обновляем данные
+        
         if (window.teamData) {
             window.teamData.currentMembersCount = currentCount;
         }
@@ -169,7 +169,7 @@ $(function () {
             teamDetails.currentMembersCount = currentCount;
         }
         
-        // Обновляем кнопку вступления
+        
         const $joinBtn = $('#joinTeamBtn');
         if ($joinBtn.length && teamDetails?.canAddMembers !== false) {
             if (currentCount >= maxMembers) {
@@ -181,7 +181,7 @@ $(function () {
             }
         }
         
-        // Обновляем карточку добавления
+        
         if (teamDetails?.canInviteMembers !== false) {
             const $addMemberCard = $('.add-member-card');
             const $addMemberBtn = $('#addMemberBtn');
@@ -196,7 +196,7 @@ $(function () {
         }
     }
 
-    // ========== УДАЛЕНИЕ УЧАСТНИКА ==========
+    
     async function kickMember(userId, $memberCard) {
         if (!teamDetails?.canKickMembers) {
             showToast('❌ Сейчас нельзя исключать участников', true);
@@ -240,7 +240,7 @@ $(function () {
         }
     }
 
-    // ========== ПРИГЛАШЕНИЕ ==========
+    
     function initInviteButton() {
         $('#addMemberBtn, #addMemberCard').off('click').on('click', function (event) {
             event.preventDefault();
@@ -260,7 +260,7 @@ $(function () {
         });
     }
 
-    // ========== КНОПКИ УДАЛЕНИЯ ==========
+    
     function initKickButtons() {
         $('.btn-kick').off('click').on('click', async function (event) {
             event.stopPropagation();
@@ -287,7 +287,7 @@ $(function () {
         });
     }
 
-    // ========== ВСТУПЛЕНИЕ В КОМАНДУ ==========
+    
     function initJoinButton() {
         $('#joinTeamBtn').off('click').on('click', async function () {           
             if (window.teamData.currentMembersCount >= window.teamData.maxMembersCount) {
@@ -311,7 +311,7 @@ $(function () {
         });
     }
 
-    // ========== ВЫХОД ИЗ КОМАНДЫ ==========
+    
     function initLeaveButton() {
         $('#leaveTeamBtn').off('click').on('click', async function () {
             if (!teamDetails?.canLeaveTeam) {
@@ -337,7 +337,7 @@ $(function () {
         });
     }
 
-    // ========== ПЕРЕХОД НА ПРОФИЛЬ ПРИ КЛИКЕ ==========
+    
     function initMemberClickHandlers() {
         $('.member-card').off('click').on('click', function(e) {
             if ($(e.target).closest('.btn-kick').length) return;
@@ -351,10 +351,10 @@ $(function () {
         $('.member-card').css('cursor', 'pointer');
     }
 
-    // ========== ЗАПУСК ==========
+    
     (async function init() {
         await updateAuthButtons();
-        await loadTeamDetails(); // Загружаем полные данные с флагами
+        await loadTeamDetails(); 
         initInviteButton();
         initKickButtons();
         initJoinButton();

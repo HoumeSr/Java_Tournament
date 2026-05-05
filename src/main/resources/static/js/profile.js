@@ -141,12 +141,12 @@ $(function () {
         img.src = avatarUrl;
     }
 
-    // Рендер карусели рейтинга внутри статистики
+    
     function renderRatingCarousel(ratingData) {
         const $wrapper = $('#ratingCarouselWrapper');
         const $track = $('#ratingCarouselTrack');
         
-        // ПРОВЕРКА НА ПУСТОЙ СПИСОК
+        
         if (!ratingData || ratingData.length === 0) {
             $wrapper.show();
             $track.html(`
@@ -207,11 +207,11 @@ $(function () {
                 </div>
             `);
             
-            // Обработчик клика по карточке
+            
             $card.on('click', function(e) {
                 if (!$(e.target).closest('.carousel-btn-mini').length) {
                     const gameId = $(this).data('game-id');
-                    // Переход на страницу рейтинга с параметром game
+                    
                     window.location.href = `/rating?game=${gameId}`;
                 }
             });
@@ -225,7 +225,7 @@ $(function () {
     function initCarouselScroll() {
         const $track = $('#ratingCarouselTrack');
         
-        // Обработчики для кнопок внутри каждой карточки
+        
         $('.carousel-btn-mini.prev-card').off('click').on('click', function(e) {
             e.stopPropagation();
             const $card = $(this).closest('.rating-card-mini');
@@ -249,17 +249,17 @@ $(function () {
             const $cards = $('.rating-card-mini');
             const $targetCard = $cards.eq(index);
             const cardWidth = $targetCard.outerWidth();
-            const scrollLeft = index * (cardWidth + 16); // 16 - gap
+            const scrollLeft = index * (cardWidth + 16); 
             
             $track.animate({
                 scrollLeft: scrollLeft
             }, 300, function() {
-                // Обновляем data-index у всех карточек
+                
                 $cards.each(function(i) {
                     $(this).attr('data-index', i);
                 });
                 
-                // Обновляем состояние кнопок
+                
                 $cards.each(function(i) {
                     const $card = $(this);
                     const total = $cards.length;
@@ -739,7 +739,7 @@ $(function () {
         });
     }
 
-    // Асинхронная инициализация
+    
     (async function init() {
         await updateHeaderAuth();
         await loadProfile();

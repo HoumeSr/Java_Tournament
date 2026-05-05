@@ -1,4 +1,4 @@
-// team-modal.js
+
 (function() {
     let selectedUserId = null;
     let selectedUserData = null;
@@ -234,7 +234,7 @@
         });
     }
 
-    // Экспортируем функции в глобальную область
+    
     window.openInviteModal = openInviteModal;
     window.closeInviteModal = closeInviteModal;
     window.initModal = initModal;

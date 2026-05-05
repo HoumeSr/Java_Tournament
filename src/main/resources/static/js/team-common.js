@@ -1,4 +1,4 @@
-// ========== ОБЩИЕ ФУНКЦИИ ==========
+
 
 function showToast(message, isError = false) {
     let $toast = $('#demoToast');
@@ -7,8 +7,8 @@ function showToast(message, isError = false) {
         $toast = $('<div id="demoToast" class="demo-toast"></div>').appendTo('body');
     }
 
-    // Toast должен быть выше модальных затемнений и выпадающих уведомлений.
-    // Перенос в body защищает от локальных stacking context внутри страницы.
+    
+    
     if ($toast.parent().get(0) !== document.body) {
         $('body').append($toast);
     }
@@ -65,7 +65,7 @@ let currentUser = null;
 
 async function getCurrentUser() {
     try {
-        // Используем api.get вместо fetch
+        
         const data = await window.api.get('/api/auth/check');
         
         if (data.authenticated && data.user) {
@@ -78,7 +78,7 @@ async function getCurrentUser() {
     }
 }
 
-// Дополнительная функция для обновления аватара в шапке
+
 async function updateAuthButtons() {
     const $auth = $('#authButtons');
     if (!$auth.length) return;
@@ -138,7 +138,7 @@ async function updateAuthButtons() {
     }
 }
 
-// Функция для проверки авторизации с редиректом
+
 async function requireAuth() {
     const user = await getCurrentUser();
     if (!user) {
@@ -148,7 +148,7 @@ async function requireAuth() {
     return user;
 }
 
-// Функция для выхода
+
 async function logout() {
     try {
         await window.api.post('/api/auth/logout', {});
@@ -157,7 +157,7 @@ async function logout() {
     }
 }
 
-// ========== ЭКСПОРТ ФУНКЦИЙ (если используете модули) ==========
+
 window.showToast = showToast;
 window.escapeHtml = escapeHtml;
 window.formatDate = formatDate;

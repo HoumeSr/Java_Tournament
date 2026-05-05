@@ -1,6 +1,6 @@
 /* rating.js — страница рейтинга игроков */
 $(function () {
-    let currentGameId = 1; // По умолчанию выбрана игра с ID = 1
+    let currentGameId = 1; 
     let gamesList = [];
     let ratingData = [];
 
@@ -48,14 +48,14 @@ $(function () {
         return '/images/' + imageUrl;
     }
 
-    // Загрузка списка игр
+    
     async function loadGames() {
         try {
             const games = await window.api.get('/api/gametypes');
             gamesList = (games || []).filter(game => game.isActive === true);
             renderGameFilters();
             
-            // Загружаем рейтинг для игры с ID = 1 (по умолчанию)
+            
             await loadRating();
         } catch (error) {
             console.error('Error loading games:', error);
@@ -63,7 +63,7 @@ $(function () {
         }
     }
 
-    // Рендер кнопок фильтрации по играм
+    
     function renderGameFilters() {
         const $container = $('#gamesFilterContainer');
         if (!$container.length) return;
@@ -84,7 +84,7 @@ $(function () {
         });
     }
 
-    // Загрузка рейтинга для выбранной игры
+    
     async function loadRating() {
         if (!currentGameId) return;
 
@@ -96,7 +96,7 @@ $(function () {
             
             if (response && response.success && response.rating) {
                 ratingData = response.rating;
-                // Ограничиваем топ-10 игроков
+                
                 const top10Players = ratingData.slice(0, 10);
                 renderRating(top10Players);
             } else {
@@ -109,7 +109,7 @@ $(function () {
         }
     }
 
-    // Рендер таблицы рейтинга
+    
     function renderRating(players) {
         const $container = $('#ratingContainer');
         
@@ -118,12 +118,12 @@ $(function () {
             return;
         }
 
-        // Сортируем по rank (на всякий случай)
+        
         players.sort((a, b) => a.rank - b.rank);
 
         const $table = $('<table>').addClass('rating-table');
         
-        // Заголовок таблицы
+        
         const $thead = $('<thead>').html(`
             <tr>
                 <th>#</th>
@@ -134,7 +134,7 @@ $(function () {
         `);
         $table.append($thead);
 
-        // Тело таблицы
+        
         const $tbody = $('<tbody>');
         
         players.forEach(player => {
@@ -200,7 +200,7 @@ $(function () {
         $table.append($tbody);
         $container.empty().append($table);
         
-        // Если в топе меньше 10 игроков, показываем уведомление
+        
         if (players.length === 10 && ratingData.length > 10) {
             const $info = $('<div>').addClass('rating-info').html(`
                 <i class="fas fa-info-circle"></i> Показаны топ-10 игроков из ${ratingData.length}
@@ -209,7 +209,7 @@ $(function () {
         }
     }
 
-    // Авторизация
+    
     async function updateAuthButtons() {
         const $auth = $('#authButtons');
         if (!$auth.length) return;
@@ -242,7 +242,7 @@ $(function () {
         }
     }
 
-    // Инициализация
+    
     (async function init() {
         await updateAuthButtons();
         await loadGames();

@@ -3,9 +3,9 @@ $(function () {
     let availableGames = [];
     let currentGameFilter = 'all';
     let teams = [];
-    let categories = []; // Храним категории с количеством команд
+    let categories = []; 
     
-    // Пагинация
+    
     let currentPage = 0;
     let totalPages = 0;
     let totalElements = 0;
@@ -31,20 +31,20 @@ $(function () {
         return '🏆';
     }
 
-    // Пересчет количества команд для всех категорий с учётом фильтра по статусу
+    
     async function reloadCategoryCounts() {
         try {
-            // Загружаем количество для всех команд
+            
             const allResponse = await window.api.get(`/api/teams/feed?page=0&size=1`);
             const allCount = allResponse.totalElements || 0;
             
-            // Обновляем количество для "Все"
+            
             const allCategory = categories.find(c => c.id === 'all');
             if (allCategory) {
                 allCategory.count = allCount;
             }
             
-            // Загружаем количество для каждой игры параллельно
+            
             const gameCategories = categories.filter(cat => cat.id !== 'all' && cat.gameId);
             const promises = gameCategories.map(cat => 
                 window.api.get(`/api/teams/feed?page=0&size=1&gameTypeId=${cat.gameId}`)
@@ -53,12 +53,12 @@ $(function () {
             
             const results = await Promise.all(promises);
             
-            // Обновляем количества для игр
+            
             gameCategories.forEach((cat, index) => {
                 cat.count = results[index].totalElements || 0;
             });
             
-            // Перерисовываем категории с новыми количествами
+            
             renderGameFilters();
             
         } catch (error) {
@@ -71,7 +71,7 @@ $(function () {
             const gameTypes = await window.api.get('/api/gametypes');
             const activeGames = (gameTypes || []).filter(game => game.isActive === true);
             
-            // Формируем категории
+            
             categories = [{ id: 'all', label: 'Все', icon: '🌍', count: 0, gameId: null }].concat(
                 activeGames.map(game => ({
                     id: String(game.id),
@@ -82,10 +82,10 @@ $(function () {
                 }))
             );
             
-            // Загружаем количества команд для каждой категории
+            
             await reloadCategoryCounts();
             
-            // Заполняем селект в модалке
+            
             const $select = $('#modalGameType');
             $select.html('<option value="">— Выберите игру —</option>');
             activeGames.forEach(function (game) {
@@ -99,7 +99,7 @@ $(function () {
         }
     }
 
-    // Рендер кнопок фильтрации по играм (с счётчиками)
+    
     function renderGameFilters() {
         const $container = $('#gameFiltersContainer');
         if (!$container.length) return;
@@ -118,7 +118,7 @@ $(function () {
                     loadTeams();
                 });
 
-            // Показываем количество для всех категорий
+            
             if (cat.count !== undefined && cat.count > 0) {
                 $btn.append($('<span>').addClass('filter-count').text(cat.count));
             }
@@ -144,7 +144,7 @@ $(function () {
         try {
             let url = `/api/teams/feed?page=${currentPage}&size=${pageSize}`;
             
-            // Добавляем фильтр по игре
+            
             if (currentGameFilter !== 'all') {
                 const category = categories.find(c => c.label === currentGameFilter);
                 if (category && category.gameId) {
@@ -169,7 +169,7 @@ $(function () {
         }
     }
 
-    // Рендер пагинации
+    
     function renderPagination(response) {
         const $pagination = $('#pagination');
         if (!$pagination.length) return;
@@ -259,12 +259,12 @@ $(function () {
             const isMine = team.listType === 'my';
             const count = `${team.currentMembersCount || 0} / ${team.maxMembersCount || 1}`;
             
-            // Получаем URL картинки команды
+            
             let imageUrl = null;
             if (team.imageUrl) {
                 imageUrl = team.imageUrl;
             } else if (team.imageUrl === undefined && team.id) {
-                // Если imageUrl не пришёл, можно использовать дефолтный или попробовать другой эндпоинт
+                
                 imageUrl = null;
             }
             
@@ -361,7 +361,7 @@ $(function () {
         }
     }
 
-    // Установка превью логотипа
+    
     function setTeamLogoPreview(file, $previewContainer) {
         if (!file || !$previewContainer.length) return;
         
@@ -373,7 +373,7 @@ $(function () {
         reader.readAsDataURL(file);
     }
 
-    // Очистка превью логотипа
+    
     function clearTeamLogoPreview($previewContainer) {
         $previewContainer.html('<i class="fas fa-users"></i>').removeClass('has-image');
     }
@@ -387,7 +387,7 @@ $(function () {
         let selectedLogoFile = null;
         let selectedLogoUrl = null;
         
-        // Загрузка файла
+        
         $uploadBtn.off('click').on('click', () => {
             $logoInput.trigger('click');
         });
@@ -410,7 +410,7 @@ $(function () {
             selectedLogoFile = file;
             selectedLogoUrl = null;
             
-            // Показываем превью
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 $logoPreview.html(`<img src="${e.target.result}" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">`).addClass('has-image');
@@ -418,7 +418,7 @@ $(function () {
             reader.readAsDataURL(file);
         });
         
-        // Очистить логотип
+        
         $clearBtn.off('click').on('click', () => {
             selectedLogoFile = null;
             selectedLogoUrl = null;
@@ -427,7 +427,7 @@ $(function () {
             showToast('Логотип удалён, будет установлен случайный');
         });
         
-        // Сохраняем выбранные данные в замыкании для использования при отправке
+        
         window.selectedTeamLogo = {
             getFile: () => selectedLogoFile,
             getUrl: () => selectedLogoUrl,
@@ -448,7 +448,7 @@ $(function () {
             }
             $('#modalCreateTeamForm')[0]?.reset();
             
-            // Сброс логотипа
+            
             if (window.selectedTeamLogo) window.selectedTeamLogo.clear();
             $('#modalTeamLogo').val('');
             $('#logoPreview').html('<i class="fas fa-users"></i>').removeClass('has-image');
@@ -486,20 +486,20 @@ $(function () {
             $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Создание...');
 
             try {
-                // Создаём команду с null imageUrl
+                
                 const team = await window.api.post('/api/teams', { 
                     name: name, 
                     gameTypeId: gameTypeId,
-                    imageUrl: null  // Явно передаём null
+                    imageUrl: null  
                 });
                 
-                // Если пользователь загрузил файл - загружаем логотип после создания команды
+                
                 if (window.selectedTeamLogo && window.selectedTeamLogo.getFile()) {
                     try {
                         const file = window.selectedTeamLogo.getFile();
                         const imageUrl = await uploadTeamLogo(team.id, file);
                         
-                        // Обновляем команду с новым логотипом (опционально)
+                        
                         if (imageUrl) {
                             team.imageUrl = imageUrl;
                         }
@@ -512,7 +512,7 @@ $(function () {
                 showToast('✅ Команда успешно создана');
                 closeCreateTeamModal();
                 
-                // Очищаем выбранный логотип
+                
                 if (window.selectedTeamLogo) window.selectedTeamLogo.clear();
                 
                 setTimeout(function () { 
@@ -530,7 +530,7 @@ $(function () {
         initLogoSelection();
     }
 
-    // Асинхронная инициализация
+    
     (async function init() {
         await updateAuthButtons();
         await loadAllGames();

@@ -1,4 +1,4 @@
-// ========== УПРАВЛЕНИЕ УВЕДОМЛЕНИЯМИ ==========
+
 
 let notifications = [];
 let notificationsDropdown = null;
@@ -6,7 +6,7 @@ let updateInterval = null;
 
 async function loadNotifications() {
     try {
-        // Используем api.get вместо fetch
+        
         const data = await window.api.get('/api/notifications/my');
         notifications = data || [];
         updateNotificationBadge();
@@ -119,7 +119,7 @@ function renderNotifications() {
     
     $dropdown.html(notificationsHtml);
     
-    // Привязываем обработчики к кнопкам
+    
     $dropdown.find('.btn-accept, .btn-decline').off('click').on('click', async function(e) {
         e.stopPropagation();
         const $btn = $(this);
@@ -131,7 +131,7 @@ function renderNotifications() {
 
 async function handleNotificationAction(notificationId, action) {
     try {
-        // Используем api.put вместо fetch
+        
         await window.api.put(`/api/notifications/${notificationId}`, { status: action });
         
         if (action === 'ACCEPTED') {
@@ -156,7 +156,7 @@ async function handleNotificationAction(notificationId, action) {
 
 async function addUserToTeam(teamId) {
     try {
-        // Используем window.auth.currentUser вместо отдельной переменной
+        
         if (!window.auth || !window.auth.currentUser) {
             await window.auth?.check();
         }
@@ -167,7 +167,7 @@ async function addUserToTeam(teamId) {
             throw new Error('User not authenticated');
         }
         
-        // Используем api.post вместо fetch
+        
         const result = await window.api.post(`/api/teams/${teamId}/members`, { 
             userId: currentUser.id 
         });
@@ -222,7 +222,7 @@ async function createNotificationIcon() {
     }
 }
 
-// Функция для отображения toast
+
 function showToast(message, isError = false) {
     const $toast = $('#demoToast');
     if (!$toast.length) return;
@@ -238,7 +238,7 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
-// Функция escapeHtml
+
 function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>"']/g, function(m) {
@@ -251,9 +251,9 @@ function escapeHtml(str) {
     });
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
+
 $(document).ready(() => {
-    // Ждем загрузки auth и профиля
+    
     const checkAuthInterval = setInterval(() => {
         if ($('.profile-icon').length) {
             clearInterval(checkAuthInterval);

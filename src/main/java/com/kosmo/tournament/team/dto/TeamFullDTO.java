@@ -19,7 +19,7 @@ public class TeamFullDTO {
     private Integer maxMembersCount;
     private List<TeamMemberDTO> members;
 
-    // Новые поля для фронта
+    
     private boolean rosterLocked;
     private String rosterLockReason;
     private boolean canLeaveTeam;

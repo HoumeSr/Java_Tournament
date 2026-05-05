@@ -105,17 +105,17 @@
         }
 
         try {
-            // Создаем FormData для отправки как @RequestParam
+            
             const formData = new FormData();
             formData.append('username', userData.username);
             formData.append('email', userData.email);
             formData.append('password', userData.password);
             formData.append('confirmPassword', userData.confirmPassword);
             
-            // Отправляем на AJAX endpoint
+            
             const response = await window.api.post('/api/auth/register', formData);
             
-            // Проверяем успешность ответа
+            
             if (response && response.success) {
                 showToast('✅ ' + (response.message || 'Регистрация успешна! Перенаправление...'));
                 
@@ -137,7 +137,7 @@
                             window.location.href = loginResponse.redirectUrl || '/profile';
                         }, 1500);
                     } else {
-                        // Если автоматический вход не удался
+                        
                         setTimeout(() => {
                             window.location.href = '/login?registered=true';
                         }, 1500);
@@ -154,11 +154,11 @@
         } catch (error) {
             console.error('Registration error:', error);
             
-            // Обработка ошибок с бэкенда
+            
             let errorMessage = '❌ Ошибка сервера';
             
             if (error.message) {
-                // Парсим возможные ошибки от бэкенда
+                
                 if (error.message.includes('никнейм') || error.message.includes('username')) {
                     errorMessage = '❌ ' + error.message;
                 } else if (error.message.includes('Email') || error.message.includes('email')) {
@@ -188,13 +188,13 @@
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            // Получаем значения полей
+            
             const username = document.getElementById('username')?.value.trim();
             const email = document.getElementById('email')?.value.trim();
             const password = document.getElementById('password')?.value;
             const confirmPassword = document.getElementById('confirmPassword')?.value;
 
-            // Валидация перед отправкой
+            
             if (!username) {
                 showToast('⚠️ Укажите никнейм', true);
                 return;
@@ -224,7 +224,7 @@
                 return;
             }
 
-            // Отправка через API хелпер
+            
             await registerUser({ username, email, password, confirmPassword });
         });
     }
@@ -290,12 +290,12 @@
         usernameInput?.addEventListener('blur', validateUsernameLive);
     }
 
-    // Показываем сообщение об успешной регистрации, если есть параметр в URL
+    
     function checkUrlParams() {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('success') === 'true') {
             showToast('✅ Регистрация успешна! Теперь войдите в аккаунт.');
-            // Очищаем параметр из URL для обновления страницы
+            
             window.history.replaceState({}, document.title, window.location.pathname);
         } else if (urlParams.get('registered') === 'true') {
             showToast('✅ Аккаунт создан! Пожалуйста, войдите.');
@@ -303,7 +303,7 @@
         }
     }
 
-    // Проверяем, что API хелпер загружен
+    
     if (typeof window.api === 'undefined') {
         console.error('API helper not loaded!');
         showToast('Ошибка загрузки API', true);
@@ -311,14 +311,14 @@
         console.log('API helper loaded successfully');
     }
 
-    // Инициализация
+    
     initSlideshow();
     resetInterval();
     initFormValidation();
     initLiveValidation();
-    checkUrlParams(); // Проверяем параметры URL
+    checkUrlParams(); 
 
-    // Пауза слайдшоу при наведении
+    
     const heroPanel = document.querySelector('.hero-panel');
     heroPanel?.addEventListener('mouseenter', () => {
         if (intervalId) clearInterval(intervalId);
@@ -326,7 +326,7 @@
     });
     heroPanel?.addEventListener('mouseleave', resetInterval);
 
-    // Очистка интервала при уходе со страницы
+    
     window.addEventListener('beforeunload', () => {
         if (intervalId) clearInterval(intervalId);
     });

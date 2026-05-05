@@ -1,4 +1,4 @@
-// ========== УВЕДОМЛЕНИЯ ==========
+
 function showToast(message, isError = false) {
     const $toast = $('#demoToast');
     if (!$toast.length) return;
@@ -14,7 +14,7 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
-// ========== АВТОРИЗАЦИЯ ==========
+
 async function updateAuthButtons() {
     const $auth = $('#authButtons');
     if (!$auth.length) return;
@@ -50,7 +50,7 @@ async function updateAuthButtons() {
     }
 }
 
-// ========== ПРОВЕРКА РЕГИСТРАЦИИ ПОЛЬЗОВАТЕЛЯ ==========
+
 async function checkUserRegistration(tournamentId) {
     try {
         const data = await window.api.get(`/api/tournaments/${tournamentId}/my-registration`);
@@ -61,7 +61,7 @@ async function checkUserRegistration(tournamentId) {
     }
 }
 
-// ========== ЗАГРУЗКА КОМАНД ДЛЯ ТУРНИРА ==========
+
 async function loadUserTeamsForTournament(tournamentId) {
     try {
         const teams = await window.api.get(`/api/tournaments/${tournamentId}/my-eligible-teams`);
@@ -72,7 +72,7 @@ async function loadUserTeamsForTournament(tournamentId) {
     }
 }
 
-// ========== ЗАГРУЗКА КОМАНД В SELECT ==========
+
 async function loadTeamsIntoSelect() {
     const tournamentId = window.tournamentData?.id;
     const $teamSelect = $('#teamSelect');
@@ -106,7 +106,7 @@ async function loadTeamsIntoSelect() {
     });
 }
 
-// ========== РЕГИСТРАЦИЯ В СОЛО ТУРНИР ==========
+
 async function registerForSoloTournament(tournamentId) {
     const $registerBtn = $('#registerSoloBtn');
     const originalText = $registerBtn.html();
@@ -135,7 +135,7 @@ async function registerForSoloTournament(tournamentId) {
     }
 }
 
-// ========== РЕГИСТРАЦИЯ КОМАНДЫ В ТУРНИР ==========
+
 async function registerTeamForTournament(tournamentId, teamId) {
     const $registerBtn = $('#registerTeamBtn');
     const originalText = $registerBtn.html();
@@ -167,7 +167,7 @@ async function registerTeamForTournament(tournamentId, teamId) {
     }
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ КНОПОК РЕГИСТРАЦИИ ==========
+
 async function initRegistrationButtons() {
     const tournamentId = window.tournamentData?.id;
     const tournamentStatus = window.tournamentData?.status;
@@ -290,19 +290,19 @@ function generateBracket(maxParticipants, actualParticipants = null) {
         };
         
         for (let i = 0; i < matchesCount; i++) {
-            // Для первого раунда может быть BYE
+            
             let team1Name = `TBD ${i * 2 + 1}`;
             let team2Name = `TBD ${i * 2 + 2}`;
             let team1Id = null;
             let team2Id = null;
             
-            // Если это первый раунд и участников меньше, чем слотов
+            
             if (roundNumber === 1 && actualParticipants) {
                 const totalSlots = teamsCount;
                 const actualCount = actualParticipants;
                 const byeCount = totalSlots - actualCount;
                 
-                // Помечаем BYE для пустых слотов
+                
                 if (i < byeCount) {
                     team1Name = 'BYE';
                     team1Id = null;
@@ -327,7 +327,7 @@ function generateBracket(maxParticipants, actualParticipants = null) {
     return rounds;
 }
 
-// ========== ЗАГРУЗКА МАТЧЕЙ ==========
+
 async function loadMatchesData(tournamentId) {
     if (!tournamentId) return null;
     
@@ -343,7 +343,7 @@ async function loadMatchesData(tournamentId) {
             participant2Id: match.participant2?.id || match.participant2Id,
             participant2Type: match.participant2?.type ||
                 (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user'),
-            participant2ImageUrl: match.participant2?.imageUrl || match.participant2ImageUrl  // ← Добавить эту строку
+            participant2ImageUrl: match.participant2?.imageUrl || match.participant2ImageUrl  
         }));
         
         return enhancedMatches;
@@ -404,7 +404,7 @@ async function applyMatchesDataWithImages(rounds, matchesData) {
                 const realMatch = roundMatches[idx] || roundMatches.find(m => m.position === idx);
                 
                 if (realMatch) {
-                    // Загружаем imageUrl для participant1
+                    
                     if (realMatch.participant1Id) {
                         let imageUrl = null;
                         if (realMatch.participant1Type === 'team') {
@@ -415,7 +415,7 @@ async function applyMatchesDataWithImages(rounds, matchesData) {
                         match.team1.imageUrl = imageUrl;
                     }
                     
-                    // Загружаем imageUrl для participant2
+                    
                     if (realMatch.participant2Id) {
                         let imageUrl = null;
                         if (realMatch.participant2Type === 'team') {
@@ -426,7 +426,7 @@ async function applyMatchesDataWithImages(rounds, matchesData) {
                         match.team2.imageUrl = imageUrl;
                     }
                     
-                    // Остальная логика applyMatchesData...
+                    
                     if (realMatch.participant1Name === 'BYE' || !realMatch.participant1Id) {
                         match.team1.name = 'BYE';
                         match.team1.id = null;
@@ -475,24 +475,24 @@ async function renderBracket(maxParticipants, tournamentId) {
     
     $container.html('<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Загрузка сетки...</div>');
     
-    // Получаем реальное количество участников
+    
     const actualParticipants = window.actualParticipantsCount || 0;
     const tournamentStatus = window.tournamentData?.status;
     
-    // Для DRAFT и REGISTRATION_OPEN используем maxParticipants для отображения сетки
-    // даже если нет матчей
+    
+    
     let rounds;
     
     if (tournamentStatus === 'DRAFT' || tournamentStatus === 'REGISTRATION_OPEN') {
-        // Рисуем сетку на основе максимального количества участников
+        
         rounds = generateBracket(maxParticipants, null);
     } else {
-        // Для начатых турниров используем реальное количество
+        
         const size = actualParticipants > 0 ? actualParticipants : maxParticipants;
         rounds = generateBracket(size, actualParticipants);
     }
     
-    // Пытаемся загрузить матчи, если они есть
+    
     if (tournamentId && (tournamentStatus === 'IN_PROGRESS' || tournamentStatus === 'FINISHED')) {
         const matchesData = await loadMatchesData(tournamentId);
         if (matchesData && matchesData.length > 0) {
@@ -523,12 +523,12 @@ function renderBracketHTML(container, rounds) {
         }
         
         if (imageUrl && imageUrl !== 'null' && imageUrl !== '') {
-            // Очищаем URL от лишних символов и экранируем
+            
             let cleanUrl = String(imageUrl).trim();
-            // Убираем возможные кавычки из URL
+            
             cleanUrl = cleanUrl.replace(/['"]/g, '');
             
-            // Создаем элемент через jQuery, чтобы избежать проблем с экранированием
+            
             const $avatar = $('<div>').addClass('team-avatar');
             const $img = $('<img>')
                 .attr('src', cleanUrl)
@@ -565,7 +565,7 @@ function renderBracketHTML(container, rounds) {
         round.matches.forEach((match) => {
             const matchDiv = document.createElement('div');
             
-            // Проверяем, есть ли BYE (автоматический проход)
+            
             const isBye = match.team1.name === 'BYE' || match.team2.name === 'BYE' ||
                          (!match.team1.id && match.team1.name.includes('TBD')) && match.team2.id;
             
@@ -580,7 +580,7 @@ function renderBracketHTML(container, rounds) {
             const isTeam2Winner = match.winner === 'team2';
             const isFinished = match.finished;
             
-            // Определяем имя победителя
+            
             let winnerName = null;
             if (isFinished && !isBye) {
                 if (isTeam1Winner && match.team1.name !== 'BYE') {
@@ -590,7 +590,7 @@ function renderBracketHTML(container, rounds) {
                 }
             }
             
-            // Определяем, кто проходит по BYE
+            
             const advancingTeam = !match.team1.id && match.team2.id ? match.team2 : 
                                  (match.team1.id && !match.team2.id ? match.team1 : null);
             
@@ -602,7 +602,7 @@ function renderBracketHTML(container, rounds) {
                              (match.team2.name.includes('TBD') ? 'fa-question-circle' :
                              (window.tournamentData?.participantType === 'TEAM' ? 'fa-users' : 'fa-user'));
             
-            // Сохраняем ID и тип
+            
             const team1Id = match.team1.id || null;
             const team2Id = match.team2.id || null;
             const team1Type = match.team1.type || (window.tournamentData?.participantType === 'TEAM' ? 'team' : 'user');
@@ -685,25 +685,25 @@ function attachBracketClickHandlers() {
         const type = $team.data('type');
         const name = $team.data('name');
         
-        // Пропускаем TBD (неопределённые команды/игроки)
+        
         if (!id || name === 'TBD' || name.includes('TBD')) {
             return;
         }
         
         if (type === 'team' || isTeamTournament) {
-            // Переход на страницу команды
+            
             window.location.href = `/teams/${id}`;
         } else {
-            // Переход на страницу пользователя
+            
             window.location.href = `/profile/${id}`;
         }
     });
     
-    // Добавляем стиль pointer для кликабельных элементов
+    
     $('.team[data-id]:not([data-id=""])').css('cursor', 'pointer');
 }
 
-// ========== РИСОВАНИЕ ЛИНИЙ ==========
+
 function drawConnections() {
     const rounds = document.querySelectorAll('.round');
     if (rounds.length < 2) return;
@@ -803,7 +803,7 @@ function drawConnections() {
     $container[0].appendChild(svg);
 }
 
-// ========== ОБНОВЛЕНИЕ ПРИ ИЗМЕНЕНИИ РАЗМЕРА ==========
+
 let resizeTimeout;
 function handleResize() {
     clearTimeout(resizeTimeout);
@@ -814,7 +814,7 @@ function handleResize() {
     }, 200);
 }
 
-// ========== ESCAPE HTML ==========
+
 function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>]/g, function(m) {
@@ -825,7 +825,7 @@ function escapeHtml(str) {
     });
 }
 
-// ========== НАВИГАЦИЯ ==========
+
 function initNavBar() {
     $('.nav-item').each(function() {
         const $item = $(this);
@@ -837,7 +837,7 @@ function initNavBar() {
     });
 }
 
-// ========== УПРАВЛЕНИЕ ТУРНИРОМ ==========
+
 function initTournamentActions() {
     const $startBtn = $('#startTournamentBtn');
     const $deleteBtn = $('#deleteTournamentBtn');
@@ -904,7 +904,7 @@ function initTournamentActions() {
     }
 }
 
-// ========== ЗАГРУЗКА КОЛИЧЕСТВА УЧАСТНИКОВ ==========
+
 async function loadParticipantsCount(tournamentId) {
     try {
         const data = await window.api.get(`/api/tournaments/${tournamentId}/participants/count`);
@@ -915,7 +915,7 @@ async function loadParticipantsCount(tournamentId) {
     }
 }
 
-// ========== ЗАГРУЗКА СПИСКА УЧАСТНИКОВ ==========
+
 async function loadParticipantsList(tournamentId) {
     try {
         const participants = await window.api.get(`/api/tournaments/${tournamentId}/participants`);
@@ -926,7 +926,7 @@ async function loadParticipantsList(tournamentId) {
     }
 }
 
-// ========== ДОБАВЛЕНИЕ КНОПКИ РЕГИСТРАЦИИ В META ==========
+
 async function addRegistrationToMeta() {
     const tournamentId = window.tournamentData?.id;
     const tournamentStatus = window.tournamentData?.status;
@@ -1025,7 +1025,7 @@ async function addRegistrationToMeta() {
     }
 }
 
-// ========== УПРАВЛЕНИЕ ПЛАВАЮЩЕЙ КНОПКОЙ ==========
+
 async function initFloatingRegisterButton() {
     const tournamentId = window.tournamentData?.id;
     const tournamentStatus = window.tournamentData?.status;
@@ -1089,7 +1089,7 @@ async function initFloatingRegisterButton() {
     }
 }
 
-// ========== МОДАЛКА ДЛЯ ВЫБОРА КОМАНДЫ ==========
+
 function showTeamSelectionModal(teams, tournamentId) {
     const modalHtml = `
         <div class="team-selection-modal" id="teamSelectionModal">
@@ -1141,9 +1141,9 @@ async function loadParticipants() {
         
         const isTeamTournament = window.tournamentData?.participantType === 'TEAM';
         
-        // Для командных турниров загружаем название команды и капитана
+        
         if (isTeamTournament && participants.length > 0) {
-            // Загружаем детали команд параллельно
+            
             const teamDetailsPromises = participants.map(async (participant) => {
                 try {
                     const teamDetails = await window.api.get(`/api/teams/${participant.teamId}`);
@@ -1201,7 +1201,7 @@ async function openParticipantsModal() {
     let participantsHtml = '';
     
     if (isTeamTournament) {
-        // Командный турнир - показываем команды
+        
         participantsHtml = participants.map((participant, index) => {
             const teamName = participant.teamName || participant.name || 'Команда';
             const captainName = participant.captainUsername || 'Не указан';
@@ -1227,7 +1227,7 @@ async function openParticipantsModal() {
             `;
         }).join('');
     } else {
-        // Соло турнир - показываем игроков
+        
         participantsHtml = participants.map((participant, index) => {
             const username = participant.name || participant.username || 'Игрок';
             const seed = participant.seed;
@@ -1256,23 +1256,23 @@ async function openParticipantsModal() {
     $participantsList.html(participantsHtml);
 }
 
-// ========== ЗАКРЫТИЕ МОДАЛЬНОГО ОКНА ==========
+
 function closeParticipantsModal() {
     $('#participantsModal').css('display', 'none');
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ КНОПКИ УЧАСТНИКОВ ==========
+
 function initParticipantsButton() {
-    // Для ссылки в панели управления (оставляем как есть, если это ссылка)
+    
     $('.participants-btn').off('click').on('click', async (e) => {
         e.preventDefault();
         await openParticipantsModal();
     });
     
-    // Для кнопок закрытия
+    
     $('#closeParticipantsModal, #cancelParticipantsBtn').off('click').on('click', closeParticipantsModal);
     
-    // Закрытие по клику вне модалки
+    
     $('#participantsModal').off('click').on('click', (e) => {
         if ($(e.target).is('#participantsModal')) {
             closeParticipantsModal();
@@ -1280,7 +1280,7 @@ function initParticipantsButton() {
     });
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
+
 async function init() {
     if (!window.tournamentData || !window.tournamentData.id) {
         console.warn('Данные турнира отсутствуют');
@@ -1314,7 +1314,7 @@ async function init() {
     initParticipantsButton();
 }
 
-// ========== ЗАПУСК ==========
+
 $(document).ready(() => {
     updateAuthButtons();
     init();

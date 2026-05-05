@@ -1,17 +1,17 @@
-// home.js - адаптирован под базовый api.js с пагинацией
+
 $(document).ready(function() {
     let currentCategory = 'all';
     let tournaments = [];
     let categories = [{ id: 'all', label: 'Все', icon: '🌍' }];
     
-    // Пагинация
+    
     let currentPage = 0;
     let totalPages = 0;
     let pageSize = 6;
     let totalElements = 0;
     let currentStatusFilter = 'all';
 
-    // Вспомогательные функции
+    
     function showToast(message, isError = false) {
         const $toast = $('#demoToast');
         if (!$toast.length) return;
@@ -46,44 +46,44 @@ $(document).ready(function() {
         return '🏆';
     }
 
-    // Пересчет количества турниров для всех категорий с учётом фильтра по статусу
+    
     async function reloadCategoryCounts() {
         try {
-            // Формируем базовый URL с фильтром по статусу
+            
             let statusParam = '';
             if (currentStatusFilter !== 'all') {
                 statusParam = `&status=${currentStatusFilter}`;
             }
             
-            // Собираем все запросы в массив для параллельного выполнения
+            
             const gameCategories = categories.filter(cat => cat.id !== 'all' && cat.gameId);
             
-            // Создаём массив промисов для всех запросов
+            
             const promises = [
-                // Запрос для "Все"
+                
                 window.api.get(`/api/tournaments/page?page=0&size=1${statusParam}`),
-                // Запросы для каждой игры
+                
                 ...gameCategories.map(cat => 
                     window.api.get(`/api/tournaments/page?page=0&size=1&gameTypeId=${cat.gameId}${statusParam}`)
-                        .catch(error => ({ totalElements: 0 })) // Обрабатываем ошибки
+                        .catch(error => ({ totalElements: 0 })) 
                 )
             ];
             
-            // Выполняем все запросы параллельно
+            
             const results = await Promise.all(promises);
             
-            // Обновляем количество для "Все" (первый результат)
+            
             const allCategory = categories.find(c => c.id === 'all');
             if (allCategory) {
                 allCategory.count = results[0].totalElements || 0;
             }
             
-            // Обновляем количества для игр (остальные результаты)
+            
             gameCategories.forEach((cat, index) => {
                 cat.count = results[index + 1].totalElements || 0;
             });
             
-            // Перерисовываем категории с новыми количествами
+            
             renderCategories();
             
         } catch (error) {
@@ -100,7 +100,7 @@ $(document).ready(function() {
         const $btn = $('<button>')
             .addClass(`status-filter-btn ${currentStatusFilter === 'REGISTRATION_OPEN' ? 'active' : ''}`)
             .html('<i class="fas fa-fire"></i> Только открытые')
-            .on('click', async function() {  // Добавили async
+            .on('click', async function() {  
                 if (currentStatusFilter === 'REGISTRATION_OPEN') {
                     currentStatusFilter = 'all';
                 } else {
@@ -109,7 +109,7 @@ $(document).ready(function() {
                 currentPage = 0;
                 renderStatusFilter();
                 
-                // Пересчитываем количество для всех категорий с новым фильтром
+                
                 await reloadCategoryCounts();
                 
                 await loadTournaments();
@@ -117,13 +117,13 @@ $(document).ready(function() {
         
         $container.append($btn);
     }
-    // Добавьте эту функцию ПЕРЕД loadTournaments()
+    
 
     async function loadCategories() {
         try {
             const gameTypes = await window.api.get('/api/gametypes');
             
-            // Формируем базовые категории без количеств
+            
             categories = [{ id: 'all', label: 'Все', icon: '🌍', count: 0, gameId: null }].concat(
                 (gameTypes || [])
                     .filter(game => game.isActive === true)
@@ -136,7 +136,7 @@ $(document).ready(function() {
                     }))
             );
             
-            // Загружаем количества с учётом текущего фильтра
+            
             await reloadCategoryCounts();
             
             renderCategories();
@@ -148,10 +148,10 @@ $(document).ready(function() {
 
     async function loadTournaments() {
         try {
-            // Строим URL с пагинацией
+            
             let url = `/api/tournaments/page?page=${currentPage}&size=${pageSize}`;
             
-            // Добавляем фильтр по игре, если выбран не "Все"
+            
             if (currentCategory !== 'all') {
                 const category = categories.find(c => c.id === currentCategory);
                 if (category && category.gameId) {
@@ -159,15 +159,15 @@ $(document).ready(function() {
                 }
             }
             
-            // ✅ ДОБАВЬТЕ ЭТОТ БЛОК - фильтр по статусу
+            
             if (currentStatusFilter !== 'all') {
                 url += `&status=${currentStatusFilter}`;
             }
             
-            // Используем api.get для /api/tournaments/page
+            
             const response = await window.api.get(url);
             
-            // Обновляем данные из ответа
+            
             tournaments = (response.content || []).map(t => ({
                 id: t.id,
                 title: t.title,
@@ -178,7 +178,7 @@ $(document).ready(function() {
                 imageUrl: t.imageUrl
             }));
             
-            // Обновляем пагинацию
+            
             currentPage = response.page || 0;
             totalPages = response.totalPages || 0;
             totalElements = response.totalElements || 0;
@@ -196,7 +196,7 @@ $(document).ready(function() {
         }
     }
 
-    // Рендер пагинации
+    
     function renderPagination(response) {
         const $pagination = $('#pagination');
         if (!$pagination.length) return;
@@ -208,7 +208,7 @@ $(document).ready(function() {
 
         let pagesHtml = '';
 
-        // Кнопка "Назад"
+        
         const isFirstPage = response ? response.first : (currentPage === 0);
         pagesHtml += `
             <button class="page-btn prev-btn" ${isFirstPage ? 'disabled' : ''}>
@@ -216,7 +216,7 @@ $(document).ready(function() {
             </button>
         `;
 
-        // Номера страниц
+        
         const startPage = Math.max(0, currentPage - 2);
         const endPage = Math.min(totalPages - 1, currentPage + 2);
 
@@ -238,7 +238,7 @@ $(document).ready(function() {
             pagesHtml += `<button class="page-btn" data-page="${totalPages - 1}">${totalPages}</button>`;
         }
 
-        // Кнопка "Вперёд"
+        
         const isLastPage = response ? response.last : (currentPage >= totalPages - 1);
         pagesHtml += `
             <button class="page-btn next-btn" ${isLastPage ? 'disabled' : ''}>
@@ -248,7 +248,7 @@ $(document).ready(function() {
 
         $pagination.html(pagesHtml);
 
-        // Обработчики
+        
         $('.prev-btn').off('click').on('click', () => {
             if (!isFirstPage && currentPage > 0) {
                 currentPage--;
@@ -296,7 +296,7 @@ $(document).ready(function() {
                     loadTournaments();
                 });
 
-            // Показываем количество для всех категорий
+            
             if (cat.count !== undefined && cat.count > 0) {
                 $btn.append($('<span>').addClass('category-count').text(cat.count));
             }
@@ -305,7 +305,7 @@ $(document).ready(function() {
     }
 
     function getFilteredTournaments() {
-        // Больше не нужно фильтровать на клиенте, так как фильтрация на бэке
+        
         return [...tournaments];
     }
 
@@ -349,7 +349,7 @@ $(document).ready(function() {
             
             let $banner;
             
-            // Если есть картинка - используем её
+            
             if (imageUrl && imageUrl !== 'null') {
                 $banner = $('<div>').addClass('card-banner').css({
                     'background-image': `url("${escapeHtml(imageUrl)}")`,
@@ -362,7 +362,7 @@ $(document).ready(function() {
                     <span class="status-badge-banner ${statusClass}">${statusText}</span>
                 `);
             } else {
-                // Если картинки нет - используем градиент
+                
                 const gradients = [
                     'linear-gradient(135deg, #1e1b2e 0%, #2d1b4e 100%)',
                     'linear-gradient(135deg, #1a1a2e 0%, #1b2d45 100%)',
@@ -403,7 +403,7 @@ $(document).ready(function() {
         });
     }
 
-    // Добавьте эту функцию, если её нет
+    
     function getStatusClass(status) {
         switch(status) {
             case 'REGISTRATION_OPEN': return 'open';
@@ -415,13 +415,13 @@ $(document).ready(function() {
         }
     }
     
-    // Авторизация - используем api.get
+    
     async function updateAuthButtons() {
         const $auth = $('#authButtons');
         if (!$auth.length) return;
         
         try {
-            // Используем api.get для проверки авторизации
+            
             const data = await window.api.get('/api/auth/check');
             
             if (data && data.authenticated && data.user) {
@@ -443,7 +443,7 @@ $(document).ready(function() {
                 
                 $('#profileIcon').off('click').on('click', () => window.location.href = '/profile');
                 
-                // Инициализируем модуль уведомлений
+                
                 if (window.NotificationsModule) {
                     window.NotificationsModule.init();
                     window.NotificationsModule.loadNotifications();
@@ -456,14 +456,14 @@ $(document).ready(function() {
                 $('#registerBtn').off('click').on('click', () => window.location.href = '/register');
                 $('#loginBtn').off('click').on('click', () => window.location.href = '/login');
                 
-                // Очищаем уведомления для неавторизованных
+                
                 if (window.NotificationsModule) {
                     window.NotificationsModule.destroy();
                 }
             }
         } catch (error) {
             console.error('Auth check error:', error);
-            // Показываем кнопки входа в случае ошибки
+            
             $auth.html(`
                 <button class="btn-outline" id="registerBtn">Регистрация</button>
                 <button class="btn-primary" id="loginBtn">Вход</button>
@@ -495,7 +495,7 @@ $(document).ready(function() {
         });
     }
 
-    // Старт - асинхронная инициализация
+    
     (async function init() {
         await loadCategories();
         renderStatusFilter();
@@ -505,7 +505,7 @@ $(document).ready(function() {
         initNavBar();
     })();
 
-    // Очистка при выгрузке
+    
     $(window).on('beforeunload', function() {
         if (window.NotificationsModule) {
             window.NotificationsModule.destroy();

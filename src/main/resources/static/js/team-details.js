@@ -13,13 +13,13 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
-// ========== АВТОРИЗАЦИЯ ==========
+
 async function updateAuthButtons() {
     const $auth = $('#authButtons');
     if (!$auth.length) return;
     
     try {
-        // Используем api.get для проверки авторизации
+        
         const data = await window.api.get('/api/auth/check');
         
         if (data && data.authenticated && data.user) {
@@ -43,14 +43,14 @@ async function updateAuthButtons() {
             $('#registerBtn').off('click').on('click', () => window.location.href = '/register');
             $('#loginBtn').off('click').on('click', () => window.location.href = '/login');
             
-            // Очищаем уведомления для неавторизованных
+            
             if (window.NotificationsModule) {
                 window.NotificationsModule.destroy();
             }
         }
     } catch (error) {
         console.error('Auth check error:', error);
-        // Показываем кнопки входа в случае ошибки
+        
         $auth.html(`
             <button class="btn-outline" id="registerBtn">Регистрация</button>
             <button class="btn-primary" id="loginBtn">Вход</button>
@@ -64,7 +64,7 @@ let selectedUserId = null;
 let selectedUserData = null;
 let searchTimeout = null;
 
-// ========== ОТКРЫТИЕ МОДАЛЬНОГО ОКНА ==========
+
 function openInviteModal() {
     const $modal = $('#inviteModal');
     if (!$modal.length) return;
@@ -100,7 +100,7 @@ function closeInviteModal() {
     selectedUserData = null;
 }
 
-// ========== ПОИСК ПОЛЬЗОВАТЕЛЕЙ ==========
+
 async function searchUsers(query) {
     const $resultsDiv = $('#searchResults');
     if (!$resultsDiv.length) return;
@@ -162,7 +162,7 @@ async function searchUsers(query) {
     }
 }
 
-// ========== ВЫБОР ПОЛЬЗОВАТЕЛЯ ==========
+
 function selectUser(user) {
     selectedUserId = user.id;
     selectedUserData = user;
@@ -210,7 +210,7 @@ function selectUser(user) {
     });
 }
 
-// ========== ОТПРАВКА ПРИГЛАШЕНИЯ ==========
+
 async function sendInvite() {
     if (!selectedUserId) {
         showToast('❌ Выберите пользователя', true);
@@ -253,7 +253,7 @@ async function sendInvite() {
     }
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ МОДАЛЬНОГО ОКНА ==========
+
 function initInviteModal() {
     const $searchInput = $('#usernameOrEmail');
     if ($searchInput.length) {
@@ -278,7 +278,7 @@ function initInviteModal() {
     $('#inviteModal .modal-overlay').off('click').on('click', closeInviteModal);
 }
 
-// ========== КНОПКИ ДЕЙСТВИЙ ==========
+
 function initActionButtons() {
     const $addMemberBtn = $('#addMemberBtn');
     if ($addMemberBtn.length) {
@@ -349,7 +349,7 @@ function initActionButtons() {
     });
 }
 
-// ========== ESCAPE HTML ==========
+
 function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>"']/g, function(m) {
@@ -362,7 +362,7 @@ function escapeHtml(str) {
     });
 }
 
-// ========== ЗАПУСК ==========
+
 $(document).ready(() => {
     updateAuthButtons();
     initInviteModal();

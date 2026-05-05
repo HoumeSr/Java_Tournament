@@ -14,7 +14,7 @@
     const slideshowContainer = document.getElementById('slideshowBg');
     const dotsContainer = document.getElementById('sliderDots');
 
-    // Инициализация слайдшоу (если элементы существуют)
+    
     if (slideshowContainer && dotsContainer) {
         initSlideshow();
         resetInterval();
@@ -132,24 +132,24 @@
         }
 
         try {
-            // Создаем FormData для отправки как @RequestParam
+            
             const formData = new FormData();
             formData.append('login', loginData.login);
             formData.append('password', loginData.password);
             
-            // Отправляем на AJAX endpoint
+            
             const response = await window.api.post('/api/auth/login', formData);
             
-            // Проверяем успешность ответа
+            
             if (response && response.success) {
                 showToast('✅ ' + (response.message || 'Вход выполнен успешно! Перенаправление...'));
                 
-                // Сохраняем данные пользователя в sessionStorage (опционально)
+                
                 if (response.user) {
                     sessionStorage.setItem('user', JSON.stringify(response.user));
                 }
                 
-                // Перенаправление через 1.5 секунды
+                
                 setTimeout(() => {
                     window.location.href = response.redirectUrl || '/profile';
                 }, 1500);
@@ -159,7 +159,7 @@
         } catch (error) {
             console.error('Login error:', error);
             
-            // Обработка ошибок с бэкенда
+            
             let errorMessage = '❌ Ошибка сервера';
             
             if (error.message) {
@@ -189,7 +189,7 @@
         }
 
         form.addEventListener('submit', async function(e) {
-            e.preventDefault(); // Отменяем стандартную отправку формы
+            e.preventDefault(); 
 
             const loginInput = document.getElementById('login');
             const passwordInput = document.getElementById('password');
@@ -197,7 +197,7 @@
             const login = loginInput ? loginInput.value.trim() : '';
             const password = passwordInput ? passwordInput.value : '';
 
-            // Валидация перед отправкой
+            
             const loginValidation = validateLoginValue(login);
             if (!loginValidation.valid) {
                 showToast(loginValidation.message, true);
@@ -214,7 +214,7 @@
                 return;
             }
 
-            // Отправка через API хелпер
+            
             await loginUser({ login, password });
         });
     }
@@ -267,7 +267,7 @@
         }
     }
 
-    // Пауза слайдшоу при наведении
+    
     const heroPanel = document.querySelector('.hero-panel');
     if (heroPanel) {
         heroPanel.addEventListener('mouseenter', () => {
@@ -277,13 +277,13 @@
         heroPanel.addEventListener('mouseleave', resetInterval);
     }
 
-    // Очистка интервала при уходе со страницы
+    
     window.addEventListener('beforeunload', () => {
         if (intervalId) clearInterval(intervalId);
     });
 
 
-    // Инициализация
+    
     initFormValidation();
     initLiveValidation();
 })();

@@ -1,9 +1,9 @@
-// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+
 let currentMatches = [];
 let currentSelectedMatch = null;
 let isLoading = false;
 
-// ========== УВЕДОМЛЕНИЯ ==========
+
 function showToast(message, isError = false) {
     const $toast = $('#demoToast');
     if (!$toast.length) return;
@@ -19,7 +19,7 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
-// ========== ESCAPE HTML ==========
+
 function escapeHtml(str) {
     if (!str) return '—';
     return String(str).replace(/[&<>]/g, function(m) {
@@ -30,7 +30,7 @@ function escapeHtml(str) {
     });
 }
 
-// ========== АВТОРИЗАЦИЯ ==========
+
 async function updateAuthButtons() {
     const $auth = $('#authButtons');
     if (!$auth.length) return;
@@ -66,7 +66,7 @@ async function updateAuthButtons() {
     }
 }
 
-// ========== НАЗВАНИЕ РАУНДА ==========
+
 function getRoundName(round, maxRound) {
     if (round === maxRound) return 'ФИНАЛ';
     if (maxRound === 4 && round === 3) return '1/2 ФИНАЛА';
@@ -78,7 +78,7 @@ function getRoundName(round, maxRound) {
     return `${round}-й раунд`;
 }
 
-// ========== ГРУППИРОВКА МАТЧЕЙ ПО РАУНДАМ ==========
+
 function groupMatchesByRound(matches) {
     const grouped = new Map();
     
@@ -100,7 +100,7 @@ function groupMatchesByRound(matches) {
     }));
 }
 
-// ========== СОЗДАНИЕ КАРТОЧКИ МАТЧА ==========
+
 function createMatchCard(match) {
     const $matchDiv = $('<div>')
         .addClass('match')
@@ -163,7 +163,7 @@ function createMatchCard(match) {
     return $matchDiv;
 }
 
-// ========== РЕНДЕР СЕТКИ ==========
+
 function renderBracket(matches) {
     const $container = $('#bracketContainer');
     if (!$container.length) return;
@@ -192,7 +192,7 @@ function renderBracket(matches) {
     setTimeout(() => drawConnections(), 100);
 }
 
-// ========== ЗАГРУЗКА МАТЧЕЙ ==========
+
 async function loadMatches() {
     if (isLoading) return;
     isLoading = true;
@@ -245,7 +245,7 @@ async function loadMatches() {
     }
 }
 
-// ========== ОТКРЫТИЕ МОДАЛЬНОГО ОКНА ==========
+
 function openWinnerModal(match) {
     currentSelectedMatch = match;
     
@@ -295,7 +295,7 @@ function openWinnerModal(match) {
     $modal.css('display', 'flex');
 }
 
-// ========== ОТПРАВКА ПОБЕДИТЕЛЯ ==========
+
 async function submitWinner() {
     const $selectedOption = $('.selector-option.selected');
     if (!$selectedOption.length) {
@@ -345,7 +345,7 @@ function closeModal() {
     currentSelectedMatch = null;
 }
 
-// ========== РИСОВАНИЕ ЛИНИЙ ==========
+
 function drawConnections() {
     const $container = $('#bracketContainer');
     const $rounds = $('.round');
@@ -444,7 +444,7 @@ function drawConnections() {
     $container[0].appendChild(svg);
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
+
 function initEventListeners() {
     $('.modal-close, #cancelModalBtn').on('click', closeModal);
     $('#submitWinnerBtn').on('click', submitWinner);
@@ -462,7 +462,7 @@ function initEventListeners() {
     });
 }
 
-// ========== ЗАПУСК ==========
+
 $(document).ready(() => {
     updateAuthButtons();
     initEventListeners();
