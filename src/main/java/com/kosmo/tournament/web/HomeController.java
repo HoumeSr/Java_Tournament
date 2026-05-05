@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.kosmo.tournament.rating.repository.RatingStatsRepository;
+import com.kosmo.tournament.storage.service.FileStorageService;
+import com.kosmo.tournament.storage.service.RandomImageService;
 import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
 
@@ -22,12 +25,17 @@ public class HomeController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private static final String DEFAULT_IMAGE_URL =
-        "http://localhost:9000/images/profiles/DEFAULT_IMAGE.png";
+    private final FileStorageService fileStorageService;
+    private final RandomImageService randomImageService;
 
-    public HomeController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public HomeController(UserRepository userRepository,
+                          PasswordEncoder passwordEncoder,
+                          FileStorageService fileStorageService,
+                          RandomImageService randomImageService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.fileStorageService = fileStorageService;
+        this.randomImageService = randomImageService;
     }
 
     @GetMapping("/")
@@ -93,7 +101,7 @@ public class HomeController {
 
         String passwordHash = passwordEncoder.encode(password);
         User newUser = new User(username, email, passwordHash);
-        newUser.setImageUrl(DEFAULT_IMAGE_URL);
+        newUser.setImageUrl(randomImageService.getRandomProfileImage());
         userRepository.save(newUser);
 
         return "redirect:/login?success=true";
@@ -165,7 +173,7 @@ public class HomeController {
 
         String passwordHash = passwordEncoder.encode(password);
         User newUser = new User(username, email, passwordHash);
-        newUser.setImageUrl(DEFAULT_IMAGE_URL);
+        newUser.setImageUrl(randomImageService.getRandomProfileImage());
         userRepository.save(newUser);
 
         response.put("success", true);
@@ -208,7 +216,7 @@ public class HomeController {
         userMap.put("id", user.getId());
         userMap.put("username", user.getUsername());
         userMap.put("role", user.getRole());
-        userMap.put("imageUrl", user.getImageUrl() != null ? user.getImageUrl() : DEFAULT_IMAGE_URL);
+        userMap.put("imageUrl", user.getImageUrl() != null ? user.getImageUrl() : randomImageService.getRandomProfileImage());
 
         response.put("user", userMap);
 

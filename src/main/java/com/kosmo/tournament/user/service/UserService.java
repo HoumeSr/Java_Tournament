@@ -31,9 +31,6 @@ public class UserService {
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
-    private static final String DEFAULT_IMAGE_URL =
-            "http://localhost:9000/images/profiles/DEFAULT_IMAGE.png";
-
     private final UserRepository userRepository;
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
@@ -114,9 +111,7 @@ public class UserService {
         user.setCountry(country);
         user.setEnabled(true);
         user.setCreatedAt(LocalDateTime.now());
-        user.setImageUrl(dto.getImageUrl() != null && !dto.getImageUrl().trim().isBlank()
-                ? dto.getImageUrl().trim()
-                : randomImageService.getRandomProfileImage());
+        user.setImageUrl(randomImageService.getRandomProfileImage());
 
         User saved = userRepository.save(user);
         return buildUserProfileDTO(saved, true);
@@ -176,8 +171,8 @@ public class UserService {
         if (dto.getImageUrl() != null) {
             String newImageUrl = dto.getImageUrl().trim();
             user.setImageUrl(newImageUrl.isBlank()
-                    ? randomImageService.getRandomProfileImage()
-                    : newImageUrl);
+                ? randomImageService.getRandomProfileImage()
+                : newImageUrl);
         }
 
         User saved = userRepository.save(user);

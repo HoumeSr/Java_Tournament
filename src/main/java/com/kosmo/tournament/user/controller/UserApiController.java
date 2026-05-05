@@ -53,7 +53,7 @@ public class UserApiController {
         return userService.searchUsers(value);
     }
 
-    @PostMapping
+    @PostMapping("/register")
     public ResponseEntity<?> createUser(@RequestBody CreateUserDTO dto) {
         try {
             UserProfileDTO created = userService.createUser(dto);

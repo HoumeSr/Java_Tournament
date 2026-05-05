@@ -347,12 +347,13 @@ $(function () {
         }
     }
 
-    async function uploadTeamLogo(file) {
+    async function uploadTeamLogo(teamId, file) {
         const formData = new FormData();
+        formData.append('teamId', teamId);  
         formData.append('file', file);
         
         try {
-            const response = await window.api.post('/api/teams/upload-logo', formData);
+            const response = await window.api.post('/api/teams/update-logo', formData);
             return response.imageUrl;
         } catch (error) {
             console.error('Error uploading logo:', error);
@@ -485,26 +486,28 @@ $(function () {
             $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Создание...');
 
             try {
-                let imageUrl = null;
-                
-                // Если пользователь загрузил файл - загружаем в MinIO
-                if (window.selectedTeamLogo && window.selectedTeamLogo.getFile()) {
-                    const file = window.selectedTeamLogo.getFile();
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    const uploadResponse = await window.api.post('/api/teams/upload-logo', formData);
-                    imageUrl = uploadResponse.imageUrl;
-                } 
-                // Если выбран случайный логотип из библиотеки
-                else if (window.selectedTeamLogo && window.selectedTeamLogo.getUrl()) {
-                    imageUrl = window.selectedTeamLogo.getUrl();
-                }
-                
+                // Создаём команду с null imageUrl
                 const team = await window.api.post('/api/teams', { 
                     name: name, 
-                    gameTypeId: gameTypeId, 
-                    imageUrl: imageUrl 
+                    gameTypeId: gameTypeId,
+                    imageUrl: null  // Явно передаём null
                 });
+                
+                // Если пользователь загрузил файл - загружаем логотип после создания команды
+                if (window.selectedTeamLogo && window.selectedTeamLogo.getFile()) {
+                    try {
+                        const file = window.selectedTeamLogo.getFile();
+                        const imageUrl = await uploadTeamLogo(team.id, file);
+                        
+                        // Обновляем команду с новым логотипом (опционально)
+                        if (imageUrl) {
+                            team.imageUrl = imageUrl;
+                        }
+                    } catch (uploadError) {
+                        console.error('Logo upload failed:', uploadError);
+                        showToast('⚠️ Команда создана, но логотип не загружен', false);
+                    }
+                }
                 
                 showToast('✅ Команда успешно создана');
                 closeCreateTeamModal();
@@ -515,7 +518,9 @@ $(function () {
                 setTimeout(function () { 
                     window.location.href = '/teams/' + team.id; 
                 }, 800);
+                
             } catch (error) {
+                console.error('Create team error:', error);
                 showToast('❌ ' + (error.message || 'Не удалось создать команду'), true);
             } finally {
                 $button.prop('disabled', false).html('<i class="fas fa-check"></i> Создать команду');

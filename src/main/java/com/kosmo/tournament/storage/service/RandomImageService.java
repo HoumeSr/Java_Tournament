@@ -32,15 +32,15 @@ public class RandomImageService {
     }
 
     public String getRandomProfileImage() {
-        return getRandomImageUrl("profiles/");
+        return getRandomImageUrl("images/profiles/");
     }
 
     public String getRandomTeamImage() {
-        return getRandomImageUrl("teams/");
+        return getRandomImageUrl("images/teams/");
     }
 
     public String getRandomTournamentImage() {
-        return getRandomImageUrl("tournaments/");
+        return getRandomImageUrl("images/tournaments/");
     }
 
     private String getRandomImageUrl(String prefix) {

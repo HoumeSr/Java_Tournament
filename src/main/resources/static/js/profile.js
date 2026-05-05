@@ -2,8 +2,6 @@ $(function () {
     let currentProfile = null;
     let currentAuthUser = null;
 
-    const DEFAULT_IMAGE_URL = 'http://localhost:9000/images/profiles/DEFAULT_IMAGE.png';
-
     function showToast(message, isError = false) {
         let $toast = $('#demoToast');
         if (!$toast.length) {
@@ -486,10 +484,7 @@ $(function () {
 
         try {
             await window.api.delete('/api/users/avatar');
-            if (currentProfile) {
-                currentProfile.imageUrl = DEFAULT_IMAGE_URL;
-            }
-            forceRefreshAvatar(DEFAULT_IMAGE_URL);
+            await loadProfile();
             await updateHeaderAuth();
             showToast('✅ Аватар сброшен на стандартный');
         } catch (error) {

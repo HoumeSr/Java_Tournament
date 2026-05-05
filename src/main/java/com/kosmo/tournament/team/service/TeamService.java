@@ -180,7 +180,7 @@ public class TeamService {
         team.setGameType(gameType);
         team.setImageUrl(dto.getImageUrl() != null && !dto.getImageUrl().isBlank()
             ? dto.getImageUrl().trim()
-            : "DEFAULT_TEAM_IMAGE.jpg");
+            : randomImageService.getRandomTeamImage());
 
         Team savedTeam = teamRepository.save(team);
 
