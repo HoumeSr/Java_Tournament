@@ -7,12 +7,14 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.kosmo.tournament.common.dto.PageResponseDTO;
 import com.kosmo.tournament.gametype.entity.GameType;
 import com.kosmo.tournament.gametype.repository.GameTypeRepository;
 import com.kosmo.tournament.notification.entity.Notification;
 import com.kosmo.tournament.notification.service.NotificationService;
+import com.kosmo.tournament.storage.service.FileStorageService;
 import com.kosmo.tournament.storage.service.RandomImageService;
 import com.kosmo.tournament.team.dto.AddTeamMemberDTO;
 import com.kosmo.tournament.team.dto.CreateTeamDTO;
@@ -28,8 +30,6 @@ import com.kosmo.tournament.tournament.model.TournamentStatus;
 import com.kosmo.tournament.tournament.repository.TournamentTeamParticipantRepository;
 import com.kosmo.tournament.user.entity.User;
 import com.kosmo.tournament.user.repository.UserRepository;
-import org.springframework.web.multipart.MultipartFile;
-import com.kosmo.tournament.storage.service.FileStorageService;
 
 @Service
 public class TeamService {
@@ -49,8 +49,9 @@ public class TeamService {
                        NotificationService notificationService,
                        GameTypeRepository gameTypeRepository,
                        TournamentTeamParticipantRepository tournamentTeamParticipantRepository,
-                       RandomImageService randomImageService) {
-                       FileStorageService fileStorageService) {
+                       RandomImageService randomImageService,
+                       FileStorageService fileStorageService) 
+                       {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.userRepository = userRepository;
