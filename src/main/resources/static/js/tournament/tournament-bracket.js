@@ -230,8 +230,10 @@ async function initRegistrationButtons() {
 }
 
 function generateBracket(maxParticipants, actualParticipants = null) {
-    let teamsCount = actualParticipants || maxParticipants;
+    // Для отображения сетки используем maxParticipants
+    let teamsCount = maxParticipants;
     
+    // Округляем до степени двойки
     if ((teamsCount & (teamsCount - 1)) !== 0 || teamsCount < 2) {
         let power = 1;
         while (power < teamsCount) {
@@ -290,30 +292,36 @@ function generateBracket(maxParticipants, actualParticipants = null) {
         };
         
         for (let i = 0; i < matchesCount; i++) {
-            
             let team1Name = `TBD ${i * 2 + 1}`;
             let team2Name = `TBD ${i * 2 + 2}`;
             let team1Id = null;
             let team2Id = null;
             
-            
-            if (roundNumber === 1 && actualParticipants) {
+            // BYE ТОЛЬКО для первого раунда и только если actualParticipants передан
+            if (roundNumber === 1 && actualParticipants && actualParticipants > 0 && actualParticipants < teamsCount) {
                 const totalSlots = teamsCount;
                 const actualCount = actualParticipants;
                 const byeCount = totalSlots - actualCount;
                 
-                
-                if (i < byeCount) {
-                    team1Name = 'BYE';
-                    team1Id = null;
-                    team2Name = `TBD ${i * 2 + 2}`;
+                // Помечаем BYE только для пустых слотов
+                // Важно: BYE должен быть в правильных позициях (обычно в конце)
+                if (i >= (matchesCount - byeCount)) {
+                    // Ставим BYE на последние byeCount матчей
+                    // Чередуем BYE, чтобы распределить их равномерно
+                    if ((i - (matchesCount - byeCount)) % 2 === 0) {
+                        team1Name = 'BYE';
+                        team1Id = null;
+                    } else {
+                        team2Name = 'BYE';
+                        team2Id = null;
+                    }
                 }
             }
             
             round.matches.push({
                 id: `${roundNumber}_${i}`,
-                team1: { name: team1Name, score: null, id: team1Id, type: null },
-                team2: { name: team2Name, score: null, id: team2Id, type: null },
+                team1: { name: team1Name, score: null, id: team1Id, type: null, imageUrl: null },
+                team2: { name: team2Name, score: null, id: team2Id, type: null, imageUrl: null },
                 winner: null,
                 finished: false
             });
@@ -404,7 +412,7 @@ async function applyMatchesDataWithImages(rounds, matchesData) {
                 const realMatch = roundMatches[idx] || roundMatches.find(m => m.position === idx);
                 
                 if (realMatch) {
-                    
+                    // Загрузка изображений...
                     if (realMatch.participant1Id) {
                         let imageUrl = null;
                         if (realMatch.participant1Type === 'team') {
@@ -414,7 +422,6 @@ async function applyMatchesDataWithImages(rounds, matchesData) {
                         }
                         match.team1.imageUrl = imageUrl;
                     }
-                    
                     
                     if (realMatch.participant2Id) {
                         let imageUrl = null;
@@ -426,23 +433,28 @@ async function applyMatchesDataWithImages(rounds, matchesData) {
                         match.team2.imageUrl = imageUrl;
                     }
                     
-                    
-                    if (realMatch.participant1Name === 'BYE' || !realMatch.participant1Id) {
-                        match.team1.name = 'BYE';
-                        match.team1.id = null;
-                        if (realMatch.participant2Id) {
-                            match.winner = 'team2';
-                            match.finished = true;
-                        }
-                    } else if (realMatch.participant2Name === 'BYE' || !realMatch.participant2Id) {
-                        match.team2.name = 'BYE';
-                        match.team2.id = null;
-                        if (realMatch.participant1Id) {
-                            match.winner = 'team1';
-                            match.finished = true;
+                    // Обработка BYE матчей ТОЛЬКО для первого раунда
+                    if (round.number === 1) {
+                        if (realMatch.participant1Name === 'BYE' || !realMatch.participant1Id) {
+                            match.team1.name = 'BYE';
+                            match.team1.id = null;
+                            // Второй участник автоматически проходит
+                            if (realMatch.participant2Id) {
+                                match.winner = 'team2';
+                                match.finished = true;
+                            }
+                        } else if (realMatch.participant2Name === 'BYE' || !realMatch.participant2Id) {
+                            match.team2.name = 'BYE';
+                            match.team2.id = null;
+                            // Первый участник автоматически проходит
+                            if (realMatch.participant1Id) {
+                                match.winner = 'team1';
+                                match.finished = true;
+                            }
                         }
                     }
                     
+                    // Обычная обработка
                     if (realMatch.participant1Name && realMatch.participant1Name !== 'BYE') {
                         match.team1.name = realMatch.participant1Name;
                         match.team1.id = realMatch.participant1Id;

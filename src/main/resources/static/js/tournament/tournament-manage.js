@@ -256,7 +256,6 @@ function openWinnerModal(match) {
     
     const maxRound = Math.max(...currentMatches.map(m => m.roundNumber));
     $modalRound.text(`${getRoundName(match.roundNumber, maxRound)} - Раунд ${match.roundNumber}`);
-    $modalMatchId.text(`Матч #${match.id}`);
     
     const isSolo = match.matchType === 'SOLO';
     const participants = [
